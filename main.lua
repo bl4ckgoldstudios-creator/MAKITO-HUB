@@ -68,6 +68,7 @@ local Settings = {
     WalkSpeed = 16, JumpPower = 50, InfEnergy = true,
     -- Visual (ESP)
     EspPlayers = false, EspFruits = false, EspChests = false, EspFlower = false, FullBright = false, FPSBooster = false, NoClip = false,
+    AutoChest = false,
     LowGraphics = false, RemoveTextures = false, RemoveShadows = false,
     -- Misc
     AutoRejoin = true, AntiAFK = true, WebhookEnabled = false, WebhookURL = "",
@@ -1095,6 +1096,9 @@ end
     NewToggle(VisualTab, "ESP Chests", "EspChests", function(v) end)
     NewToggle(VisualTab, "ESP Flowers", "EspFlower", function(v) end)
     
+    NewSection(VisualTab, "Farming")
+    NewToggle(VisualTab, "Auto Farm Chests (TP)", "AutoChest", function(v) end)
+    
     NewSection(VisualTab, "Environment")
     NewToggle(VisualTab, "Full Bright", "FullBright", function(v)
         if v then
@@ -1498,10 +1502,25 @@ local function AutoChestLogic()
             task.wait(1)
             if Settings.AutoChest then
                 pcall(function()
+                    local function FarmChest(v)
+                        if v.Name:find("Chest") then
+                            local handle = v:IsA("BasePart") and v or v:FindFirstChildWhichIsA("BasePart", true)
+                            if handle then
+                                TweenTo(handle.CFrame)
+                                task.wait(0.5)
+                            end
+                        end
+                    end
+
                     for _, v in ipairs(workspace:GetChildren()) do
-                        if v.Name:find("Chest") and v:IsA("Part") then
-                            TweenTo(v.CFrame)
-                            task.wait(0.2)
+                        if not Settings.AutoChest then break end
+                        FarmChest(v)
+                    end
+                    local chestFolder = workspace:FindFirstChild("Chests")
+                    if chestFolder then
+                        for _, v in ipairs(chestFolder:GetChildren()) do
+                            if not Settings.AutoChest then break end
+                            FarmChest(v)
                         end
                     end
                 end)
@@ -2210,11 +2229,30 @@ task.spawn(function()
                 end
             end
             
-            -- ESP Chests
+            -- ESP Chests (Improved Detection)
             if Settings.EspChests then
+                local function CheckChest(v)
+                    if v.Name:find("Chest") then
+                        local handle = v:IsA("BasePart") and v or v:FindFirstChildWhichIsA("BasePart", true)
+                        if handle then
+                            local chestColor = Color3.new(1, 0.8, 0) -- Default Yellow
+                            if v.Name:find("1") then chestColor = Color3.fromRGB(192, 192, 192) -- Silver
+                            elseif v.Name:find("2") then chestColor = Color3.fromRGB(255, 215, 0) -- Gold
+                            elseif v.Name:find("3") then chestColor = Color3.fromRGB(0, 255, 255) -- Diamond/Blue
+                            end
+                            CreateESP(handle, v.Name, chestColor, false)
+                        end
+                    end
+                end
+
                 for _, v in ipairs(workspace:GetChildren()) do
-                    if v.Name:find("Chest") and v:IsA("Part") then
-                        CreateESP(v, "Chest", Color3.new(1, 0.8, 0), false)
+                    CheckChest(v)
+                end
+                -- Fallback for specific chest folders
+                local chestFolder = workspace:FindFirstChild("Chests")
+                if chestFolder then
+                    for _, v in ipairs(chestFolder:GetChildren()) do
+                        CheckChest(v)
                     end
                 end
             end
