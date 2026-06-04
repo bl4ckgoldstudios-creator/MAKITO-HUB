@@ -44,7 +44,7 @@ if not ParentGui then ParentGui = LocalPlayer:WaitForChild("PlayerGui") end
 _G.MakitoHubRunning = true
 local Settings = {
     -- Auto Farm Settings
-    AutoFarm = false, FastAttack = false, AutoQuest = false, AutoNextSea = false, Weapon = "Melee", Distance = 10, TweenSpeed = 350, BringMobs = false,
+    AutoFarm = false, FastAttack = false, AutoQuest = false, AutoNextSea = false, Weapon = "Melee", Distance = 10, TweenSpeed = 350, BringMobs = false, AutoFarmNearest = false,
     AutoSkill = false, SkillZ = true, SkillX = true, SkillC = true, SkillV = true,
     AutoMastery = false, MasteryHealth = 20, MasteryWeapon = "Sword",
     FastAttackSpeed = 0.05, AutoHaki = false, AutoKen = false, AutoStats = false, SelectedStat = "Melee",
@@ -59,6 +59,7 @@ local Settings = {
     AutoFarmMaterial = false, SelectedMaterial = "Dragon Scale",
     -- Raid Settings
     AutoRaid = false, AutoBuyChip = false, AutoNextIsland = false, AutoAwaken = false, KillAuraRaid = false,
+    AutoDungeon = false,
     SelectedRaid = "Flame",
     -- PvP Settings
     SafeMode = true, AimAssist = false, AutoCombo = false, SelectedFruit = "Dough", PredictMovement = true, SelectedPlayer = "None", AutoBounty = false,
@@ -427,7 +428,15 @@ local FastAttackConn = nil
 local function GetFramework()
     pcall(function()
         if not CombatFramework then
+            -- Try multiple paths for CombatFramework (Update 29 compatibility)
             local framework = LocalPlayer.PlayerScripts:FindFirstChild("CombatFramework")
+            if not framework then
+                framework = LocalPlayer.PlayerScripts:FindFirstChild("CombatFrameworkR")
+            end
+            if not framework then
+                -- Try in ReplicatedStorage
+                framework = ReplicatedStorage:FindFirstChild("CombatFramework")
+            end
             if framework then
                 CombatFramework = require(framework)
             end
@@ -1015,6 +1024,7 @@ end
     local FarmTab = NewTab("Auto Farm")
     NewSection(FarmTab, "Main Progression")
     NewToggle(FarmTab, "Auto Farm Level", "AutoFarm", function(v) end)
+    NewToggle(FarmTab, "Auto Farm Nearest (No Quest)", "AutoFarmNearest", function(v) end)
     NewToggle(FarmTab, "Auto Quest", "AutoQuest", function(v) end)
     NewToggle(FarmTab, "Auto Next Sea", "AutoNextSea", function(v) end)
     NewToggle(FarmTab, "Bring Mobs", "BringMobs", function(v) end)
@@ -1051,6 +1061,7 @@ end
     
     NewSection(RaidTab, "Settings")
     NewDropdown(RaidTab, "Select Raid", {"Flame", "Ice", "Quake", "Light", "Dark", "Spider", "Rumble", "Magma", "Buddha", "Sand"}, "SelectedRaid", function(v) end)
+    NewToggle(RaidTab, "Auto Dungeon Farm", "AutoDungeon", function(v) end)
     
     NewButton(RaidTab, "TP to Raid Lab", function()
         TweenTo(CFrame.new(-495, 300, -2850))
@@ -1079,6 +1090,8 @@ end
     NewToggle(CombatTab, "Predict Movement", "PredictMovement", function(v) end)
 
     NewSection(CombatTab, "Player Hacks")
+    NewToggle(CombatTab, "No Clip", "NoClip", function(v) end)
+    NewToggle(CombatTab, "Fly Hack", "FlyHack", function(v) end)
     NewToggle(CombatTab, "Walk On Water", "WalkOnWater", function(v) end)
     NewToggle(CombatTab, "Infinite Geppo", "InfGeppo", function(v) end)
     NewToggle(CombatTab, "Infinite Energy", "InfEnergy", function(v) end)
@@ -1792,26 +1805,12 @@ end
 local function GetNearestEnemy(EnemyName)
     local Nearest, MaxDist = nil, math.huge
     local enemiesFolder = workspace:FindFirstChild("Enemies") or workspace
-    
+
     -- Normalização do nome para busca mais flexível
     local searchName = EnemyName and EnemyName:lower() or nil
-    
-    for _, v in ipairs(enemiesFolder:GetChildren()) do
-        if v:IsA("Model") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
-            local vName = v.Name:lower()
-            if not searchName or vName == searchName or vName:find(searchName) then
-                local dist = (v.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
-                if dist < MaxDist then
-                    MaxDist = dist
-                    Nearest = v
-                end
-            end
-        end
-    end
-    
-    -- Fallback agressivo para o Workspace (comum no Sea 1)
-    if not Nearest then
-        for _, v in ipairs(workspace:GetChildren()) do
+
+    pcall(function()
+        for _, v in ipairs(enemiesFolder:GetChildren()) do
             if v:IsA("Model") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
                 local vName = v.Name:lower()
                 if not searchName or vName == searchName or vName:find(searchName) then
@@ -1823,8 +1822,26 @@ local function GetNearestEnemy(EnemyName)
                 end
             end
         end
+    end)
+
+    -- Fallback agressivo para o Workspace (comum no Sea 1)
+    if not Nearest then
+        pcall(function()
+            for _, v in ipairs(workspace:GetChildren()) do
+                if v:IsA("Model") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
+                    local vName = v.Name:lower()
+                    if not searchName or vName == searchName or vName:find(searchName) then
+                        local dist = (v.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+                        if dist < MaxDist then
+                            MaxDist = dist
+                            Nearest = v
+                        end
+                    end
+                end
+            end
+        end)
     end
-    
+
     return Nearest
 end
 
@@ -1864,18 +1881,25 @@ local function Float(enabled)
 end
 
 local function GetQuestData()
-    local level = LocalPlayer.Data.Level.Value
+    local level = 0
+    pcall(function()
+        level = LocalPlayer.Data.Level.Value
+    end)
+
     local sea = GetSea()
     local data = QuestData[sea]
     if not data then return nil end
-    
+
     local myTeam = LocalPlayer.Team and LocalPlayer.Team.Name or "Pirates"
 
     -- 1. Check if we already have an active quest in the UI
     local MainGui = LocalPlayer.PlayerGui:FindFirstChild("Main")
     if MainGui and MainGui:FindFirstChild("Quest") and MainGui.Quest.Visible then
-        local questText = MainGui.Quest.Container.QuestTitle.Title.Text:lower()
-        
+        local questText = ""
+        pcall(function()
+            questText = MainGui.Quest.Container.QuestTitle.Title.Text:lower()
+        end)
+
         -- Custom titles mapping (Blox Fruits quest titles vs enemy names)
         local TitleMap = {
             ["skull slayer"] = "Skull Slayer",
@@ -1885,7 +1909,7 @@ local function GetQuestData()
             ["sun-kissed warrior"] = "Sun-kissed Warrior",
             ["serpent hunter"] = "Serpent Hunter"
         }
-        
+
         for title, enemy in pairs(TitleMap) do
             if questText:find(title) then
                 for _, q in ipairs(data) do
@@ -2096,6 +2120,107 @@ local function AutoSaberLogic()
 end
 
 local FarmPosLock = nil
+-- DUNGEON AUTO FARM LOGIC
+local function AutoDungeonLogic()
+    task.spawn(function()
+        while _G.MakitoHubRunning do
+            task.wait(0.5)
+            if Settings.AutoDungeon then
+                pcall(function()
+                    if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then return end
+                    
+                    -- Check if in dungeon
+                    local dungeonFolder = workspace:FindFirstChild("Dungeon")
+                    if dungeonFolder then
+                        -- Find nearest enemy in dungeon
+                        local NearestEnemy = nil
+                        local MinDist = math.huge
+                        
+                        for _, v in ipairs(dungeonFolder:GetDescendants()) do
+                            if v:IsA("Model") and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                                local dist = (v.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+                                if dist < MinDist then
+                                    MinDist = dist
+                                    NearestEnemy = v
+                                end
+                            end
+                        end
+                        
+                        if NearestEnemy then
+                            EquipWeapon()
+                            Float(true)
+                            LocalPlayer.Character.HumanoidRootPart.CFrame = NearestEnemy.HumanoidRootPart.CFrame * CFrame.new(0, Settings.Distance, 0)
+                        end
+                    else
+                        -- TP to dungeon entrance if not in dungeon
+                        local sea = GetSea()
+                        if sea == 3 then
+                            -- Sea 3 Dungeon location (Castle on the Sea)
+                            TweenTo(CFrame.new(-5400, 15, 1000))
+                        elseif sea == 2 then
+                            -- Sea 2 Dungeon location (Factory)
+                            TweenTo(CFrame.new(634, 72, 918))
+                        end
+                    end
+                end)
+            end
+        end
+    end)
+end
+
+-- AUTO FARM NEAREST LOGIC (Redz Hub Style - No Quest Needed)
+local function AutoFarmNearestLogic()
+    task.spawn(function()
+        while _G.MakitoHubRunning do
+            task.wait(0.1)
+            if Settings.AutoFarmNearest then
+                pcall(function()
+                    if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then return end
+                    
+                    -- Find nearest enemy regardless of quest
+                    local NearestEnemy = nil
+                    local MinDist = math.huge
+                    local enemiesFolder = workspace:FindFirstChild("Enemies") or workspace
+                    
+                    for _, v in ipairs(enemiesFolder:GetDescendants()) do
+                        if v:IsA("Model") and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                            local dist = (v.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+                            if dist < MinDist and dist < 500 then -- 500 stud range
+                                MinDist = dist
+                                NearestEnemy = v
+                            end
+                        end
+                    end
+                    
+                    if NearestEnemy then
+                        EquipWeapon()
+                        Float(true)
+                        
+                        -- Lock position to enemy
+                        local targetCF = NearestEnemy.HumanoidRootPart.CFrame * CFrame.new(0, Settings.Distance, 0) * CFrame.Angles(math.rad(-90), 0, 0)
+                        LocalPlayer.Character.HumanoidRootPart.CFrame = targetCF
+                        
+                        -- Bring nearby mobs if enabled
+                        if Settings.BringMobs then
+                            for _, v in ipairs(enemiesFolder:GetDescendants()) do
+                                if v:IsA("Model") and v.Name == NearestEnemy.Name and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                                    local distToMain = (v.HumanoidRootPart.Position - NearestEnemy.HumanoidRootPart.Position).Magnitude
+                                    if distToMain < 150 then
+                                        v.HumanoidRootPart.CanCollide = false
+                                        v.HumanoidRootPart.CFrame = NearestEnemy.HumanoidRootPart.CFrame
+                                    end
+                                end
+                            end
+                        end
+                    else
+                        Float(false)
+                    end
+                end)
+            end
+        end
+    end)
+end
+
 -- Main Automation Loop
 task.spawn(function()
     while true do
@@ -2126,10 +2251,18 @@ task.spawn(function()
                             end
 
                             TweenTo(npcPos * CFrame.new(0, 10, 0))
-                            
+
                             if (LocalPlayer.Character.HumanoidRootPart.Position - npcPos.Position).Magnitude < 20 then
-                                -- Try starting quest
-                                ReplicatedStorage.Remotes.CommF_:InvokeServer("StartQuest", Quest.Name, Quest.ID)
+                                -- Try starting quest with fallback for different remote names
+                                pcall(function()
+                                    ReplicatedStorage.Remotes.CommF_:InvokeServer("StartQuest", Quest.Name, Quest.ID)
+                                end)
+                                pcall(function()
+                                    ReplicatedStorage.Remotes.CommF_:InvokeServer("StartQuest")
+                                end)
+                                pcall(function()
+                                    ReplicatedStorage.Remotes["CommF_"]:InvokeServer("StartQuest", Quest.Name, Quest.ID)
+                                end)
                                 task.wait(1)
                             end
                         end
@@ -2224,9 +2357,18 @@ task.spawn(function()
         task.wait(1)
         if Settings.AutoStats then
             pcall(function()
-                local points = LocalPlayer.Data.StatsPoints.Value
+                local points = 0
+                if LocalPlayer.Data and LocalPlayer.Data:FindFirstChild("StatsPoints") then
+                    points = LocalPlayer.Data.StatsPoints.Value
+                end
                 if points > 0 then
-                    ReplicatedStorage.Remotes.CommF_:InvokeServer("AddPoint", Settings.SelectedStat, points)
+                    -- Try multiple remote methods
+                    pcall(function()
+                        ReplicatedStorage.Remotes.CommF_:InvokeServer("AddPoint", Settings.SelectedStat, points)
+                    end)
+                    pcall(function()
+                        ReplicatedStorage.Remotes.CommF_:InvokeServer("AddPoint", Settings.SelectedStat)
+                    end)
                 end
             end)
         end
@@ -2234,10 +2376,74 @@ task.spawn(function()
 end)
 
 -- Misc Features
+local FlyBV = nil
+local FlyBG = nil
+local function EnableFly()
+    if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then return end
+    local root = LocalPlayer.Character.HumanoidRootPart
+    
+    if not FlyBV then
+        FlyBV = Instance.new("BodyVelocity", root)
+        FlyBV.Name = "MakitoFlyBV"
+        FlyBV.Velocity = Vector3.new(0, 0, 0)
+        FlyBV.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+    end
+    
+    if not FlyBG then
+        FlyBG = Instance.new("BodyGyro", root)
+        FlyBG.Name = "MakitoFlyBG"
+        FlyBG.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+        FlyBG.P = 50000
+        FlyBG.CFrame = root.CFrame
+    end
+    
+    LocalPlayer.Character.Humanoid.PlatformStand = true
+end
+
+local function DisableFly()
+    if FlyBV then FlyBV:Destroy() FlyBV = nil end
+    if FlyBG then FlyBG:Destroy() FlyBG = nil end
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+        LocalPlayer.Character.Humanoid.PlatformStand = false
+    end
+end
+
 task.spawn(function()
     while _G.MakitoHubRunning do
-        task.wait(0.5)
+        task.wait(0.1)
         pcall(function()
+            if Settings.FlyHack then
+                EnableFly()
+            else
+                DisableFly()
+            end
+
+            if Settings.InfEnergy and LocalPlayer.Character then
+                -- Try multiple energy value names (Update 29 compatibility)
+                if LocalPlayer.Character:FindFirstChild("Energy") then
+                    LocalPlayer.Character.Energy.Value = 100
+                elseif LocalPlayer.Character:FindFirstChild("Stamina") then
+                    LocalPlayer.Character.Stamina.Value = 100
+                elseif LocalPlayer.Character:FindFirstChild("Mana") then
+                    LocalPlayer.Character.Mana.Value = 100
+                end
+            end
+
+            if Settings.NoClip and LocalPlayer.Character then
+                for _, v in pairs(LocalPlayer.Character:GetDescendants()) do
+                    if v:IsA("BasePart") then
+                        v.CanCollide = false
+                    end
+                end
+            elseif not Settings.NoClip and LocalPlayer.Character then
+                -- Restore collision when NoClip is off
+                for _, v in pairs(LocalPlayer.Character:GetDescendants()) do
+                    if v:IsA("BasePart") and v.Name ~= "HumanoidRootPart" then
+                        v.CanCollide = true
+                    end
+                end
+            end
+
             if Settings.WalkOnWater then
                 -- Water walking logic
             end
@@ -2418,6 +2624,8 @@ end
 task.spawn(AutoPvPLogic)
 task.spawn(AutoBossLogic)
 task.spawn(AutoChestLogic)
+task.spawn(AutoFarmNearestLogic)
+task.spawn(AutoDungeonLogic)
 task.spawn(CreateHub)
 Notify("MAKITO HUB SUPREME V6.0 INICIADO!", 5)
 print("[Makito Hub] Welcome, Lucas. System ready.")
