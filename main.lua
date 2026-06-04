@@ -462,39 +462,52 @@ local function StartFastAttack()
     -- Heartbeat for maximum stability at high speeds
     FastAttackConn = RunService.Heartbeat:Connect(function()
         if _G.MakitoHubRunning and Settings.FastAttack and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            GetFramework()
-            
-            if CombatFramework and CombatFramework.activeController then
-                pcall(function()
-                    -- REDZ HUB STYLE - SILENT LONG RANGE ATTACK
-                    -- No clicks needed, just active when weapon is held
-                    local currentTool = LocalPlayer.Character:FindFirstChildOfClass("Tool")
-                    if currentTool then
-                        -- Set insane reach (120 is the sweet spot for "considerable distance")
-                        CombatFramework.activeController.hitboxMagnitude = 120
-                        
-                        if CombatFrameworkRoot and CombatFrameworkRoot.activeController then
-                            -- Instant reset of everything that causes delay or animation
-                            CombatFrameworkRoot.activeController.timeToNextAttack = 0
-                            CombatFrameworkRoot.activeController.attackCount = 0 
-                            CombatFrameworkRoot.activeController.increment = 0
-                            CombatFrameworkRoot.activeController.hitboxMagnitude = 120
-                            
-                            -- Force active state to allow hits without clicking
-                            CombatFrameworkRoot.activeController.active = true
-                        end
+            pcall(function()
+                GetFramework()
 
-                        -- Attack Loop: Calls the internal attack function directly
-                        -- This deals damage without triggering the "click" animation
-                        for i = 1, 12 do 
-                            CombatFramework.activeController.attack()
+                if CombatFramework and CombatFramework.activeController then
+                    pcall(function()
+                        -- REDZ HUB STYLE - SILENT LONG RANGE ATTACK
+                        -- No clicks needed, just active when weapon is held
+                        local currentTool = LocalPlayer.Character:FindFirstChildOfClass("Tool")
+                        if currentTool then
+                            -- Set insane reach (120 is the sweet spot for "considerable distance")
+                            CombatFramework.activeController.hitboxMagnitude = 120
+
                             if CombatFrameworkRoot and CombatFrameworkRoot.activeController then
+                                -- Instant reset of everything that causes delay or animation
+                                CombatFrameworkRoot.activeController.timeToNextAttack = 0
                                 CombatFrameworkRoot.activeController.attackCount = 0
+                                CombatFrameworkRoot.activeController.increment = 0
+                                CombatFrameworkRoot.activeController.hitboxMagnitude = 120
+
+                                -- Force active state to allow hits without clicking
+                                CombatFrameworkRoot.activeController.active = true
+                            end
+
+                            -- Attack Loop: Calls the internal attack function directly
+                            -- This deals damage without triggering the "click" animation
+                            for i = 1, 12 do
+                                pcall(function()
+                                    CombatFramework.activeController.attack()
+                                    if CombatFrameworkRoot and CombatFrameworkRoot.activeController then
+                                        CombatFrameworkRoot.activeController.attackCount = 0
+                                    end
+                                end)
                             end
                         end
+                    end)
+                else
+                    -- Fallback: Use VirtualInputManager if CombatFramework fails
+                    local currentTool = LocalPlayer.Character:FindFirstChildOfClass("Tool")
+                    if currentTool then
+                        pcall(function()
+                            VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
+                            VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+                        end)
                     end
-                end)
-            end
+                end
+            end)
         end
     end)
     
@@ -534,18 +547,19 @@ local function StartKillAura()
     StopKillAura()
     KillAuraConn = RunService.Heartbeat:Connect(function()
         if _G.MakitoHubRunning and Settings.KillAura and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            GetFramework()
-            
-            if CombatFramework and CombatFramework.activeController then
-                pcall(function()
-                    local currentTool = LocalPlayer.Character:FindFirstChildOfClass("Tool")
-                    if currentTool then
-                        local myRoot = LocalPlayer.Character.HumanoidRootPart
-                        local auraRange = Settings.KillAuraDistance or 60
-                        
+            pcall(function()
+                local currentTool = LocalPlayer.Character:FindFirstChildOfClass("Tool")
+                if currentTool then
+                    local myRoot = LocalPlayer.Character.HumanoidRootPart
+                    local auraRange = Settings.KillAuraDistance or 60
+
+                    -- Get Framework and try to use it
+                    GetFramework()
+
+                    if CombatFramework and CombatFramework.activeController then
                         -- Set hitbox magnitude for long range
                         CombatFramework.activeController.hitboxMagnitude = auraRange
-                        
+
                         if CombatFrameworkRoot and CombatFrameworkRoot.activeController then
                             CombatFrameworkRoot.activeController.timeToNextAttack = 0
                             CombatFrameworkRoot.activeController.attackCount = 0
@@ -556,7 +570,7 @@ local function StartKillAura()
 
                         -- Attack all nearby enemies (players and mobs)
                         local targets = {}
-                        
+
                         -- Check players
                         for _, v in ipairs(Players:GetPlayers()) do
                             if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") and v.Character:FindFirstChild("Humanoid") and v.Character.Humanoid.Health > 0 then
@@ -566,7 +580,7 @@ local function StartKillAura()
                                 end
                             end
                         end
-                        
+
                         -- Check mobs/enemies
                         local enemiesFolder = workspace:FindFirstChild("Enemies") or workspace
                         for _, v in ipairs(enemiesFolder:GetDescendants()) do
@@ -577,25 +591,60 @@ local function StartKillAura()
                                 end
                             end
                         end
-                        
+
                         -- Rapid fire attack on all targets
                         for _, target in ipairs(targets) do
                             if target and target.Parent then
                                 -- Face the target
                                 myRoot.CFrame = CFrame.new(myRoot.Position, target.Position)
-                                
+
                                 -- Execute multiple attacks per frame for insane DPS
                                 for i = 1, 8 do
-                                    CombatFramework.activeController.attack()
-                                    if CombatFrameworkRoot and CombatFrameworkRoot.activeController then
-                                        CombatFrameworkRoot.activeController.attackCount = 0
-                                    end
+                                    pcall(function()
+                                        CombatFramework.activeController.attack()
+                                        if CombatFrameworkRoot and CombatFrameworkRoot.activeController then
+                                            CombatFrameworkRoot.activeController.attackCount = 0
+                                        end
+                                    end)
+                                end
+                            end
+                        end
+                    else
+                        -- Fallback: Use VirtualInputManager if CombatFramework fails
+                        local targets = {}
+                        for _, v in ipairs(Players:GetPlayers()) do
+                            if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") and v.Character:FindFirstChild("Humanoid") and v.Character.Humanoid.Health > 0 then
+                                local dist = (v.Character.HumanoidRootPart.Position - myRoot.Position).Magnitude
+                                if dist <= auraRange then
+                                    table.insert(targets, v.Character.HumanoidRootPart)
+                                end
+                            end
+                        end
+
+                        local enemiesFolder = workspace:FindFirstChild("Enemies") or workspace
+                        for _, v in ipairs(enemiesFolder:GetDescendants()) do
+                            if v:IsA("Model") and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                                local dist = (v.HumanoidRootPart.Position - myRoot.Position).Magnitude
+                                if dist <= auraRange then
+                                    table.insert(targets, v.HumanoidRootPart)
+                                end
+                            end
+                        end
+
+                        for _, target in ipairs(targets) do
+                            if target and target.Parent then
+                                myRoot.CFrame = CFrame.new(myRoot.Position, target.Position)
+                                for i = 1, 3 do
+                                    pcall(function()
+                                        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
+                                        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+                                    end)
                                 end
                             end
                         end
                     end
-                end)
-            end
+                end
+            end)
         end
     end)
 end
@@ -2154,39 +2203,45 @@ local function AutoDungeonLogic()
             if Settings.AutoDungeon then
                 pcall(function()
                     if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then return end
-                    
+
                     -- Check if in dungeon
                     local dungeonFolder = workspace:FindFirstChild("Dungeon")
                     if dungeonFolder then
                         -- Find nearest enemy in dungeon
                         local NearestEnemy = nil
                         local MinDist = math.huge
-                        
-                        for _, v in ipairs(dungeonFolder:GetDescendants()) do
-                            if v:IsA("Model") and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-                                local dist = (v.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
-                                if dist < MinDist then
-                                    MinDist = dist
-                                    NearestEnemy = v
+
+                        pcall(function()
+                            for _, v in ipairs(dungeonFolder:GetDescendants()) do
+                                if v:IsA("Model") and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                                    local dist = (v.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+                                    if dist < MinDist then
+                                        MinDist = dist
+                                        NearestEnemy = v
+                                    end
                                 end
                             end
-                        end
-                        
+                        end)
+
                         if NearestEnemy then
-                            EquipWeapon()
-                            Float(true)
-                            LocalPlayer.Character.HumanoidRootPart.CFrame = NearestEnemy.HumanoidRootPart.CFrame * CFrame.new(0, Settings.Distance, 0)
+                            pcall(function()
+                                EquipWeapon()
+                                Float(true)
+                                LocalPlayer.Character.HumanoidRootPart.CFrame = NearestEnemy.HumanoidRootPart.CFrame * CFrame.new(0, Settings.Distance, 0)
+                            end)
                         end
                     else
                         -- TP to dungeon entrance if not in dungeon
-                        local sea = GetSea()
-                        if sea == 3 then
-                            -- Sea 3 Dungeon location (Castle on the Sea)
-                            TweenTo(CFrame.new(-5400, 15, 1000))
-                        elseif sea == 2 then
-                            -- Sea 2 Dungeon location (Factory)
-                            TweenTo(CFrame.new(634, 72, 918))
-                        end
+                        pcall(function()
+                            local sea = GetSea()
+                            if sea == 3 then
+                                -- Sea 3 Dungeon location (Castle on the Sea)
+                                TweenTo(CFrame.new(-5400, 15, 1000))
+                            elseif sea == 2 then
+                                -- Sea 2 Dungeon location (Factory)
+                                TweenTo(CFrame.new(634, 72, 918))
+                            end
+                        end)
                     end
                 end)
             end
@@ -2202,42 +2257,48 @@ local function AutoFarmNearestLogic()
             if Settings.AutoFarmNearest then
                 pcall(function()
                     if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then return end
-                    
+
                     -- Find nearest enemy regardless of quest
                     local NearestEnemy = nil
                     local MinDist = math.huge
                     local enemiesFolder = workspace:FindFirstChild("Enemies") or workspace
-                    
-                    for _, v in ipairs(enemiesFolder:GetDescendants()) do
-                        if v:IsA("Model") and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-                            local dist = (v.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
-                            if dist < MinDist and dist < 500 then -- 500 stud range
-                                MinDist = dist
-                                NearestEnemy = v
-                            end
-                        end
-                    end
-                    
-                    if NearestEnemy then
-                        EquipWeapon()
-                        Float(true)
-                        
-                        -- Lock position to enemy
-                        local targetCF = NearestEnemy.HumanoidRootPart.CFrame * CFrame.new(0, Settings.Distance, 0) * CFrame.Angles(math.rad(-90), 0, 0)
-                        LocalPlayer.Character.HumanoidRootPart.CFrame = targetCF
-                        
-                        -- Bring nearby mobs if enabled
-                        if Settings.BringMobs then
-                            for _, v in ipairs(enemiesFolder:GetDescendants()) do
-                                if v:IsA("Model") and v.Name == NearestEnemy.Name and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-                                    local distToMain = (v.HumanoidRootPart.Position - NearestEnemy.HumanoidRootPart.Position).Magnitude
-                                    if distToMain < 150 then
-                                        v.HumanoidRootPart.CanCollide = false
-                                        v.HumanoidRootPart.CFrame = NearestEnemy.HumanoidRootPart.CFrame
-                                    end
+
+                    pcall(function()
+                        for _, v in ipairs(enemiesFolder:GetDescendants()) do
+                            if v:IsA("Model") and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                                local dist = (v.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+                                if dist < MinDist and dist < 500 then -- 500 stud range
+                                    MinDist = dist
+                                    NearestEnemy = v
                                 end
                             end
                         end
+                    end)
+
+                    if NearestEnemy then
+                        pcall(function()
+                            EquipWeapon()
+                            Float(true)
+
+                            -- Lock position to enemy
+                            local targetCF = NearestEnemy.HumanoidRootPart.CFrame * CFrame.new(0, Settings.Distance, 0) * CFrame.Angles(math.rad(-90), 0, 0)
+                            LocalPlayer.Character.HumanoidRootPart.CFrame = targetCF
+
+                            -- Bring nearby mobs if enabled
+                            if Settings.BringMobs then
+                                pcall(function()
+                                    for _, v in ipairs(enemiesFolder:GetDescendants()) do
+                                        if v:IsA("Model") and v.Name == NearestEnemy.Name and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                                            local distToMain = (v.HumanoidRootPart.Position - NearestEnemy.HumanoidRootPart.Position).Magnitude
+                                            if distToMain < 150 then
+                                                v.HumanoidRootPart.CanCollide = false
+                                                v.HumanoidRootPart.CFrame = NearestEnemy.HumanoidRootPart.CFrame
+                                            end
+                                        end
+                                    end
+                                end)
+                            end
+                        end)
                     else
                         Float(false)
                     end
@@ -2251,124 +2312,128 @@ end
 task.spawn(function()
     while true do
         task.wait(0.15)
-        if not _G.MakitoHubRunning then 
+        if not _G.MakitoHubRunning then
             if FarmPosLock then FarmPosLock:Disconnect() FarmPosLock = nil end
-            continue 
+            continue
         end
-        
+
         pcall(function()
             if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then return end
-            
+
             if Settings.AutoFarm then
-                local Quest = GetQuestData()
-                local MainGui = LocalPlayer.PlayerGui:FindFirstChild("Main")
-                local HasQuest = MainGui and MainGui:FindFirstChild("Quest") and MainGui.Quest.Visible
-                
-                if Quest then
-                    if not HasQuest then
-                        -- NO QUEST: Go pick one if AutoQuest is on
-                        if FarmPosLock then FarmPosLock:Disconnect() FarmPosLock = nil end
-                        if Settings.AutoQuest then
-                            local npcPos = Quest.Pos
-                            -- Try to find actual NPC model
-                            local npcModel = workspace:FindFirstChild(Quest.NPC, true)
-                            if npcModel and npcModel:FindFirstChild("HumanoidRootPart") then
-                                npcPos = npcModel.HumanoidRootPart.CFrame
-                            end
+                pcall(function()
+                    local Quest = GetQuestData()
+                    local MainGui = LocalPlayer.PlayerGui:FindFirstChild("Main")
+                    local HasQuest = MainGui and MainGui:FindFirstChild("Quest") and MainGui.Quest.Visible
 
-                            TweenTo(npcPos * CFrame.new(0, 10, 0))
-
-                            if (LocalPlayer.Character.HumanoidRootPart.Position - npcPos.Position).Magnitude < 20 then
-                                -- Try starting quest with fallback for different remote names
-                                pcall(function()
-                                    ReplicatedStorage.Remotes.CommF_:InvokeServer("StartQuest", Quest.Name, Quest.ID)
-                                end)
-                                pcall(function()
-                                    ReplicatedStorage.Remotes.CommF_:InvokeServer("StartQuest")
-                                end)
-                                pcall(function()
-                                    ReplicatedStorage.Remotes["CommF_"]:InvokeServer("StartQuest", Quest.Name, Quest.ID)
-                                end)
-                                task.wait(1)
-                            end
-                        end
-                    else
-                        -- HAVE QUEST: Go kill mobs
-                        local Enemy = GetNearestEnemy(Quest.Enemy)
-                        
-                        -- If no enemy found, go wait at spawn zone
-                        if not Enemy then
+                    if Quest then
+                        if not HasQuest then
+                            -- NO QUEST: Go pick one if AutoQuest is on
                             if FarmPosLock then FarmPosLock:Disconnect() FarmPosLock = nil end
-                            local waitPos = Quest.EnemyPos or Quest.Pos
-                            
-                            -- Use direct CFrame for nearby waiting to avoid tween loop
-                            local dist = (LocalPlayer.Character.HumanoidRootPart.Position - waitPos.Position).Magnitude
-                            if dist < 50 then
-                                Float(true)
-                                LocalPlayer.Character.HumanoidRootPart.CFrame = waitPos * CFrame.new(0, 30, 0)
-                            else
-                                TweenTo(waitPos * CFrame.new(0, 30, 0))
+                            if Settings.AutoQuest then
+                                local npcPos = Quest.Pos
+                                -- Try to find actual NPC model
+                                local npcModel = workspace:FindFirstChild(Quest.NPC, true)
+                                if npcModel and npcModel:FindFirstChild("HumanoidRootPart") then
+                                    npcPos = npcModel.HumanoidRootPart.CFrame
+                                end
+
+                                TweenTo(npcPos * CFrame.new(0, 10, 0))
+
+                                if (LocalPlayer.Character.HumanoidRootPart.Position - npcPos.Position).Magnitude < 20 then
+                                    -- Try starting quest with fallback for different remote names
+                                    pcall(function()
+                                        ReplicatedStorage.Remotes.CommF_:InvokeServer("StartQuest", Quest.Name, Quest.ID)
+                                    end)
+                                    pcall(function()
+                                        ReplicatedStorage.Remotes.CommF_:InvokeServer("StartQuest")
+                                    end)
+                                    pcall(function()
+                                        ReplicatedStorage.Remotes["CommF_"]:InvokeServer("StartQuest", Quest.Name, Quest.ID)
+                                    end)
+                                    task.wait(1)
+                                end
                             end
                         else
-                            -- Found Enemy: Attack
-                            EquipWeapon()
-                            
-                            -- Safe Mode: Check for nearby players
-                            local playerNearby = false
-                            if Settings.SafeMode then
-                                for _, p in ipairs(Players:GetPlayers()) do
-                                    if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                                        local dist = (p.Character.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
-                                        if dist < 250 then playerNearby = true break end
+                            -- HAVE QUEST: Go kill mobs
+                            local Enemy = GetNearestEnemy(Quest.Enemy)
+
+                            -- If no enemy found, go wait at spawn zone
+                            if not Enemy then
+                                if FarmPosLock then FarmPosLock:Disconnect() FarmPosLock = nil end
+                                local waitPos = Quest.EnemyPos or Quest.Pos
+
+                                -- Use direct CFrame for nearby waiting to avoid tween loop
+                                local dist = (LocalPlayer.Character.HumanoidRootPart.Position - waitPos.Position).Magnitude
+                                if dist < 50 then
+                                    Float(true)
+                                    LocalPlayer.Character.HumanoidRootPart.CFrame = waitPos * CFrame.new(0, 30, 0)
+                                else
+                                    TweenTo(waitPos * CFrame.new(0, 30, 0))
+                                end
+                            else
+                                -- Found Enemy: Attack
+                                EquipWeapon()
+
+                                -- Safe Mode: Check for nearby players
+                                local playerNearby = false
+                                if Settings.SafeMode then
+                                    for _, p in ipairs(Players:GetPlayers()) do
+                                        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                                            local dist = (p.Character.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+                                            if dist < 250 then playerNearby = true break end
+                                        end
                                     end
                                 end
-                            end
 
-                            if playerNearby then
-                                -- Stop farming and float high if player nearby
-                                if FarmPosLock then FarmPosLock:Disconnect() FarmPosLock = nil end
-                                Float(true)
-                                LocalPlayer.Character.HumanoidRootPart.CFrame = LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0, 100, 0)
-                                task.wait(1)
-                                return
-                            end
-
-                            if not isTweening then
-                                Float(true)
-                                -- INSANE STABILITY: Lock CFrame on Heartbeat (Eliminates Jitter)
-                                local targetCF = Enemy.HumanoidRootPart.CFrame * CFrame.new(0, Settings.Distance, 0) * CFrame.Angles(math.rad(-90), 0, 0)
-                                
-                                if not FarmPosLock then
-                                    FarmPosLock = RunService.Heartbeat:Connect(function()
-                                        if Settings.AutoFarm and not isTweening and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                                            LocalPlayer.Character.HumanoidRootPart.CFrame = targetCF
-                                        else
-                                            if FarmPosLock then FarmPosLock:Disconnect() FarmPosLock = nil end
-                                        end
-                                    end)
+                                if playerNearby then
+                                    -- Stop farming and float high if player nearby
+                                    if FarmPosLock then FarmPosLock:Disconnect() FarmPosLock = nil end
+                                    Float(true)
+                                    LocalPlayer.Character.HumanoidRootPart.CFrame = LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0, 100, 0)
+                                    task.wait(1)
+                                    return
                                 end
-                                
-                                -- Grouping Mobs (Bring Mobs)
-                                if Settings.BringMobs then
-                                    local enemiesFolder = workspace:FindFirstChild("Enemies") or workspace
-                                    for _, v in ipairs(enemiesFolder:GetChildren()) do
-                                        if v.Name == Enemy.Name and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-                                            local distToMain = (v.HumanoidRootPart.Position - Enemy.HumanoidRootPart.Position).Magnitude
-                                            if distToMain < 150 then
-                                                -- Force mobs to stay slightly apart or overlapping but with collisions handled correctly
-                                                v.HumanoidRootPart.CanCollide = false
-                                                v.HumanoidRootPart.CFrame = Enemy.HumanoidRootPart.CFrame
-                                                -- Disable animations to prevent the mob from moving away from the CFrame lock
-                                                if v.Humanoid:FindFirstChild("Animator") then v.Humanoid.Animator:Destroy() end
+
+                                if not isTweening then
+                                    Float(true)
+                                    -- INSANE STABILITY: Lock CFrame on Heartbeat (Eliminates Jitter)
+                                    local targetCF = Enemy.HumanoidRootPart.CFrame * CFrame.new(0, Settings.Distance, 0) * CFrame.Angles(math.rad(-90), 0, 0)
+
+                                    if not FarmPosLock then
+                                        FarmPosLock = RunService.Heartbeat:Connect(function()
+                                            if Settings.AutoFarm and not isTweening and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                                                pcall(function()
+                                                    LocalPlayer.Character.HumanoidRootPart.CFrame = targetCF
+                                                end)
+                                            else
+                                                if FarmPosLock then FarmPosLock:Disconnect() FarmPosLock = nil end
+                                            end
+                                        end)
+                                    end
+
+                                    -- Grouping Mobs (Bring Mobs)
+                                    if Settings.BringMobs then
+                                        local enemiesFolder = workspace:FindFirstChild("Enemies") or workspace
+                                        for _, v in ipairs(enemiesFolder:GetChildren()) do
+                                            if v.Name == Enemy.Name and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                                                local distToMain = (v.HumanoidRootPart.Position - Enemy.HumanoidRootPart.Position).Magnitude
+                                                if distToMain < 150 then
+                                                    -- Force mobs to stay slightly apart or overlapping but with collisions handled correctly
+                                                    v.HumanoidRootPart.CanCollide = false
+                                                    v.HumanoidRootPart.CFrame = Enemy.HumanoidRootPart.CFrame
+                                                    -- Disable animations to prevent the mob from moving away from the CFrame lock
+                                                    if v.Humanoid:FindFirstChild("Animator") then v.Humanoid.Animator:Destroy() end
+                                                end
                                             end
                                         end
                                     end
                                 end
+                                -- AutoClick removed: Fast Attack now handles damage automatically without clicking
                             end
-                            -- AutoClick removed: Fast Attack now handles damage automatically without clicking
                         end
                     end
-                end
+                end)
             else
                 if FarmPosLock then FarmPosLock:Disconnect() FarmPosLock = nil end
                 Float(false)
