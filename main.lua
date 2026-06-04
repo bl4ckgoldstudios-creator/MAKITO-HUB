@@ -456,27 +456,31 @@ local function StartFastAttack()
             
             if CombatFramework and CombatFramework.activeController then
                 pcall(function()
-                    -- LONG RANGE DAMAGE (Redz Style)
-                    CombatFramework.activeController.hitboxMagnitude = 100
-                    
-                    if CombatFrameworkRoot and CombatFrameworkRoot.activeController then
-                        -- ZERO COOLDOWN: Reset internal timers and counters
-                        CombatFrameworkRoot.activeController.timeToNextAttack = 0
-                        CombatFrameworkRoot.activeController.attackCount = 0 
-                        CombatFrameworkRoot.activeController.increment = 0
-                        CombatFrameworkRoot.activeController.hitboxMagnitude = 100
+                    -- REDZ HUB STYLE - SILENT LONG RANGE ATTACK
+                    -- No clicks needed, just active when weapon is held
+                    local currentTool = LocalPlayer.Character:FindFirstChildOfClass("Tool")
+                    if currentTool then
+                        -- Set insane reach (120 is the sweet spot for "considerable distance")
+                        CombatFramework.activeController.hitboxMagnitude = 120
                         
-                        -- Redz Hub Secret: Nullify the cooldown variable directly
-                        if CombatFrameworkRoot.activeController.active then
-                            CombatFrameworkRoot.activeController.timeToNextAttack = 0
-                        end
-                    end
-
-                    -- HYPER SPEED: Call attack multiple times and cancel animation instantly
-                    for i = 1, 10 do 
-                        CombatFramework.activeController.attack()
                         if CombatFrameworkRoot and CombatFrameworkRoot.activeController then
-                            CombatFrameworkRoot.activeController.attackCount = 0
+                            -- Instant reset of everything that causes delay or animation
+                            CombatFrameworkRoot.activeController.timeToNextAttack = 0
+                            CombatFrameworkRoot.activeController.attackCount = 0 
+                            CombatFrameworkRoot.activeController.increment = 0
+                            CombatFrameworkRoot.activeController.hitboxMagnitude = 120
+                            
+                            -- Force active state to allow hits without clicking
+                            CombatFrameworkRoot.activeController.active = true
+                        end
+
+                        -- Attack Loop: Calls the internal attack function directly
+                        -- This deals damage without triggering the "click" animation
+                        for i = 1, 12 do 
+                            CombatFramework.activeController.attack()
+                            if CombatFrameworkRoot and CombatFrameworkRoot.activeController then
+                                CombatFrameworkRoot.activeController.attackCount = 0
+                            end
                         end
                     end
                 end)
@@ -484,21 +488,23 @@ local function StartFastAttack()
         end
     end)
     
-    -- Animation Canceller (Aggressive Mode)
+    -- Animation Canceller (Aggressive Mode - 100% Invisible)
     task.spawn(function()
-        while _G.MakitoHubRunning and Settings.FastAttack do
+        while _G.MakitoHubRunning do
             task.wait()
-            pcall(function()
-                if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-                    local hum = LocalPlayer.Character.Humanoid
-                    for _, anim in ipairs(hum:GetPlayingAnimationTracks()) do
-                        -- Stop any animation that looks like an attack
-                        if anim.Name:lower():find("attack") or anim.Name:lower():find("slash") or anim.Name:lower():find("swing") or anim.Name:lower():find("punch") then
-                            anim:Stop(0)
+            if Settings.FastAttack then
+                pcall(function()
+                    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+                        local hum = LocalPlayer.Character.Humanoid
+                        for _, anim in ipairs(hum:GetPlayingAnimationTracks()) do
+                            -- Stop any animation that looks like an attack instantly
+                            if anim.Name:lower():find("attack") or anim.Name:lower():find("slash") or anim.Name:lower():find("swing") or anim.Name:lower():find("punch") then
+                                anim:Stop(0)
+                            end
                         end
                     end
-                end
-            end)
+                end)
+            end
         end
     end)
 end
@@ -539,17 +545,55 @@ local function EquipWeapon()
     end
 end
 
--- 5. ADVANCED UI (REDZ STYLE - CUSTOM)
-local function CreateHub()
-    local MakitoGui = Instance.new("ScreenGui", ParentGui)
-    MakitoGui.Name = "MakitoHubSupremeV6"
-    
-    local Main = Instance.new("Frame", MakitoGui)
-    Main.Size = UDim2.new(0, 650, 0, 450)
-    Main.Position = UDim2.new(0.5, -325, 0.5, -225)
-    Main.BackgroundColor3 = Color3.fromRGB(10, 10, 15)
-    Main.BorderSizePixel = 0
-    Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 12)
+    -- 5. ADVANCED UI (REDZ STYLE - CUSTOM)
+    local function MakeDraggable(frame, parent)
+        local dragging = false
+        local dragInput, dragStart, startPos
+
+        local function update(input)
+            local delta = input.Position - dragStart
+            frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+
+        frame.InputBegan:Connect(function(input)
+            if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) and not UserInputService:GetFocusedTextBox() then
+                dragging = true
+                dragStart = input.Position
+                startPos = frame.Position
+
+                input.Changed:Connect(function()
+                    if input.UserInputState == Enum.UserInputState.End then
+                        dragging = false
+                    end
+                end)
+            end
+        end)
+
+        frame.InputChanged:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+                dragInput = input
+            end
+        end)
+
+        UserInputService.InputChanged:Connect(function(input)
+            if input == dragInput and dragging then
+                update(input)
+            end
+        end)
+    end
+
+    local function CreateHub()
+        local MakitoGui = Instance.new("ScreenGui", ParentGui)
+        MakitoGui.Name = "MakitoHubSupremeV6"
+        
+        local Main = Instance.new("Frame", MakitoGui)
+        Main.Size = UDim2.new(0, 550, 0, 350) -- Adjusted for mobile
+        Main.Position = UDim2.new(0.5, -275, 0.5, -175)
+        Main.BackgroundColor3 = Color3.fromRGB(10, 10, 15)
+        Main.BorderSizePixel = 0
+        Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 12)
+        
+        MakeDraggable(Main) -- Enable dragging for mobile
     
     local MainStroke = Instance.new("UIStroke", Main)
     MainStroke.Color = Settings.ThemeColor
@@ -1971,10 +2015,19 @@ task.spawn(function()
                         -- HAVE QUEST: Go kill mobs
                         local Enemy = GetNearestEnemy(Quest.Enemy)
                         
-                        -- If we have a quest but no enemy found nearby, go to the farm zone
+                        -- If no enemy found, go wait at spawn zone
                         if not Enemy then
                             if FarmPosLock then FarmPosLock:Disconnect() FarmPosLock = nil end
-                            TweenTo(Quest.EnemyPos or Quest.Pos)
+                            local waitPos = Quest.EnemyPos or Quest.Pos
+                            
+                            -- Use direct CFrame for nearby waiting to avoid tween loop
+                            local dist = (LocalPlayer.Character.HumanoidRootPart.Position - waitPos.Position).Magnitude
+                            if dist < 50 then
+                                Float(true)
+                                LocalPlayer.Character.HumanoidRootPart.CFrame = waitPos * CFrame.new(0, 30, 0)
+                            else
+                                TweenTo(waitPos * CFrame.new(0, 30, 0))
+                            end
                         else
                             -- Found Enemy: Attack
                             EquipWeapon()
@@ -2031,7 +2084,7 @@ task.spawn(function()
                                     end
                                 end
                             end
-                            AutoClick()
+                            -- AutoClick removed: Fast Attack now handles damage automatically without clicking
                         end
                     end
                 end
