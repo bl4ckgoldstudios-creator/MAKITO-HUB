@@ -64,7 +64,7 @@ local Settings = {
     SafeMode = true, AimAssist = false, AutoCombo = false, SelectedFruit = "Dough", PredictMovement = true, SelectedPlayer = "None", AutoBounty = false,
     BountyThreshold = 20, -- HP percentage to attack
     BountyHop = false, -- Server hop after kill
-    KillAura = false, AttackAura = false, WalkOnWater = false, InfGeppo = true, FlyHack = false,
+    KillAura = false, KillAuraDistance = 60, AttackAura = false, WalkOnWater = false, InfGeppo = true, FlyHack = false,
     WalkSpeed = 16, JumpPower = 50, InfEnergy = true,
     -- Visual (ESP)
     EspPlayers = false, EspFruits = false, EspChests = false, EspFlower = false, FullBright = false, FPSBooster = false, NoClip = false,
@@ -513,6 +513,107 @@ end
 -- Start the Hyper Fast Attack
 task.spawn(StartFastAttack)
 
+-- KILL AURA V2 (REDZ HUB STYLE - COMBATFRAMEWORK BASED)
+-- Ataca todos os inimigos próximos automaticamente sem animação
+local KillAuraConn = nil
+
+local function StopKillAura()
+    if KillAuraConn then KillAuraConn:Disconnect() KillAuraConn = nil end
+end
+
+local function StartKillAura()
+    StopKillAura()
+    KillAuraConn = RunService.Heartbeat:Connect(function()
+        if _G.MakitoHubRunning and Settings.KillAura and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            GetFramework()
+            
+            if CombatFramework and CombatFramework.activeController then
+                pcall(function()
+                    local currentTool = LocalPlayer.Character:FindFirstChildOfClass("Tool")
+                    if currentTool then
+                        local myRoot = LocalPlayer.Character.HumanoidRootPart
+                        local auraRange = Settings.KillAuraDistance or 60
+                        
+                        -- Set hitbox magnitude for long range
+                        CombatFramework.activeController.hitboxMagnitude = auraRange
+                        
+                        if CombatFrameworkRoot and CombatFrameworkRoot.activeController then
+                            CombatFrameworkRoot.activeController.timeToNextAttack = 0
+                            CombatFrameworkRoot.activeController.attackCount = 0
+                            CombatFrameworkRoot.activeController.increment = 0
+                            CombatFrameworkRoot.activeController.hitboxMagnitude = auraRange
+                            CombatFrameworkRoot.activeController.active = true
+                        end
+
+                        -- Attack all nearby enemies (players and mobs)
+                        local targets = {}
+                        
+                        -- Check players
+                        for _, v in ipairs(Players:GetPlayers()) do
+                            if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") and v.Character:FindFirstChild("Humanoid") and v.Character.Humanoid.Health > 0 then
+                                local dist = (v.Character.HumanoidRootPart.Position - myRoot.Position).Magnitude
+                                if dist <= auraRange then
+                                    table.insert(targets, v.Character.HumanoidRootPart)
+                                end
+                            end
+                        end
+                        
+                        -- Check mobs/enemies
+                        local enemiesFolder = workspace:FindFirstChild("Enemies") or workspace
+                        for _, v in ipairs(enemiesFolder:GetDescendants()) do
+                            if v:IsA("Model") and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                                local dist = (v.HumanoidRootPart.Position - myRoot.Position).Magnitude
+                                if dist <= auraRange then
+                                    table.insert(targets, v.HumanoidRootPart)
+                                end
+                            end
+                        end
+                        
+                        -- Rapid fire attack on all targets
+                        for _, target in ipairs(targets) do
+                            if target and target.Parent then
+                                -- Face the target
+                                myRoot.CFrame = CFrame.new(myRoot.Position, target.Position)
+                                
+                                -- Execute multiple attacks per frame for insane DPS
+                                for i = 1, 8 do
+                                    CombatFramework.activeController.attack()
+                                    if CombatFrameworkRoot and CombatFrameworkRoot.activeController then
+                                        CombatFrameworkRoot.activeController.attackCount = 0
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end)
+            end
+        end
+    end)
+end
+
+-- Start Kill Aura
+task.spawn(StartKillAura)
+
+-- Animation Canceller for Kill Aura (100% Invisible)
+task.spawn(function()
+    while _G.MakitoHubRunning do
+        task.wait()
+        if Settings.KillAura then
+            pcall(function()
+                if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+                    local hum = LocalPlayer.Character.Humanoid
+                    for _, anim in ipairs(hum:GetPlayingAnimationTracks()) do
+                        -- Stop any animation that looks like an attack instantly
+                        if anim.Name:lower():find("attack") or anim.Name:lower():find("slash") or anim.Name:lower():find("swing") or anim.Name:lower():find("punch") then
+                            anim:Stop(0)
+                        end
+                    end
+                end
+            end)
+        end
+    end
+end)
+
 local function AutoClick()
     -- Clicks now handled by the Stepped connection for maximum speed
     if not Settings.FastAttack then return end
@@ -959,6 +1060,8 @@ end
     local CombatTab = NewTab("Combat")
     NewSection(CombatTab, "Attack Mods")
     NewToggle(CombatTab, "Fast Attack V17", "FastAttack", function(v) end)
+    NewToggle(CombatTab, "Kill Aura V2 (Redz Style)", "KillAura", function(v) end)
+    NewSlider(CombatTab, "Kill Aura Distance", 10, 150, 60, "KillAuraDistance", function(v) end)
     NewToggle(CombatTab, "Safe Mode (Anti-Player)", "SafeMode", function(v) end)
     NewToggle(CombatTab, "Auto Haki", "AutoHaki", function(v) end)
     NewToggle(CombatTab, "Auto Ken", "AutoKen", function(v) end)
