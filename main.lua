@@ -128,6 +128,8 @@ _G.Settings = Settings
 -- 3. MASSIVE DATABASE (QUESTS, ISLANDS, NPCS)
 local SeaData = {
     [1] = {
+        {Name = "Starter Island (Pirate)", Pos = CFrame.new(1059, 15, 1550)},
+        {Name = "Starter Island (Marine)", Pos = CFrame.new(-2566, 7, 2975)},
         {Name = "Jungle", Pos = CFrame.new(-1612, 37, 149)},
         {Name = "Pirate Village", Pos = CFrame.new(-1181, 4, 3850)},
         {Name = "Desert", Pos = CFrame.new(1094, 6, 4195)},
@@ -164,7 +166,11 @@ local SeaData = {
 
 local QuestData = {
     [1] = { -- First Sea
-        {Min = 0, Name = "BanditQuest1", NPC = "Bandit Recruiter", ID = 1, Enemy = "Bandit", Pos = CFrame.new(1059, 15, 1550)},
+        -- Pirate Starter
+        {Min = 0, Name = "BanditQuest1", NPC = "Bandit Recruiter", ID = 1, Enemy = "Bandit", Pos = CFrame.new(1059, 15, 1550), Team = "Pirates"},
+        -- Marine Starter
+        {Min = 0, Name = "MarineQuest1", NPC = "Marine Quest Giver", ID = 1, Enemy = "Trainee", Pos = CFrame.new(-2566, 7, 2975), Team = "Marines"},
+        
         {Min = 15, Name = "MonkeyQuest1", NPC = "Monkey Quest Giver", ID = 1, Enemy = "Monkey", Pos = CFrame.new(-1598, 37, 153)},
         {Min = 20, Name = "MonkeyQuest1", NPC = "Monkey Quest Giver", ID = 2, Enemy = "Gorilla", Pos = CFrame.new(-1598, 37, 153)},
         {Min = 25, Name = "MonkeyQuest1", NPC = "Monkey Quest Giver", ID = 3, Enemy = "Gorilla King", Pos = CFrame.new(-1598, 37, 153)},
@@ -513,6 +519,18 @@ local function EquipWeapon()
     local Character = LocalPlayer.Character
     if not Character then return end
     local weaponName = Settings.Weapon
+    
+    -- Se for nível baixo e não tiver arma, tenta equipar o soco (Combat)
+    local level = LocalPlayer.Data.Level.Value
+    if level < 20 and weaponName == "Melee" then
+        for _, v in ipairs(LocalPlayer.Backpack:GetChildren()) do
+            if v:IsA("Tool") and (v.Name == "Combat" or v:FindFirstChild("Combat")) then
+                Character.Humanoid:EquipTool(v)
+                return
+            end
+        end
+    end
+
     for _, v in ipairs(LocalPlayer.Backpack:GetChildren()) do
         if v:IsA("Tool") and (v.ToolTip == weaponName or v.Name:lower():find(weaponName:lower()) or (weaponName == "Melee" and (v:FindFirstChild("Combat") or v.Name == "Combat"))) then
             Character.Humanoid:EquipTool(v)
@@ -1609,9 +1627,13 @@ local function GetNearestEnemy(EnemyName)
     local Nearest, MaxDist = nil, math.huge
     local enemiesFolder = workspace:FindFirstChild("Enemies") or workspace
     
+    -- Normalização do nome para busca mais flexível
+    local searchName = EnemyName and EnemyName:lower() or nil
+    
     for _, v in ipairs(enemiesFolder:GetChildren()) do
         if v:IsA("Model") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
-            if not EnemyName or v.Name == EnemyName or v.Name:find(EnemyName) then
+            local vName = v.Name:lower()
+            if not searchName or vName == searchName or vName:find(searchName) then
                 local dist = (v.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
                 if dist < MaxDist then
                     MaxDist = dist
@@ -1621,11 +1643,12 @@ local function GetNearestEnemy(EnemyName)
         end
     end
     
-    -- Se não achou na pasta Enemies, tenta no workspace (fallback)
-    if not Nearest and enemiesFolder.Name == "Enemies" then
+    -- Fallback agressivo para o Workspace (comum no Sea 1)
+    if not Nearest then
         for _, v in ipairs(workspace:GetChildren()) do
             if v:IsA("Model") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
-                if not EnemyName or v.Name == EnemyName or v.Name:find(EnemyName) then
+                local vName = v.Name:lower()
+                if not searchName or vName == searchName or vName:find(searchName) then
                     local dist = (v.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
                     if dist < MaxDist then
                         MaxDist = dist
@@ -1679,6 +1702,8 @@ local function GetQuestData()
     local sea = GetSea()
     local data = QuestData[sea]
     if not data then return nil end
+    
+    local myTeam = LocalPlayer.Team and LocalPlayer.Team.Name or "Pirates"
 
     -- 1. Check if we already have an active quest in the UI
     local MainGui = LocalPlayer.PlayerGui:FindFirstChild("Main")
@@ -1714,6 +1739,11 @@ local function GetQuestData()
     local bestQuest = nil
     for _, q in ipairs(data) do
         if level >= q.Min then 
+            -- Para o nível 0-10, respeita o time do jogador
+            if q.Min == 0 and q.Team and q.Team ~= myTeam then
+                continue
+            end
+
             if not bestQuest or q.Min > bestQuest.Min then 
                 bestQuest = q 
             end 
@@ -1937,60 +1967,66 @@ task.spawn(function()
                                 task.wait(1)
                             end
                         end
+                    else
                         -- HAVE QUEST: Go kill mobs
                         local Enemy = GetNearestEnemy(Quest.Enemy)
                         
-                        -- Safe Mode: Check for nearby players
-                        local playerNearby = false
-                        if Settings.SafeMode then
-                            for _, p in ipairs(Players:GetPlayers()) do
-                                if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                                    local dist = (p.Character.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
-                                    if dist < 250 then playerNearby = true break end
-                                end
-                            end
-                        end
-
-                        if playerNearby then
-                            if FarmPosLock then FarmPosLock:Disconnect() FarmPosLock = nil end
-                            Float(true)
-                            LocalPlayer.Character.HumanoidRootPart.CFrame = LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0, 100, 0)
-                            task.wait(1)
-                            return
-                        end
-
-                        -- If no enemy found, go wait at spawn zone
+                        -- If we have a quest but no enemy found nearby, go to the farm zone
                         if not Enemy then
                             if FarmPosLock then FarmPosLock:Disconnect() FarmPosLock = nil end
-                            local waitPos = Quest.EnemyPos or Quest.Pos
-                            TweenTo(waitPos * CFrame.new(0, 30, 0)) -- Wait slightly higher at spawn
+                            TweenTo(Quest.EnemyPos or Quest.Pos)
                         else
                             -- Found Enemy: Attack
                             EquipWeapon()
+                            
+                            -- Safe Mode: Check for nearby players
+                            local playerNearby = false
+                            if Settings.SafeMode then
+                                for _, p in ipairs(Players:GetPlayers()) do
+                                    if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                                        local dist = (p.Character.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+                                        if dist < 250 then playerNearby = true break end
+                                    end
+                                end
+                            end
+
+                            if playerNearby then
+                                -- Stop farming and float high if player nearby
+                                if FarmPosLock then FarmPosLock:Disconnect() FarmPosLock = nil end
+                                Float(true)
+                                LocalPlayer.Character.HumanoidRootPart.CFrame = LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0, 100, 0)
+                                task.wait(1)
+                                return
+                            end
+
                             if not isTweening then
                                 Float(true)
-                                -- INSANE STABILITY: Lock CFrame relative to current enemy
+                                -- INSANE STABILITY: Lock CFrame on Heartbeat (Eliminates Jitter)
                                 local targetCF = Enemy.HumanoidRootPart.CFrame * CFrame.new(0, Settings.Distance, 0) * CFrame.Angles(math.rad(-90), 0, 0)
                                 
-                                -- Always update targetCF to the current nearest enemy
-                                if FarmPosLock then FarmPosLock:Disconnect() FarmPosLock = nil end
+                                if not FarmPosLock then
+                                    FarmPosLock = RunService.Heartbeat:Connect(function()
+                                        if Settings.AutoFarm and not isTweening and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                                            LocalPlayer.Character.HumanoidRootPart.CFrame = targetCF
+                                        else
+                                            if FarmPosLock then FarmPosLock:Disconnect() FarmPosLock = nil end
+                                        end
+                                    end)
+                                end
                                 
-                                FarmPosLock = RunService.Heartbeat:Connect(function()
-                                    if Settings.AutoFarm and not isTweening and Enemy and Enemy:FindFirstChild("HumanoidRootPart") and Enemy.Humanoid.Health > 0 then
-                                        LocalPlayer.Character.HumanoidRootPart.CFrame = Enemy.HumanoidRootPart.CFrame * CFrame.new(0, Settings.Distance, 0) * CFrame.Angles(math.rad(-90), 0, 0)
-                                    else
-                                        if FarmPosLock then FarmPosLock:Disconnect() FarmPosLock = nil end
-                                    end
-                                end)
-
-                                -- Grouping Mobs (Bring Mobs) - MORE AGGRESSIVE
+                                -- Grouping Mobs (Bring Mobs)
                                 if Settings.BringMobs then
                                     local enemiesFolder = workspace:FindFirstChild("Enemies") or workspace
                                     for _, v in ipairs(enemiesFolder:GetChildren()) do
-                                        if (v.Name == Enemy.Name or v.Name:find(Enemy.Name)) and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-                                            v.HumanoidRootPart.CanCollide = false
-                                            v.HumanoidRootPart.CFrame = Enemy.HumanoidRootPart.CFrame
-                                            if v.Humanoid:FindFirstChild("Animator") then v.Humanoid.Animator:Destroy() end
+                                        if v.Name == Enemy.Name and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                                            local distToMain = (v.HumanoidRootPart.Position - Enemy.HumanoidRootPart.Position).Magnitude
+                                            if distToMain < 150 then
+                                                -- Force mobs to stay slightly apart or overlapping but with collisions handled correctly
+                                                v.HumanoidRootPart.CanCollide = false
+                                                v.HumanoidRootPart.CFrame = Enemy.HumanoidRootPart.CFrame
+                                                -- Disable animations to prevent the mob from moving away from the CFrame lock
+                                                if v.Humanoid:FindFirstChild("Animator") then v.Humanoid.Animator:Destroy() end
+                                            end
                                         end
                                     end
                                 end
