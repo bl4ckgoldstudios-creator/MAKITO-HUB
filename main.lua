@@ -696,74 +696,100 @@ end
     local function CreateHub()
         local MakitoGui = Instance.new("ScreenGui", ParentGui)
         MakitoGui.Name = "MakitoHubSupremeV6"
-        
+        MakitoGui.ResetOnSpawn = false
+
         local Main = Instance.new("Frame", MakitoGui)
-        Main.Size = UDim2.new(0, 550, 0, 350) -- Adjusted for mobile
-        Main.Position = UDim2.new(0.5, -275, 0.5, -175)
-        Main.BackgroundColor3 = Color3.fromRGB(10, 10, 15)
+        Main.Size = UDim2.new(0, 600, 0, 400) -- Increased size for better visibility
+        Main.Position = UDim2.new(0.5, -300, 0.5, -200)
+        Main.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
         Main.BorderSizePixel = 0
-        Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 12)
-        
-        MakeDraggable(Main) -- Enable dragging for mobile
-    
-    local MainStroke = Instance.new("UIStroke", Main)
-    MainStroke.Color = Settings.ThemeColor
-    MainStroke.Thickness = 2
-    MainStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 16)
 
-    local TopBar = Instance.new("Frame", Main)
-    TopBar.Size = UDim2.new(1, 0, 0, 50)
-    TopBar.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
-    TopBar.BorderSizePixel = 0
-    Instance.new("UICorner", TopBar).CornerRadius = UDim.new(0, 12)
-    
-    local Title = Instance.new("TextLabel", TopBar)
-    Title.Size = UDim2.new(1, -40, 1, 0)
-    Title.Position = UDim2.new(0, 20, 0, 0)
-    Title.Text = "MAKITO HUB SUPREME - VERSION 6.0"
-    Title.TextColor3 = Color3.new(1,1,1)
-    Title.Font = Enum.Font.GothamBold
-    Title.TextSize = 18
-    Title.BackgroundTransparency = 1
-    Title.TextXAlignment = Enum.TextXAlignment.Left
+        MakeDraggable(Main)
 
-    local SideBar = Instance.new("ScrollingFrame", Main)
-    SideBar.Size = UDim2.new(0, 160, 1, -70)
-    SideBar.Position = UDim2.new(0, 15, 0, 60)
-    SideBar.BackgroundTransparency = 1
-    SideBar.ScrollBarThickness = 0
-    local SideBarLayout = Instance.new("UIListLayout", SideBar)
-    SideBarLayout.Padding = UDim.new(0, 10)
+        -- Gradient Background
+        local MainGradient = Instance.new("UIGradient", Main)
+        MainGradient.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(15, 15, 20)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(25, 25, 35))
+        })
+        MainGradient.Rotation = 45
 
-    local Container = Instance.new("Frame", Main)
-    Container.Size = UDim2.new(1, -200, 1, -70)
-    Container.Position = UDim2.new(0, 185, 0, 60)
-    Container.BackgroundTransparency = 1
+        local MainStroke = Instance.new("UIStroke", Main)
+        MainStroke.Color = Settings.ThemeColor
+        MainStroke.Thickness = 2
+        MainStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
-    -- LOGO & INFO
-    local Logo = Instance.new("ImageLabel", TopBar)
-    Logo.Size = UDim2.new(0, 40, 0, 40)
-    Logo.Position = UDim2.new(1, -50, 0.5, -20)
-    Logo.BackgroundTransparency = 1
-    Logo.Image = "rbxassetid://123456789" -- Placeholder Logo ID
-    
-    local ServerLabel = Instance.new("TextLabel", TopBar)
-    ServerLabel.Size = UDim2.new(0, 150, 0, 20)
-    ServerLabel.Position = UDim2.new(1, -210, 0.5, -10)
-    ServerLabel.Text = "FPS: 60 | Ping: 50ms"
-    ServerLabel.TextColor3 = Color3.new(0.8, 0.8, 0.8)
-    ServerLabel.Font = Enum.Font.Gotham
-    ServerLabel.TextSize = 12
-    ServerLabel.BackgroundTransparency = 1
-    
-    task.spawn(function()
-        while MakitoGui.Parent do
-            local fps = math.floor(1/RunService.RenderStepped:Wait())
-            local ping = math.floor(game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue())
-            ServerLabel.Text = "FPS: " .. fps .. " | Ping: " .. ping .. "ms"
-            task.wait(1)
-        end
-    end)
+        local TopBar = Instance.new("Frame", Main)
+        TopBar.Size = UDim2.new(1, 0, 0, 60)
+        TopBar.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+        TopBar.BorderSizePixel = 0
+        Instance.new("UICorner", TopBar).CornerRadius = UDim.new(0, 16)
+
+        local Title = Instance.new("TextLabel", TopBar)
+        Title.Size = UDim2.new(1, -120, 1, 0)
+        Title.Position = UDim2.new(0, 20, 0, 0)
+        Title.Text = "MAKITO HUB SUPREME V6.0"
+        Title.TextColor3 = Settings.ThemeColor
+        Title.Font = Enum.Font.GothamBold
+        Title.TextSize = 20
+        Title.BackgroundTransparency = 1
+        Title.TextXAlignment = Enum.TextXAlignment.Left
+
+        local SideBar = Instance.new("ScrollingFrame", Main)
+        SideBar.Size = UDim2.new(0, 170, 1, -80)
+        SideBar.Position = UDim2.new(0, 15, 0, 75)
+        SideBar.BackgroundTransparency = 1
+        SideBar.ScrollBarThickness = 0
+        local SideBarLayout = Instance.new("UIListLayout", SideBar)
+        SideBarLayout.Padding = UDim.new(0, 8)
+
+        local Container = Instance.new("ScrollingFrame", Main)
+        Container.Size = UDim2.new(1, -210, 1, -80)
+        Container.Position = UDim2.new(0, 195, 0, 75)
+        Container.BackgroundTransparency = 1
+        Container.ScrollBarThickness = 4
+        Container.ScrollBarImageColor3 = Settings.ThemeColor
+        local ContainerLayout = Instance.new("UIListLayout", Container)
+        ContainerLayout.Padding = UDim.new(0, 8)
+        ContainerLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+            Container.CanvasSize = UDim2.new(0, 0, 0, ContainerLayout.AbsoluteContentSize.Y + 20)
+        end)
+
+        -- Status Indicator
+        local StatusDot = Instance.new("Frame", TopBar)
+        StatusDot.Size = UDim2.new(0, 12, 0, 12)
+        StatusDot.Position = UDim2.new(1, -100, 0.5, -6)
+        StatusDot.BackgroundColor3 = Color3.fromRGB(0, 255, 100)
+        StatusDot.BorderSizePixel = 0
+        Instance.new("UICorner", StatusDot).CornerRadius = UDim.new(1, 0)
+
+        local StatusLabel = Instance.new("TextLabel", TopBar)
+        StatusLabel.Size = UDim2.new(0, 80, 0, 20)
+        StatusLabel.Position = UDim2.new(1, -85, 0.5, -10)
+        StatusLabel.Text = "ONLINE"
+        StatusLabel.TextColor3 = Color3.fromRGB(0, 255, 100)
+        StatusLabel.Font = Enum.Font.GothamBold
+        StatusLabel.TextSize = 12
+        StatusLabel.BackgroundTransparency = 1
+
+        local ServerLabel = Instance.new("TextLabel", TopBar)
+        ServerLabel.Size = UDim2.new(0, 150, 0, 20)
+        ServerLabel.Position = UDim2.new(1, -210, 0.5, -10)
+        ServerLabel.Text = "FPS: -- | Ping: --ms"
+        ServerLabel.TextColor3 = Color3.new(0.7, 0.7, 0.7)
+        ServerLabel.Font = Enum.Font.Gotham
+        ServerLabel.TextSize = 11
+        ServerLabel.BackgroundTransparency = 1
+
+        task.spawn(function()
+            while MakitoGui.Parent do
+                local fps = math.floor(1/RunService.RenderStepped:Wait())
+                local ping = math.floor(game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue())
+                ServerLabel.Text = "FPS: " .. fps .. " | Ping: " .. ping .. "ms"
+                task.wait(1)
+            end
+        end)
 
     local Tabs = {}
     local function NewTab(name, icon)
@@ -811,42 +837,42 @@ end
     -- UI Components
     local function NewSection(parent, name)
         local label = Instance.new("TextLabel", parent)
-        label.Size = UDim2.new(1, 0, 0, 30)
+        label.Size = UDim2.new(1, 0, 0, 35)
         label.Text = "   " .. name:upper()
         label.TextColor3 = Settings.ThemeColor
         label.BackgroundTransparency = 1
         label.Font = Enum.Font.GothamBold
-        label.TextSize = 13
+        label.TextSize = 14
         label.TextXAlignment = Enum.TextXAlignment.Left
     end
-    
+
     local function NewToggle(parent, name, setting, callback)
         local btn = Instance.new("TextButton", parent)
-        btn.Size = UDim2.new(1, 0, 0, 50)
-        btn.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+        btn.Size = UDim2.new(1, 0, 0, 45)
+        btn.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
         btn.Text = "      " .. name
         btn.TextColor3 = Color3.new(1,1,1)
         btn.Font = Enum.Font.Gotham
         btn.TextSize = 14
         btn.TextXAlignment = Enum.TextXAlignment.Left
-        Instance.new("UICorner", btn)
-        
+        Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
+
         local status = Instance.new("Frame", btn)
-        status.Size = UDim2.new(0, 40, 0, 20)
-        status.Position = UDim2.new(1, -50, 0.5, -10)
-        status.BackgroundColor3 = Settings[setting] and Settings.ThemeColor or Color3.fromRGB(50, 50, 60)
+        status.Size = UDim2.new(0, 44, 0, 22)
+        status.Position = UDim2.new(1, -55, 0.5, -11)
+        status.BackgroundColor3 = Settings[setting] and Settings.ThemeColor or Color3.fromRGB(60, 60, 70)
         Instance.new("UICorner", status).CornerRadius = UDim.new(1, 0)
-        
+
         local circle = Instance.new("Frame", status)
-        circle.Size = UDim2.new(0, 16, 0, 16)
-        circle.Position = Settings[setting] and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
+        circle.Size = UDim2.new(0, 18, 0, 18)
+        circle.Position = Settings[setting] and UDim2.new(1, -20, 0.5, -9) or UDim2.new(0, 2, 0.5, -9)
         circle.BackgroundColor3 = Color3.new(1,1,1)
         Instance.new("UICorner", circle).CornerRadius = UDim.new(1, 0)
-        
+
         btn.MouseButton1Click:Connect(function()
             Settings[setting] = not Settings[setting]
-            local goalPos = Settings[setting] and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
-            local goalCol = Settings[setting] and Settings.ThemeColor or Color3.fromRGB(50, 50, 60)
+            local goalPos = Settings[setting] and UDim2.new(1, -20, 0.5, -9) or UDim2.new(0, 2, 0.5, -9)
+            local goalCol = Settings[setting] and Settings.ThemeColor or Color3.fromRGB(60, 60, 70)
             TweenService:Create(circle, TweenInfo.new(0.3), {Position = goalPos}):Play()
             TweenService:Create(status, TweenInfo.new(0.3), {BackgroundColor3 = goalCol}):Play()
             callback(Settings[setting])
@@ -856,13 +882,13 @@ end
 
     local function NewButton(parent, name, callback)
         local btn = Instance.new("TextButton", parent)
-        btn.Size = UDim2.new(1, 0, 0, 45)
-        btn.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
+        btn.Size = UDim2.new(1, 0, 0, 42)
+        btn.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
         btn.Text = name
         btn.TextColor3 = Color3.new(1,1,1)
         btn.Font = Enum.Font.GothamBold
         btn.TextSize = 14
-        Instance.new("UICorner", btn)
+        Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
         btn.MouseButton1Click:Connect(callback)
         return btn
     end
@@ -870,9 +896,9 @@ end
     local function NewDropdown(parent, name, options, setting, callback)
         local dFrame = Instance.new("Frame", parent)
         dFrame.Size = UDim2.new(1, 0, 0, 50)
-        dFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-        Instance.new("UICorner", dFrame)
-        
+        dFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+        Instance.new("UICorner", dFrame).CornerRadius = UDim.new(0, 8)
+
         local label = Instance.new("TextLabel", dFrame)
         label.Size = UDim2.new(0.4, 0, 1, 0)
         label.Position = UDim2.new(0, 15, 0, 0)
@@ -882,25 +908,25 @@ end
         label.TextSize = 14
         label.BackgroundTransparency = 1
         label.TextXAlignment = Enum.TextXAlignment.Left
-        
+
         local btn = Instance.new("TextButton", dFrame)
         btn.Size = UDim2.new(0.5, 0, 0.7, 0)
         btn.Position = UDim2.new(0.45, 0, 0.15, 0)
-        btn.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
+        btn.BackgroundColor3 = Color3.fromRGB(45, 45, 60)
         btn.Text = Settings[setting] or "Select..."
         btn.TextColor3 = Settings.ThemeColor
         btn.Font = Enum.Font.GothamBold
         btn.TextSize = 12
-        Instance.new("UICorner", btn)
+        Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
 
         local scrolling = Instance.new("ScrollingFrame", parent)
         scrolling.Size = UDim2.new(1, 0, 0, 0)
-        scrolling.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+        scrolling.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
         scrolling.BorderSizePixel = 0
         scrolling.Visible = false
         scrolling.ZIndex = 10
         scrolling.ScrollBarThickness = 2
-        Instance.new("UICorner", scrolling)
+        Instance.new("UICorner", scrolling).CornerRadius = UDim.new(0, 8)
         local layout = Instance.new("UIListLayout", scrolling)
         
         btn.MouseButton1Click:Connect(function()
@@ -959,9 +985,9 @@ end
     local function NewSlider(parent, name, min, max, default, setting, callback)
         local sFrame = Instance.new("Frame", parent)
         sFrame.Size = UDim2.new(1, 0, 0, 65)
-        sFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-        Instance.new("UICorner", sFrame)
-        
+        sFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+        Instance.new("UICorner", sFrame).CornerRadius = UDim.new(0, 8)
+
         local label = Instance.new("TextLabel", sFrame)
         label.Size = UDim2.new(1, -20, 0, 30)
         label.Position = UDim2.new(0, 15, 0, 5)
@@ -971,23 +997,23 @@ end
         label.TextSize = 14
         label.BackgroundTransparency = 1
         label.TextXAlignment = Enum.TextXAlignment.Left
-        
+
         local bar = Instance.new("Frame", sFrame)
         bar.Size = UDim2.new(1, -40, 0, 6)
         bar.Position = UDim2.new(0, 20, 0, 45)
-        bar.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
-        Instance.new("UICorner", bar)
-        
+        bar.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
+        Instance.new("UICorner", bar).CornerRadius = UDim.new(1, 0)
+
         local fill = Instance.new("Frame", bar)
         fill.Size = UDim2.new((Settings[setting] or default - min) / (max - min), 0, 1, 0)
         fill.BackgroundColor3 = Settings.ThemeColor
-        Instance.new("UICorner", fill)
-        
+        Instance.new("UICorner", fill).CornerRadius = UDim.new(1, 0)
+
         local circle = Instance.new("Frame", fill)
-        circle.Size = UDim2.new(0, 14, 0, 14)
-        circle.Position = UDim2.new(1, -7, 0.5, -7)
+        circle.Size = UDim2.new(0, 16, 0, 16)
+        circle.Position = UDim2.new(1, -8, 0.5, -8)
         circle.BackgroundColor3 = Color3.new(1,1,1)
-        Instance.new("UICorner", circle)
+        Instance.new("UICorner", circle).CornerRadius = UDim.new(1, 0)
 
         local dragging = false
         local function Update(input)
@@ -999,20 +1025,20 @@ end
             callback(val)
             SaveSettings()
         end
-        
+
         bar.InputBegan:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
                 dragging = true
                 Update(input)
             end
         end)
-        
+
         UserInputService.InputEnded:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
                 dragging = false
             end
         end)
-        
+
         UserInputService.InputChanged:Connect(function(input)
             if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
                 Update(input)
