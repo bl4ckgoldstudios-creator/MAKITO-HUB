@@ -1,0 +1,79 @@
+local SettingsModule = {}
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local HttpService = game:GetService("HttpService")
+
+_G.MakitoHubRunning = true
+
+SettingsModule.Values = {
+    -- Safety Settings
+    AutoModeratorHop = true, AutoModeratorShutdown = false,
+    -- Auto Farm Settings
+    AutoFarm = false, FastAttack = false, AutoQuest = false, AutoNextSea = false, Weapon = "Melee", Distance = 10, TweenSpeed = 350, BringMobs = false, AutoFarmNearest = false,
+    AutoSkill = false, SkillZ = true, SkillX = true, SkillC = true, SkillV = true,
+    AutoMastery = false, MasteryHealth = 20, MasteryWeapon = "Sword",
+    FastAttackSpeed = 0.05, AutoHaki = false, AutoKen = false, AutoStats = false, SelectedStat = "Melee",
+    -- Sea Events
+    AutoSeaEvent = false, AutoMirage = false, AutoFindGear = false, AutoKitsune = false, AutoLeviathan = false, AutoMirageLever = false,
+    AutoEliteHunter = false, AutoFactory = false, AutoDoughKing = false, AutoCakePrince = false, AutoBone = false,
+    AutoTerrorShark = false, AutoRipIndra = false, AutoBeautifulPirate = false, AutoLaw = false,
+    AutoBoss = false, AutoBossHop = true,
+    AutoRaceV4 = false, AutoTrial = false,
+    -- Items & Puzzles
+    AutoSoulGuitar = false, AutoCDK = false, AutoSaber = false, AutoPole = false, AutoGodhuman = false,
+    AutoYama = false, AutoTushita = false, AutoRengoku = false, AutoMidnightBlade = false,
+    AutoFarmMaterial = false, SelectedMaterial = "Dragon Scale",
+    AutoBuySaber = false, AutoBuyPole = false, AutoBuyGodhuman = false, AutoBuyCDK = false, AutoBuySoulGuitar = false,
+    -- Raid Settings
+    AutoRaid = false, AutoBuyChip = false, AutoNextIsland = false, AutoAwaken = false, KillAuraRaid = false,
+    AutoRaidHop = false, RaidHopDelay = 60,
+    AutoDungeon = false,
+    SelectedRaid = "Flame",
+    -- PvP Settings
+    SafeMode = true, AimAssist = false, AutoCombo = false, SelectedFruit = "Dough", PredictMovement = true, SelectedPlayer = "None", AutoBounty = false,
+    BountyThreshold = 20,
+    BountyHop = false,
+    KillAura = false, KillAuraDistance = 60, AttackAura = false, WalkOnWater = false, InfGeppo = true, FlyHack = false,
+    WalkSpeed = 16, JumpPower = 50, InfEnergy = true,
+    -- Visual (ESP)
+    EspPlayers = false, EspFruits = false, EspChests = false, EspFlower = false, FullBright = false, FPSBooster = false, NoClip = false, EspBox = false, EspTracer = false,
+    AutoChest = false,
+    LowGraphics = false, RemoveTextures = false, RemoveShadows = false, WhiteScreen = false,
+    -- Misc
+    AutoRejoin = true, AntiAFK = true, WebhookEnabled = false, WebhookURL = "",
+    AutoBuyFruit = false, AutoStoreFruit = true, AutoFruitFinder = false, AutoSnipe = false,
+    SnipeFruits = {"Dough", "Kitsune", "Leopard", "Dragon", "Spirit", "Control", "Venom", "Shadow"},
+    ThemeColor = Color3.fromRGB(0, 255, 150), CurrentTheme = "Default",
+    KillSwitchKey = Enum.KeyCode.RightControl
+}
+
+SettingsModule.Themes = {
+    ["Default"] = Color3.fromRGB(0, 255, 150),
+    ["Neon Red"] = Color3.fromRGB(255, 0, 50),
+    ["Deep Blue"] = Color3.fromRGB(0, 100, 255),
+    ["Golden"] = Color3.fromRGB(255, 200, 0),
+    ["Purple Night"] = Color3.fromRGB(150, 0, 255)
+}
+
+function SettingsModule.Save()
+    pcall(function()
+        if writefile then writefile("MakitoHub_V6_Settings.json", HttpService:JSONEncode(SettingsModule.Values)) end
+    end)
+end
+
+function SettingsModule.Load()
+    pcall(function()
+        if isfile and isfile("MakitoHub_V6_Settings.json") then
+            local decoded = HttpService:JSONDecode(readfile("MakitoHub_V6_Settings.json"))
+            for k, v in pairs(decoded) do SettingsModule.Values[k] = v end
+        end
+    end)
+    -- FORCE DISABLE CRITICALS ON START
+    SettingsModule.Values.AutoFarm = false
+    SettingsModule.Values.AutoQuest = false
+    SettingsModule.Values.FastAttack = false
+    SettingsModule.Values.BringMobs = false
+end
+
+return SettingsModule
