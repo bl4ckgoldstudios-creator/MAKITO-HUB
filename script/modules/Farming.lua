@@ -72,6 +72,25 @@ function FarmingModule.SupremeQuestHandler(QuestData)
     return BestQuest
 end
 
+function FarmingModule.EquipWeapon(weaponName)
+    local target = weaponName == "Melee" and "Melee" or weaponName == "Sword" and "Sword" or "Fruit"
+    
+    for _, v in ipairs(LocalPlayer.Backpack:GetChildren()) do
+        if v:IsA("Tool") then
+            if target == "Melee" and v.ToolTip == "Melee" then
+                LocalPlayer.Character.Humanoid:EquipTool(v)
+                break
+            elseif target == "Sword" and v.ToolTip == "Sword" then
+                LocalPlayer.Character.Humanoid:EquipTool(v)
+                break
+            elseif target == "Fruit" and (v.ToolTip == "Blox Fruit" or v.ToolTip == "Demon Fruit") then
+                LocalPlayer.Character.Humanoid:EquipTool(v)
+                break
+            end
+        end
+    end
+end
+
 -- BLACK HOLE BRING MOBS (CLUSTER TOTAL)
 function FarmingModule.BlackHoleBringMobs(targetEnemy)
     if not _G.Settings.BringMobs or not targetEnemy or not targetEnemy:FindFirstChild("HumanoidRootPart") then return end
@@ -142,26 +161,83 @@ end
 -- ADVANCED AUTO SOUL GUITAR
 function FarmingModule.AutoSoulGuitarLogic()
     if not _G.Settings.AutoSoulGuitar then return end
-    -- Check if already has it
-    if LocalPlayer.Backpack:FindFirstChild("Soul Guitar") or LocalPlayer.Character:FindFirstChild("Soul Guitar") then return end
     
-    -- Puzzle Logic (Simplified for this version)
-    -- 1. Check if full moon
-    if game:GetService("Lighting").Sky.FullMoonMagnitude > 0.9 then
-        -- 2. Pray at Gravestone
-        _G.Utils.TweenTo(CFrame.new(-9515, 164, -5785))
-        _G.Utils.SafeRemote("SoulGuitar", "Pray")
+    local hasSoulGuitar = LocalPlayer.Backpack:FindFirstChild("Soul Guitar") or LocalPlayer.Character:FindFirstChild("Soul Guitar")
+    if hasSoulGuitar then return end
+    
+    local sea = FarmingModule.GetSea()
+    if sea ~= 3 then return end
+
+    -- 1. Check if Full Moon
+    local isFullMoon = game:GetService("Lighting").Sky.FullMoonMagnitude > 0.9
+    
+    if isFullMoon then
+        -- Go to Gravestone
+        local gravePos = CFrame.new(-9515, 164, -5785)
+        _G.Utils.TweenTo(gravePos)
+        
+        if (LocalPlayer.Character.HumanoidRootPart.Position - gravePos.Position).Magnitude < 10 then
+            _G.Utils.SafeRemote("SoulGuitar", "Pray")
+        end
     end
-    -- 3. Farm Materials
-    -- (Logic to farm Bones, Ectoplasm, Dark Fragment)
+
+    -- 2. Material Farm for Soul Guitar
+    -- Needs: 500 Bones, 250 Ectoplasm, 1 Dark Fragment
+    local bones = LocalPlayer.Data:FindFirstChild("Bones") and LocalPlayer.Data.Bones.Value or 0
+    
+    if bones < 500 then
+        if _G.MakitoStatus then _G.MakitoStatus.Text = "Status: Farmando Ossos para Soul Guitar (" .. bones .. "/500)" end
+        local enemy = _G.Utils.GetNearestEnemy("Reborn Skeleton") or _G.Utils.GetNearestEnemy("Living Zombie")
+        if enemy then
+            FarmingModule.EquipWeapon(_G.Settings.Weapon)
+            _G.Utils.TweenTo(enemy.HumanoidRootPart.CFrame * CFrame.new(0, 10, 0))
+            _G.Combat.StartFastAttack()
+        end
+    end
 end
 
 -- AUTO CDK (CURSED DUAL KATANA)
 function FarmingModule.AutoCDKLogic()
     if not _G.Settings.AutoCDK then return end
-    -- Logic for Tushita and Yama questlines
-    -- 1. Check if has Tushita and Yama at 350+ Mastery
-    -- 2. Complete Alucard Quests
+    
+    local hasCDK = LocalPlayer.Backpack:FindFirstChild("Cursed Dual Katana") or LocalPlayer.Character:FindFirstChild("Cursed Dual Katana")
+    if hasCDK then return end
+
+    -- Needs Yama and Tushita at 350 Mastery
+    local yama = LocalPlayer.Backpack:FindFirstChild("Yama") or LocalPlayer.Character:FindFirstChild("Yama")
+    local tushita = LocalPlayer.Backpack:FindFirstChild("Tushita") or LocalPlayer.Character:FindFirstChild("Tushita")
+    
+    if yama and tushita then
+        -- Mastery Check Logic here
+        -- If mastery < 350, go farm mastery
+    else
+        -- Logic to get Yama/Tushita
+        if not yama then
+            -- Go to Hydra Island Secret Room
+        end
+    end
+end
+
+-- AUTO GODHUMAN
+function FarmingModule.AutoGodhumanLogic()
+    if not _G.Settings.AutoGodhuman then return end
+    
+    -- Needs multiple materials and 400 mastery on all V2 fighting styles
+    -- This is a complex chain, starting with material farm
+    local mat = _G.Settings.SelectedMaterial or "Dragon Scale"
+    local data = _G.Data.MaterialData[mat]
+    
+    if data then
+        if _G.MakitoStatus then _G.MakitoStatus.Text = "Status: Farmando " .. mat end
+        local enemy = _G.Utils.GetNearestEnemy(data.Enemy)
+        if enemy then
+            FarmingModule.EquipWeapon(_G.Settings.Weapon)
+            _G.Utils.TweenTo(enemy.HumanoidRootPart.CFrame * CFrame.new(0, 10, 0))
+            _G.Combat.StartFastAttack()
+        else
+            _G.Utils.TweenTo(data.Pos)
+        end
+    end
 end
 
 -- AUTO RACE V4 (TRIAL SOLVER)
@@ -180,6 +256,19 @@ function FarmingModule.AutoTrialLogic()
     end
 end
 
+-- AUTO STATS
+function FarmingModule.AutoStatsLogic()
+    if not _G.Settings.AutoStats then return end
+    
+    local stat = _G.Settings.SelectedStat
+    local remoteStat = stat == "Melee" and "Melee" or stat == "Defense" and "Defense" or stat == "Sword" and "Sword" or stat == "Gun" and "Gun" or "Demon Fruit"
+    
+    local points = LocalPlayer.Data.StatsPoints.Value
+    if points > 0 then
+        _G.Utils.SafeRemote("AddPoint", remoteStat, points)
+    end
+end
+
 -- AUTO NEXT SEA
 function FarmingModule.AutoNextSeaLogic()
     if not _G.Settings.AutoNextSea then return end
@@ -187,11 +276,69 @@ function FarmingModule.AutoNextSeaLogic()
     local sea = FarmingModule.GetSea()
     
     if sea == 1 and level >= 700 then
-        -- Logic to talk to Military Detective and go to Sea 2
+        _G.Utils.TweenTo(CFrame.new(-4842, 718, -2621))
         _G.Utils.SafeRemote("TravelMain")
     elseif sea == 2 and level >= 1500 then
-        -- Logic to fight Rip_Indra and go to Sea 3
+        _G.Utils.TweenTo(CFrame.new(-5400, 15, 1000))
         _G.Utils.SafeRemote("TravelZou")
+    end
+end
+
+-- FRUIT SYSTEM (SNIPER, STORE, FINDER)
+function FarmingModule.FruitLogic()
+    -- 1. Fruit Finder & Sniper
+    if _G.Settings.AutoFruitFinder or _G.Settings.AutoSnipe then
+        for _, v in ipairs(workspace:GetChildren()) do
+            if v:IsA("Tool") and (v.Name:find("Fruit") or v:FindFirstChild("Handle")) then
+                if _G.Settings.AutoSnipe then
+                    local isRare = false
+                    for _, rare in ipairs(_G.Settings.SnipeFruits or {}) do
+                        if v.Name:find(rare) then isRare = true break end
+                    end
+                    if isRare then
+                        if _G.MakitoStatus then _G.MakitoStatus.Text = "Status: SNIPING " .. v.Name end
+                        _G.Utils.TweenTo(v.Handle.CFrame)
+                    end
+                elseif _G.Settings.AutoFruitFinder then
+                    _G.Utils.TweenTo(v.Handle.CFrame)
+                end
+            end
+        end
+    end
+
+    -- 2. Auto Store Fruit
+    if _G.Settings.AutoStoreFruit then
+        local fruit = LocalPlayer.Backpack:FindFirstChildOfClass("Tool")
+        if fruit and (fruit.ToolTip == "Blox Fruit" or fruit.ToolTip == "Demon Fruit") then
+            _G.Utils.SafeRemote("StoreFruit", fruit.Name, fruit)
+        end
+    end
+end
+
+-- LEVIATHAN SOLVER & SEA 3 ADVANCED
+function FarmingModule.LeviathanLogic()
+    if not _G.Settings.AutoLeviathan then return end
+    
+    local SeaEvents = workspace:FindFirstChild("SeaEvents") or workspace:FindFirstChild("Sea")
+    if not SeaEvents then return end
+
+    local Leviathan = SeaEvents:FindFirstChild("Leviathan")
+    if Leviathan then
+        if _G.MakitoStatus then _G.MakitoStatus.Text = "Status: MATANDO LEVIATHAN" end
+        -- Position above the head to avoid most attacks
+        local head = Leviathan:FindFirstChild("Head") or Leviathan.PrimaryPart
+        if head then
+            _G.Utils.TweenTo(head.CFrame * CFrame.new(0, 50, 0))
+            _G.Combat.StartFastAttack()
+            
+            -- Auto Use Skills for max damage
+            _G.Combat.UseSkill("Z")
+            _G.Combat.UseSkill("X")
+            _G.Combat.UseSkill("C")
+        end
+    else
+        -- Search for Leviathan Gates or Cold Zone
+        if _G.MakitoStatus then _G.MakitoStatus.Text = "Status: Procurando Leviathan..." end
     end
 end
 

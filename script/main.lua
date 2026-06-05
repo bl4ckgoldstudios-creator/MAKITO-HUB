@@ -1,10 +1,26 @@
--- MAKITO ELITE - Blox Fruits Supreme Edition
--- Versão: 8.0 (Auditada e Refatorada)
+-- MAKITO HUB PRO - SUPREME EDITION
+-- Versão: 8.1 (Início do Refinamento)
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
+local HttpService = game:GetService("HttpService")
 
--- 1. CARREGAMENTO MODULAR COM FALLBACK
+-- 0. AUTO-UPDATE CHECK
+local CurrentVersion = "8.1"
+pcall(function()
+    local versionUrl = "https://raw.githubusercontent.com/bl4ckgoldstudios-creator/MAKITO-HUB/refs/heads/main/version.txt"
+    local onlineVersion = game:HttpGet(versionUrl):gsub("%s+", "")
+    if onlineVersion ~= CurrentVersion then
+        warn("[MAKITO HUB]: Nova versao disponivel (" .. onlineVersion .. ")! Re-execute o script.")
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "ATUALIZAÇÃO DISPONÍVEL",
+            Text = "Versão " .. onlineVersion .. " detectada no GitHub!",
+            Duration = 15
+        })
+    end
+end)
+
+-- 1. SMART MODULE LOADER
 local function LoadModule(name)
     local localPath = "modules/" .. name .. ".lua"
     local githubBase = "https://raw.githubusercontent.com/bl4ckgoldstudios-creator/MAKITO-HUB/refs/heads/main/script/modules/"
@@ -42,6 +58,8 @@ _G.Data = Data
 _G.Utils = Utils
 _G.Combat = Combat
 _G.Farming = Farming
+_G.MakitoHubRunning = true
+_G.MakitoStatus = {Text = "Iniciando..."}
 
 -- 2. INICIALIZAÇÃO
 Settings.Load()
@@ -64,6 +82,27 @@ end)
 -- TAREFAS DE MÉDIA PRIORIDADE
 AddTask("Medium", "Farm", function()
     Farming.SupremeAutoFarm()
+end)
+
+AddTask("Medium", "AutomationLoop", function()
+    Farming.AutoSoulGuitarLogic()
+    Farming.AutoCDKLogic()
+    Farming.AutoGodhumanLogic()
+    Farming.AutoTrialLogic()
+    Farming.AutoNextSeaLogic()
+    Farming.AutoStatsLogic()
+    Farming.FruitLogic()
+    Farming.LeviathanLogic()
+end)
+
+AddTask("Medium", "Webhook", function()
+    if _G.Settings.WebhookURL and _G.Settings.WebhookURL ~= "" then
+        local level = LocalPlayer.Data.Level.Value
+        if not _G.LastWebhookLevel or level >= _G.LastWebhookLevel + 10 then
+            _G.LastWebhookLevel = level
+            Utils.SendWebhook(_G.Settings.WebhookURL, "MAKITO HUB - PROGRESSO", "Level Atual: " .. level .. "\nMar: " .. Farming.GetSea(), 0x00FF96)
+        end
+    end
 end)
 
 -- TAREFAS DE BAIXA PRIORIDADE
@@ -95,4 +134,4 @@ end)
 
 -- 4. START UI
 UI.CreateHub()
-Utils.Notify("MAKITO ELITE V8.0 ATIVADO!", 5)
+Utils.Notify("MAKITO HUB V8.0 ATIVADO!", 5)

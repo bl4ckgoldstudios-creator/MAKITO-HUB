@@ -98,4 +98,54 @@ function UtilsModule.SafeRemote(remoteName, ...)
     end, ...)
 end
 
+-- WEBHOOK SYSTEM
+function UtilsModule.SendWebhook(url, title, message, color)
+    if not url or url == "" or url == "None" then return end
+    
+    local data = {
+        ["embeds"] = {{
+            ["title"] = title or "MAKITO HUB LOG",
+            ["description"] = message or "",
+            ["color"] = color or 65280, -- Verde padrão
+            ["footer"] = {["text"] = "Makito Hub - " .. os.date("%X")}
+        }}
+    }
+    
+    pcall(function()
+        (syn and syn.request or http_request or request)({
+            Url = url,
+            Method = "POST",
+            Headers = {["Content-Type"] = "application/json"},
+            Body = HttpService:JSONEncode(data)
+        })
+    end)
+end
+
+-- ENEMY FINDER
+function UtilsModule.GetNearestEnemy(name)
+    local nearest = nil
+    local minDist = math.huge
+    local enemies = workspace:FindFirstChild("Enemies") or workspace
+    
+    for _, v in ipairs(enemies:GetChildren()) do
+        if v.Name == name and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+            local dist = (LocalPlayer.Character.HumanoidRootPart.Position - v.HumanoidRootPart.Position).Magnitude
+            if dist < minDist then
+                minDist = dist
+                nearest = v
+            end
+        end
+    end
+    return nearest
+end
+
+-- MODERATOR CHECK (SAFE EXIT)
+function UtilsModule.CheckModerator()
+    for _, v in ipairs(Players:GetPlayers()) do
+        if v:GetRankInGroup(2769967) >= 100 then -- Grupo oficial Blox Fruits
+            LocalPlayer:Kick("MODERADOR DETECTADO: " .. v.Name)
+        end
+    end
+end
+
 return UtilsModule
