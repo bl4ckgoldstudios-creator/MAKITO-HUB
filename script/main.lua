@@ -171,6 +171,9 @@ task.spawn(function()
 end)
 
 -- START UI
--- UI.CreateHub()
-
-Utils.Notify("MAKITO HUB SUPREME V7.0 INICIADO!", 5)
+if UI then
+    UI.CreateHub()
+    Utils.Notify("MAKITO HUB SUPREME V7.0 INICIADO!", 5)
+else
+    warn("[MAKITO HUB FATAL]: UI Module not found. Script stopped.")
+end

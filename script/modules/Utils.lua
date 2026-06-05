@@ -11,7 +11,13 @@ local currentTween = nil
 local isTweening = false
 
 function UtilsModule.Notify(text, duration)
-    -- Simple notification logic (assuming NewNotification exists in UI or globally)
+    pcall(function()
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "MAKITO HUB",
+            Text = text,
+            Duration = duration or 5
+        })
+    end)
     print("[MAKITO HUB]: " .. text)
 end
 

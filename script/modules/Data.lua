@@ -74,8 +74,42 @@ DataModule.MaterialData = {
 
 DataModule.Combos = {
     ["Dough"] = {{Key = "V", Wait = 0.5}, {Key = "C", Wait = 0.4}, {Key = "X", Wait = 0.5}, {Key = "Z", Wait = 0.3}},
-    ["Kitsune"] = {{Key = "C", Wait = 0.4}, {Key = "V", Wait = 0.6}, {Key = "Z", Wait = 0.3}, {Key = "X", Wait = 0.4}}
-    -- ... (Rest of combos)
+    ["Kitsune"] = {{Key = "C", Wait = 0.4}, {Key = "V", Wait = 0.6}, {Key = "Z", Wait = 0.3}, {Key = "X", Wait = 0.4}},
+    ["Leopard"] = {{Key = "Z", Wait = 0.3}, {Key = "X", Wait = 0.3}, {Key = "C", Wait = 0.4}, {Key = "V", Wait = 0.5}},
+    ["Buddha"] = {{Key = "Z", Wait = 0.3}, {Key = "X", Wait = 0.3}, {Key = "C", Wait = 0.3}, {Key = "V", Wait = 0.4}},
+    ["Dragon"] = {{Key = "X", Wait = 0.4}, {Key = "C", Wait = 0.4}, {Key = "V", Wait = 0.5}, {Key = "Z", Wait = 0.3}},
+    ["Venom"] = {{Key = "Z", Wait = 0.3}, {Key = "X", Wait = 0.3}, {Key = "C", Wait = 0.4}, {Key = "V", Wait = 0.5}},
+    ["Control"] = {{Key = "C", Wait = 0.4}, {Key = "Z", Wait = 0.3}, {Key = "X", Wait = 0.3}, {Key = "V", Wait = 0.5}},
+    ["Spirit"] = {{Key = "X", Wait = 0.4}, {Key = "C", Wait = 0.4}, {Key = "Z", Wait = 0.3}, {Key = "V", Wait = 0.5}},
+    ["Shadow"] = {{Key = "Z", Wait = 0.3}, {Key = "X", Wait = 0.3}, {Key = "C", Wait = 0.4}, {Key = "V", Wait = 0.5}},
+    ["Portal"] = {{Key = "V", Wait = 0.5}, {Key = "Z", Wait = 0.3}, {Key = "X", Wait = 0.3}, {Key = "C", Wait = 0.4}},
+    ["Gravity"] = {{Key = "Z", Wait = 0.3}, {Key = "X", Wait = 0.3}, {Key = "C", Wait = 0.4}, {Key = "V", Wait = 0.5}},
+    ["Magma"] = {{Key = "X", Wait = 0.4}, {Key = "C", Wait = 0.4}, {Key = "Z", Wait = 0.3}, {Key = "V", Wait = 0.5}},
+    ["Rumble"] = {{Key = "Z", Wait = 0.3}, {Key = "X", Wait = 0.3}, {Key = "C", Wait = 0.4}, {Key = "V", Wait = 0.5}},
+    ["Light"] = {{Key = "X", Wait = 0.4}, {Key = "C", Wait = 0.4}, {Key = "Z", Wait = 0.3}, {Key = "V", Wait = 0.5}},
+    ["Ice"] = {{Key = "Z", Wait = 0.3}, {Key = "X", Wait = 0.3}, {Key = "C", Wait = 0.4}, {Key = "V", Wait = 0.5}},
+    ["Quake"] = {{Key = "X", Wait = 0.4}, {Key = "C", Wait = 0.4}, {Key = "Z", Wait = 0.3}, {Key = "V", Wait = 0.5}},
+    ["Dark"] = {{Key = "Z", Wait = 0.3}, {Key = "X", Wait = 0.3}, {Key = "C", Wait = 0.4}, {Key = "V", Wait = 0.5}},
+    ["Spider"] = {{Key = "X", Wait = 0.4}, {Key = "C", Wait = 0.4}, {Key = "Z", Wait = 0.3}, {Key = "V", Wait = 0.5}},
+    ["Love"] = {{Key = "Z", Wait = 0.3}, {Key = "X", Wait = 0.3}, {Key = "C", Wait = 0.4}, {Key = "V", Wait = 0.5}},
+    ["Sound"] = {{Key = "X", Wait = 0.4}, {Key = "C", Wait = 0.4}, {Key = "Z", Wait = 0.3}, {Key = "V", Wait = 0.5}},
+    ["Phoenix"] = {{Key = "Z", Wait = 0.3}, {Key = "X", Wait = 0.3}, {Key = "C", Wait = 0.4}, {Key = "V", Wait = 0.5}},
+    ["Blizzard"] = {{Key = "X", Wait = 0.4}, {Key = "C", Wait = 0.4}, {Key = "Z", Wait = 0.3}, {Key = "V", Wait = 0.5}},
+    ["Rocket"] = {{Key = "Z", Wait = 0.3}, {Key = "X", Wait = 0.3}, {Key = "C", Wait = 0.4}, {Key = "V", Wait = 0.5}},
+    ["Smoke"] = {{Key = "X", Wait = 0.4}, {Key = "C", Wait = 0.4}, {Key = "Z", Wait = 0.3}, {Key = "V", Wait = 0.5}},
+    ["Spin"] = {{Key = "Z", Wait = 0.3}, {Key = "X", Wait = 0.3}, {Key = "C", Wait = 0.4}, {Key = "V", Wait = 0.5}},
+    ["Spring"] = {{Key = "X", Wait = 0.4}, {Key = "C", Wait = 0.4}, {Key = "Z", Wait = 0.3}, {Key = "V", Wait = 0.5}},
+    ["Chop"] = {{Key = "Z", Wait = 0.3}, {Key = "X", Wait = 0.3}, {Key = "C", Wait = 0.4}, {Key = "V", Wait = 0.5}},
+    ["Diamond"] = {{Key = "X", Wait = 0.4}, {Key = "C", Wait = 0.4}, {Key = "Z", Wait = 0.3}, {Key = "V", Wait = 0.5}},
+    ["Rubber"] = {{Key = "Z", Wait = 0.3}, {Key = "X", Wait = 0.3}, {Key = "C", Wait = 0.4}, {Key = "V", Wait = 0.5}},
+    ["Barrier"] = {{Key = "X", Wait = 0.4}, {Key = "C", Wait = 0.4}, {Key = "Z", Wait = 0.3}, {Key = "V", Wait = 0.5}},
+    ["Ghost"] = {{Key = "Z", Wait = 0.3}, {Key = "X", Wait = 0.3}, {Key = "C", Wait = 0.4}, {Key = "V", Wait = 0.5}},
+    ["Soul"] = {{Key = "X", Wait = 0.4}, {Key = "C", Wait = 0.4}, {Key = "Z", Wait = 0.3}, {Key = "V", Wait = 0.5}},
+    ["Falcon"] = {{Key = "Z", Wait = 0.3}, {Key = "X", Wait = 0.3}, {Key = "C", Wait = 0.4}, {Key = "V", Wait = 0.5}},
+    ["Pain"] = {{Key = "X", Wait = 0.4}, {Key = "C", Wait = 0.4}, {Key = "Z", Wait = 0.3}, {Key = "V", Wait = 0.5}},
+    ["T-Rex"] = {{Key = "Z", Wait = 0.3}, {Key = "X", Wait = 0.3}, {Key = "C", Wait = 0.4}, {Key = "V", Wait = 0.5}},
+    ["Mammoth"] = {{Key = "X", Wait = 0.4}, {Key = "C", Wait = 0.4}, {Key = "Z", Wait = 0.3}, {Key = "V", Wait = 0.5}},
+    ["Dough V2"] = {{Key = "V", Wait = 0.5}, {Key = "C", Wait = 0.4}, {Key = "X", Wait = 0.5}, {Key = "Z", Wait = 0.3}}
 }
 
 return DataModule

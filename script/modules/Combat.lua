@@ -11,6 +11,7 @@ local CombatFrameworkRoot = nil
 local FastAttackConn = nil
 
 local function GetFramework()
+    if CombatFramework and CombatFrameworkRoot then return end -- Cache valid framework
     pcall(function()
         if not CombatFramework then
             -- BUSCA EXAUSTIVA: Procura em todos os caminhos possíveis, incluindo novos caminhos de 2026
@@ -46,6 +47,12 @@ local function GetFramework()
         end
     end)
 end
+
+-- Clear cache on character load
+LocalPlayer.CharacterAdded:Connect(function()
+    CombatFramework = nil
+    CombatFrameworkRoot = nil
+end)
 
 function CombatModule.StopFastAttack()
     if FastAttackConn then FastAttackConn:Disconnect() FastAttackConn = nil end

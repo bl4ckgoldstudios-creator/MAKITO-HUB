@@ -81,9 +81,11 @@ function FarmingModule.BringMobs(targetEnemy, radius)
                 if v.Humanoid.Sit ~= true then v.Humanoid.Sit = true end
                 
                 -- Anti-Reset: Impede que o mob volte para o spawn original
-                if v:FindFirstChild("Data") and v.Data:FindFirstChild("SpawnPos") then
-                    v.Data.SpawnPos.Value = targetEnemy.HumanoidRootPart.Position
-                end
+                pcall(function()
+                    if v:FindFirstChild("Data") and v.Data:FindFirstChild("SpawnPos") then
+                        v.Data.SpawnPos.Value = targetEnemy.HumanoidRootPart.Position
+                    end
+                end)
             end
         end
     end
