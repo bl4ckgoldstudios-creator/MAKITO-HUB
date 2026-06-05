@@ -158,6 +158,81 @@ function FarmingModule.SupremeAutoFarm()
     end)
 end
 
+function FarmingModule.AutoFarmNearestLogic()
+    if not _G.Settings.AutoFarmNearest then return end
+    
+    local enemy = _G.Utils.GetNearestEnemyAny()
+    if enemy then
+        FarmingModule.EquipWeapon(_G.Settings.Weapon)
+        _G.Utils.TweenTo(enemy.HumanoidRootPart.CFrame * CFrame.new(0, 10, 0))
+        _G.Combat.StartFastAttack()
+    end
+end
+
+-- DUNGEON & RAID AUTOMATION
+function FarmingModule.RaidLogic()
+    if _G.Settings.AutoBuyChip then
+        _G.Utils.SafeRemote("Raids", "BuyChip", _G.Settings.SelectedRaid)
+    end
+    
+    if _G.Settings.AutoStartRaid then
+        _G.Utils.SafeRemote("Raids", "StartRaid")
+    end
+    
+    if _G.Settings.AutoDungeon then
+        local island = workspace:FindFirstChild("Island") -- Nome genérico, ajustar conforme o jogo
+        if island then
+            local enemy = _G.Utils.GetNearestEnemyAny()
+            if enemy then
+                _G.Utils.TweenTo(enemy.HumanoidRootPart.CFrame * CFrame.new(0, 15, 0))
+                _G.Combat.StartFastAttack()
+            end
+        end
+    end
+    
+    if _G.Settings.AutoNextIsland then
+        -- Lógica de avançar para a próxima ilha da raid (teleporte para o centro da próxima)
+    end
+    
+    if _G.Settings.AutoAwaken then
+        _G.Utils.SafeRemote("AwakenSkill")
+    end
+end
+
+-- SHOP & INSTÂNCIAS
+function FarmingModule.ShopLogic()
+    if _G.Settings.AutoBuyFightingStyle then
+        local styles = {"Godhuman", "Superhuman", "Electric Claw", "Dragon Talon", "Death Step", "Sharkman Karate"}
+        for _, style in ipairs(styles) do
+            _G.Utils.SafeRemote("BuyFightingStyle", style)
+        end
+    end
+    
+    if _G.Settings.AutoBuyLegendarySword then
+        local swords = {"Shisui", "Wando", "Sadi"}
+        for _, sword in ipairs(swords) do
+            _G.Utils.SafeRemote("LegendarySwordDealer", sword)
+        end
+    end
+    
+    if _G.Settings.AutoGacha then
+        _G.Utils.SafeRemote("FruitGacha")
+    end
+end
+
+-- CHEST FARM
+function FarmingModule.ChestFarmLogic()
+    if not _G.Settings.AutoChest then return end
+    
+    for _, v in ipairs(workspace:GetChildren()) do
+        if v.Name:find("Chest") and v:IsA("Part") then
+            if _G.MakitoStatus then _G.MakitoStatus.Text = "Status: Coletando Baú..." end
+            _G.Utils.TweenTo(v.CFrame)
+            task.wait(0.2)
+        end
+    end
+end
+
 -- ADVANCED AUTO SOUL GUITAR
 function FarmingModule.AutoSoulGuitarLogic()
     if not _G.Settings.AutoSoulGuitar then return end
@@ -311,6 +386,22 @@ function FarmingModule.FruitLogic()
         local fruit = LocalPlayer.Backpack:FindFirstChildOfClass("Tool")
         if fruit and (fruit.ToolTip == "Blox Fruit" or fruit.ToolTip == "Demon Fruit") then
             _G.Utils.SafeRemote("StoreFruit", fruit.Name, fruit)
+        end
+    end
+
+    -- 3. Auto Bring Fruit (Magnetic)
+    if _G.Settings.AutoBringFruit then
+        for _, v in ipairs(workspace:GetChildren()) do
+            if v:IsA("Tool") and (v.Name:find("Fruit") or v:FindFirstChild("Handle")) then
+                v.Handle.CFrame = LocalPlayer.Character.HumanoidRootPart.CFrame
+            end
+        end
+    end
+
+    -- 4. Shop Sniper (Auto Buy)
+    if _G.Settings.AutoBuyFruit then
+        for _, rare in ipairs(_G.Settings.SnipeFruits or {}) do
+            _G.Utils.SafeRemote("BuyFruit", rare)
         end
     end
 end

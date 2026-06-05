@@ -295,6 +295,7 @@ function UIModule.CreateWindow(title, themeColor)
 
     function UIModule.NewDropdown(tab, name, options, settingName, callback)
         local DropdownFrame = Instance.new("Frame", tab)
+        DropdownFrame.Name = name .. "Dropdown"
         DropdownFrame.Size = UDim2.new(1, 0, 0, 40)
         DropdownFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
         Instance.new("UICorner", DropdownFrame)
@@ -317,29 +318,38 @@ function UIModule.CreateWindow(title, themeColor)
         List.Size = UDim2.new(1, 0, 0, #options * 30)
         List.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
         List.Visible = false
+        List.ZIndex = 10
         Instance.new("UICorner", List)
         local ListLayout = Instance.new("UIListLayout", List)
 
-        for _, opt in ipairs(options) do
-            local OptBtn = Instance.new("TextButton", List)
-            OptBtn.Size = UDim2.new(1, 0, 0, 30)
-            OptBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-            OptBtn.Text = opt
-            OptBtn.TextColor3 = Color3.new(0.8, 0.8, 0.8)
-            OptBtn.Font = Enum.Font.Gotham
-            Instance.new("UICorner", OptBtn)
+        local function Refresh(newOptions)
+            for _, v in ipairs(List:GetChildren()) do if v:IsA("TextButton") then v:Destroy() end end
+            for _, opt in ipairs(newOptions) do
+                local OptBtn = Instance.new("TextButton", List)
+                OptBtn.Size = UDim2.new(1, 0, 0, 30)
+                OptBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+                OptBtn.Text = opt
+                OptBtn.TextColor3 = Color3.new(0.8, 0.8, 0.8)
+                OptBtn.Font = Enum.Font.Gotham
+                Instance.new("UICorner", OptBtn)
 
-            OptBtn.MouseButton1Click:Connect(function()
-                _G.Settings[settingName] = opt
-                Label.Text = name .. ": " .. opt
-                List.Visible = false
-                if callback then callback(opt) end
-            end)
+                OptBtn.MouseButton1Click:Connect(function()
+                    _G.Settings[settingName] = opt
+                    Label.Text = name .. ": " .. opt
+                    List.Visible = false
+                    if callback then callback(opt) end
+                end)
+            end
+            List.Size = UDim2.new(1, 0, 0, #newOptions * 30)
         end
+
+        Refresh(options)
 
         OpenBtn.MouseButton1Click:Connect(function()
             List.Visible = not List.Visible
         end)
+
+        return {Refresh = Refresh}
     end
 
     function UIModule.NewTextBox(tab, name, placeholder, settingName, callback)
@@ -366,6 +376,22 @@ function UIModule.CreateWindow(title, themeColor)
         end)
     end
 
+    function UIModule.NewButton(tab, name, callback)
+        local Button = Instance.new("TextButton", tab)
+        Button.Size = UDim2.new(1, 0, 0, 35)
+        Button.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
+        Button.Text = name
+        Button.TextColor3 = Color3.new(1,1,1)
+        Button.Font = Enum.Font.GothamMedium
+        Button.TextSize = 13
+        Instance.new("UICorner", Button)
+        Ripple(Button)
+
+        Button.MouseButton1Click:Connect(function()
+            if callback then callback() end
+        end)
+    end
+
     return MakitoGui, MainFrame
 end
 
@@ -377,77 +403,158 @@ function UIModule.CreateHub()
     local MainTab = UIModule.NewTab("Main")
     UIModule.NewSection(MainTab, "Auto Farm")
     UIModule.NewToggle(MainTab, "Auto Farm Level", "AutoFarm")
+    UIModule.NewToggle(MainTab, "Auto Farm Nearest", "AutoFarmNearest")
     UIModule.NewToggle(MainTab, "Auto Quest", "AutoQuest")
     UIModule.NewToggle(MainTab, "Bring Mobs", "BringMobs")
     UIModule.NewSlider(MainTab, "Farm Distance", 0, 50, 10, "Distance")
     UIModule.NewDropdown(MainTab, "Select Weapon", {"Melee", "Sword", "Fruit"}, "Weapon")
+    UIModule.NewSection(MainTab, "Automation")
+    UIModule.NewToggle(MainTab, "Anti-AFK", "AntiAFK")
 
-    local CombatTab = UIModule.NewTab("Combat")
+    local CombatTab = UIModule.NewTab("Combat & PvP")
     UIModule.NewSection(CombatTab, "Attack")
     UIModule.NewToggle(CombatTab, "Fast Attack V23", "FastAttack")
     UIModule.NewToggle(CombatTab, "Kill Aura Silent V3", "KillAura")
-    UIModule.NewSection(CombatTab, "PvP")
-    UIModule.NewToggle(CombatTab, "Auto Bounty", "AutoBounty")
-    UIModule.NewToggle(CombatTab, "Auto Combo", "AutoCombo")
-    UIModule.NewDropdown(CombatTab, "Selected Fruit", {"Dough", "Kitsune", "Leopard", "Dragon", "Spirit", "Venom", "Control", "Portal", "Gravity", "Magma", "Rumble", "Light", "Ice", "Quake", "Dark", "Spider", "Love", "Sound", "Phoenix", "Blizzard", "Rocket", "Smoke", "Spin", "Spring", "Chop", "Diamond", "Rubber", "Barrier", "Ghost", "Soul", "Falcon", "Pain", "T-Rex", "Mammoth", "Dough V2"}, "SelectedFruit")
+    UIModule.NewSection(CombatTab, "PvP & Bounty")
+    local playerList = {}
+    for _, v in ipairs(Players:GetPlayers()) do table.insert(playerList, v.Name) end
+    UIModule.PlayerDropdown = UIModule.NewDropdown(CombatTab, "Select Player", playerList, "SelectedPlayer")
+    
+    task.spawn(function()
+        while task.wait(5) do
+            local newList = {}
+            for _, v in ipairs(Players:GetPlayers()) do table.insert(newList, v.Name) end
+            if UIModule.PlayerDropdown then UIModule.PlayerDropdown.Refresh(newList) end
+        end
+    end)
+    UIModule.NewButton(CombatTab, "Teleport to Player", function()
+        local target = Players:FindFirstChild(_G.Settings.SelectedPlayer)
+        if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+            _G.Utils.TweenTo(target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3))
+        end
+    end)
+    UIModule.NewToggle(CombatTab, "Auto Bounty / Kill", "AutoBounty")
+    UIModule.NewToggle(CombatTab, "AimBot Skills", "AimBot")
+    UIModule.NewSection(CombatTab, "Visuals")
+    UIModule.NewToggle(CombatTab, "Player ESP", "PlayerESP")
+    UIModule.NewToggle(CombatTab, "Box ESP", "BoxESP")
+    UIModule.NewToggle(CombatTab, "Line ESP", "LineESP")
 
-    local StatsTab = UIModule.NewTab("Stats")
-    UIModule.NewSection(StatsTab, "Distribution")
-    UIModule.NewToggle(StatsTab, "Auto Stats", "AutoStats")
-    UIModule.NewDropdown(StatsTab, "Selected Stat", {"Melee", "Defense", "Sword", "Gun", "Demon Fruit"}, "SelectedStat")
+    local TeleportTab = UIModule.NewTab("Teleport")
+    UIModule.NewSection(TeleportTab, "Islands")
+    
+    local currentSea = _G.Farming.GetSea()
+    local islandOptions = {}
+    for _, island in ipairs(_G.Data.SeaData[currentSea]) do table.insert(islandOptions, island.Name) end
+    
+    UIModule.IslandDropdown = UIModule.NewDropdown(TeleportTab, "Select Island", islandOptions, "SelectedIsland")
+    
+    task.spawn(function()
+        local lastSea = currentSea
+        while task.wait(5) do
+            local sea = _G.Farming.GetSea()
+            if sea ~= lastSea then
+                lastSea = sea
+                local newList = {}
+                for _, island in ipairs(_G.Data.SeaData[sea]) do table.insert(newList, island.Name) end
+                if UIModule.IslandDropdown then UIModule.IslandDropdown.Refresh(newList) end
+            end
+        end
+    end)
 
-    local ItemsTab = UIModule.NewTab("Items")
-    UIModule.NewSection(ItemsTab, "Lendários")
-    UIModule.NewToggle(ItemsTab, "Auto Soul Guitar", "AutoSoulGuitar")
-    UIModule.NewToggle(ItemsTab, "Auto CDK", "AutoCDK")
-    UIModule.NewToggle(ItemsTab, "Auto Godhuman", "AutoGodhuman")
-    UIModule.NewDropdown(ItemsTab, "Selected Material", {"Dragon Scale", "Fish Tail", "Mystic Droplet", "Vampire Fang", "Magma Ore"}, "SelectedMaterial")
+    UIModule.NewButton(TeleportTab, "Teleport to Island", function()
+        local sea = _G.Farming.GetSea()
+        local selected = _G.Settings.SelectedIsland
+        for _, island in ipairs(_G.Data.SeaData[sea]) do
+            if island.Name == selected then
+                _G.Utils.TweenTo(island.Pos)
+                break
+            end
+        end
+    end)
+    UIModule.NewSection(TeleportTab, "World Travel")
+    UIModule.NewButton(TeleportTab, "Travel to First Sea", function() _G.Utils.SafeRemote("TravelMain") end)
+    UIModule.NewButton(TeleportTab, "Travel to Second Sea", function() _G.Utils.SafeRemote("TravelZou") end)
+    UIModule.NewButton(TeleportTab, "Travel to Third Sea", function() _G.Utils.SafeRemote("TravelDressrosa") end)
+    UIModule.NewSection(TeleportTab, "Quick TP")
+    UIModule.NewButton(TeleportTab, "Teleport to Cafe", function() 
+        if _G.Farming.GetSea() == 2 then _G.Utils.TweenTo(CFrame.new(-382, 73, 291)) end
+    end)
+    UIModule.NewButton(TeleportTab, "Teleport to Mansion", function() 
+        if _G.Farming.GetSea() == 3 then _G.Utils.TweenTo(CFrame.new(-12463, 332, -7548)) end
+    end)
 
-    local SeaTab = UIModule.NewTab("Sea Events")
-    UIModule.NewSection(SeaTab, "Sea 3")
-    UIModule.NewToggle(SeaTab, "Auto Leviathan", "AutoLeviathan")
-    UIModule.NewToggle(SeaTab, "Auto Kitsune", "AutoKitsune")
-    UIModule.NewToggle(SeaTab, "Auto Sea Events", "AutoSeaEvent")
-    UIModule.NewSection(SeaTab, "Race V4")
-    UIModule.NewToggle(SeaTab, "Auto Trial", "AutoTrial")
-
-    local FruitTab = UIModule.NewTab("Fruits")
-    UIModule.NewSection(FruitTab, "Automation")
-    UIModule.NewToggle(FruitTab, "Auto Fruit Finder", "AutoFruitFinder")
-    UIModule.NewToggle(FruitTab, "Auto Store Fruit", "AutoStoreFruit")
-    UIModule.NewToggle(FruitTab, "Auto Snipe Fruit", "AutoSnipe")
+    local FruitTab = UIModule.NewTab("Devil Fruit")
+    UIModule.NewSection(FruitTab, "Gacha & Shop")
+    UIModule.NewToggle(FruitTab, "Auto Buy Fruits (Sniper)", "AutoBuyFruit")
+    UIModule.NewToggle(FruitTab, "Auto Random Fruit (Gacha)", "AutoGacha")
+    UIModule.NewSection(FruitTab, "World Fruits")
+    UIModule.NewToggle(FruitTab, "Teleport to Spawned Fruit", "AutoFruitFinder")
+    UIModule.NewToggle(FruitTab, "Auto Bring Fruits", "AutoBringFruit")
+    UIModule.NewToggle(FruitTab, "Auto Store Fruits", "AutoStoreFruit")
     UIModule.NewTextBox(FruitTab, "Snipe List", "Ex: Dragon,Kitsune", "SnipeFruitsRaw", function(val)
         local fruits = {}
         for s in val:gmatch("([^,]+)") do 
-            local clean = s:gsub("^%s*(.-)%s*$", "%1") -- Trim equivalent
+            local clean = s:gsub("^%s*(.-)%s*$", "%1")
             table.insert(fruits, clean) 
         end
         _G.Settings.SnipeFruits = fruits
     end)
 
-    local VisualsTab = UIModule.NewTab("Visuals")
+    local DungeonTab = UIModule.NewTab("Dungeon & Raid")
+    UIModule.NewSection(DungeonTab, "Raids")
+    UIModule.NewDropdown(DungeonTab, "Select Chip", {"Flame", "Ice", "Quake", "Light", "Dark", "String", "Rumble", "Magma", "Human: Buddha", "Sand", "Bird: Phoenix", "Dough"}, "SelectedRaid")
+    UIModule.NewToggle(DungeonTab, "Auto Buy Chip", "AutoBuyChip")
+    UIModule.NewToggle(DungeonTab, "Auto Start Raid", "AutoStartRaid")
+    UIModule.NewSection(DungeonTab, "Automation")
+    UIModule.NewToggle(DungeonTab, "Auto Farm Dungeon", "AutoDungeon")
+    UIModule.NewToggle(DungeonTab, "Auto Next Island", "AutoNextIsland")
+    UIModule.NewToggle(DungeonTab, "Auto Awaken", "AutoAwaken")
+
+    local SeaTab = UIModule.NewTab("Sea Events")
+    UIModule.NewSection(SeaTab, "Farm")
+    UIModule.NewToggle(SeaTab, "Auto Sea Beast", "AutoSeaBeast")
+    UIModule.NewToggle(SeaTab, "Auto Rumbling Waters", "AutoRumbling")
+    UIModule.NewToggle(SeaTab, "Auto Ship Raid", "AutoShipRaid")
+    UIModule.NewSection(SeaTab, "Bosses & Tracker")
+    UIModule.NewToggle(SeaTab, "Auto Leviathan", "AutoLeviathan")
+    UIModule.NewToggle(SeaTab, "Auto Kitsune", "AutoKitsune")
+    UIModule.NewToggle(SeaTab, "Auto Terrorshark", "AutoTerrorShark")
+
+    local ShopTab = UIModule.NewTab("Shop & Instâncias")
+    UIModule.NewSection(ShopTab, "Automation")
+    UIModule.NewToggle(ShopTab, "Auto Buy Fighting Styles", "AutoBuyFightingStyle")
+    UIModule.NewToggle(ShopTab, "Auto Buy Legendary Swords", "AutoBuyLegendarySword")
+    UIModule.NewToggle(ShopTab, "Auto Buy Accessories", "AutoBuyAccessory")
+    UIModule.NewSection(ShopTab, "Items")
+    UIModule.NewToggle(ShopTab, "Auto Soul Guitar", "AutoSoulGuitar")
+    UIModule.NewToggle(ShopTab, "Auto CDK", "AutoCDK")
+    UIModule.NewToggle(ShopTab, "Auto Godhuman", "AutoGodhuman")
+
+    local StatsTab = UIModule.NewTab("Stats")
+    UIModule.NewSection(StatsTab, "Distribution")
+    UIModule.NewToggle(StatsTab, "Auto Point Stats", "AutoStats")
+    UIModule.NewDropdown(StatsTab, "Select Stat", {"Melee", "Defense", "Sword", "Gun", "Demon Fruit"}, "SelectedStat")
+
+    local VisualsTab = UIModule.NewTab("Visuals / Misc")
+    UIModule.NewSection(VisualsTab, "ESP")
+    UIModule.NewToggle(VisualsTab, "Chest ESP", "EspChests")
+    UIModule.NewToggle(VisualsTab, "Fruit ESP", "EspFruits")
+    UIModule.NewButton(VisualsTab, "Auto Collect Chests", function() _G.Settings.AutoChest = not _G.Settings.AutoChest end)
+    UIModule.NewSection(VisualsTab, "World")
+    UIModule.NewToggle(VisualsTab, "Remove Fog", "RemoveFog")
+    UIModule.NewToggle(VisualsTab, "Full Bright", "FullBright")
     UIModule.NewToggle(VisualsTab, "FPS Booster", "FPSBooster")
-    UIModule.NewToggle(VisualsTab, "White Screen", "WhiteScreen")
-    UIModule.NewSection(VisualsTab, "Themes")
-    UIModule.NewDropdown(VisualsTab, "Hub Theme", {"Default", "Neon Red", "Deep Blue", "Golden", "Purple Night"}, "CurrentTheme", function(themeName)
-        local themes = {
-            ["Default"] = Color3.fromRGB(0, 255, 150),
-            ["Neon Red"] = Color3.fromRGB(255, 0, 50),
-            ["Deep Blue"] = Color3.fromRGB(0, 100, 255),
-            ["Golden"] = Color3.fromRGB(255, 200, 0),
-            ["Purple Night"] = Color3.fromRGB(150, 0, 255)
-        }
-        local color = themes[themeName]
-        if color then
-            _G.Settings.ThemeColor = color
-            Main.UIStroke.Color = color
-            -- Adicionar lógica para atualizar todos os botões/elementos com o novo tema
+    UIModule.NewSection(VisualsTab, "Server")
+    UIModule.NewButton(VisualsTab, "Server Hop", function()
+        local Servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Asc&limit=100"))
+        for _, s in pairs(Servers.data) do
+            if s.playing < s.maxPlayers and s.id ~= game.JobId then
+                game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, s.id, LocalPlayer)
+                break
+            end
         end
     end)
-
-    local MiscTab = UIModule.NewTab("Misc")
-    UIModule.NewToggle(MiscTab, "Anti AFK", "AntiAFK")
-    UIModule.NewToggle(MiscTab, "Walk on Water", "WalkOnWater")
 
     local ConfigTab = UIModule.NewTab("Config")
     UIModule.NewSection(ConfigTab, "Discord Webhook")

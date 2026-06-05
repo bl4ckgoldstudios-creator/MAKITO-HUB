@@ -20,13 +20,15 @@ SettingsModule.Values = {
     AutoTerrorShark = false, AutoRipIndra = false, AutoBeautifulPirate = false, AutoLaw = false,
     AutoBoss = false, AutoBossHop = true,
     AutoRaceV4 = false, AutoTrial = false,
+    AutoSeaBeast = false, AutoRumbling = false, AutoShipRaid = false,
     -- Items & Puzzles
     AutoSoulGuitar = false, AutoCDK = false, AutoSaber = false, AutoPole = false, AutoGodhuman = false,
     AutoYama = false, AutoTushita = false, AutoRengoku = false, AutoMidnightBlade = false,
     AutoFarmMaterial = false, SelectedMaterial = "Dragon Scale",
     AutoBuySaber = false, AutoBuyPole = false, AutoBuyGodhuman = false, AutoBuyCDK = false, AutoBuySoulGuitar = false,
+    AutoBuyFightingStyle = false, AutoBuyLegendarySword = false, AutoBuyAccessory = false,
     -- Raid Settings
-    AutoRaid = false, AutoBuyChip = false, AutoNextIsland = false, AutoAwaken = false, KillAuraRaid = false,
+    AutoRaid = false, AutoBuyChip = false, AutoStartRaid = false, AutoNextIsland = false, AutoAwaken = false, KillAuraRaid = false,
     AutoRaidHop = false, RaidHopDelay = 60,
     AutoDungeon = false,
     SelectedRaid = "Flame",
@@ -36,14 +38,20 @@ SettingsModule.Values = {
     BountyHop = false,
     KillAura = false, KillAuraDistance = 60, AttackAura = false, WalkOnWater = false, InfGeppo = true, FlyHack = false,
     WalkSpeed = 16, JumpPower = 50, InfEnergy = true,
+    AimBot = false, PlayerESP = false, BoxESP = false, LineESP = false,
+    -- Teleport Settings
+    SelectedIsland = "None",
     -- Visual (ESP)
     EspPlayers = false, EspFruits = false, EspChests = false, EspFlower = false, FullBright = false, FPSBooster = false, NoClip = false, EspBox = false, EspTracer = false,
     AutoChest = false,
     LowGraphics = false, RemoveTextures = false, RemoveShadows = false, WhiteScreen = false,
+    RemoveFog = false,
     -- Misc
     AutoRejoin = true, AntiAFK = true, WebhookEnabled = false, WebhookURL = "",
     AutoBuyFruit = false, AutoStoreFruit = true, AutoFruitFinder = false, AutoSnipe = false,
     SnipeFruits = {"Dough", "Kitsune", "Leopard", "Dragon", "Spirit", "Control", "Venom", "Shadow"},
+    SnipeFruitsRaw = "Dough,Kitsune,Leopard,Dragon,Spirit,Control,Venom,Shadow",
+    AutoBringFruit = false, AutoGacha = false,
     ThemeColor = Color3.fromRGB(0, 255, 150), CurrentTheme = "Default",
     KillSwitchKey = Enum.KeyCode.RightControl
 }

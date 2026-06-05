@@ -139,6 +139,86 @@ function UtilsModule.GetNearestEnemy(name)
     return nearest
 end
 
+function UtilsModule.GetNearestEnemyAny()
+    local nearest = nil
+    local minDist = math.huge
+    local enemies = workspace:FindFirstChild("Enemies") or workspace
+    
+    for _, v in ipairs(enemies:GetChildren()) do
+        if v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+            local dist = (LocalPlayer.Character.HumanoidRootPart.Position - v.HumanoidRootPart.Position).Magnitude
+            if dist < minDist then
+                minDist = dist
+                nearest = v
+            end
+        end
+    end
+    return nearest
+end
+
+-- ESP SYSTEM (PLAYER, CHEST, FRUIT)
+local ESPObjects = {}
+
+function UtilsModule.CreateESP(obj, text, color)
+    if not obj or ESPObjects[obj] then return end
+    
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "MakitoESP"
+    billboard.Adornee = obj
+    billboard.Size = UDim2.new(0, 100, 0, 50)
+    billboard.StudsOffset = Vector3.new(0, 3, 0)
+    billboard.AlwaysOnTop = true
+    billboard.Parent = CoreGui
+    
+    local label = Instance.new("TextLabel", billboard)
+    label.BackgroundTransparency = 1
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.Text = text
+    label.TextColor3 = color
+    label.Font = Enum.Font.GothamBold
+    label.TextSize = 12
+    
+    if _G.Settings.BoxESP then
+        local box = Instance.new("BoxHandleAdornment", CoreGui)
+        box.Name = "MakitoBox"
+        box.Adornee = obj
+        box.AlwaysOnTop = true
+        box.ZIndex = 5
+        box.Transparency = 0.5
+        box.Color3 = color
+        box.Size = obj.Size
+    end
+    
+    ESPObjects[obj] = billboard
+end
+
+function UtilsModule.ClearESP()
+    for _, v in pairs(ESPObjects) do v:Destroy() end
+    ESPObjects = {}
+end
+
+-- WORLD VISUALS
+function UtilsModule.SetFullBright(enabled)
+    if enabled then
+        game:GetService("Lighting").Brightness = 2
+        game:GetService("Lighting").ClockTime = 14
+        game:GetService("Lighting").FogEnd = 100000
+        game:GetService("Lighting").GlobalShadows = false
+    else
+        game:GetService("Lighting").Brightness = 1
+        game:GetService("Lighting").GlobalShadows = true
+    end
+end
+
+function UtilsModule.RemoveFog(enabled)
+    if enabled then
+        game:GetService("Lighting").FogEnd = 100000
+        for _, v in pairs(game:GetService("Lighting"):GetDescendants()) do
+            if v:IsA("Atmosphere") then v:Destroy() end
+        end
+    end
+end
+
 -- MODERATOR CHECK (SAFE EXIT)
 function UtilsModule.CheckModerator()
     for _, v in ipairs(Players:GetPlayers()) do

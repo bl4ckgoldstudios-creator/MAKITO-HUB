@@ -138,6 +138,59 @@ function CombatModule.KillAuraLogic()
     end
 end
 
+-- AIMBOT SKILLS (AUTO-TARGET NEAREST PLAYER/NPC)
+function CombatModule.AimBotLogic()
+    if not _G.Settings.AimBot then return end
+    
+    local target = nil
+    local minDist = math.huge
+    
+    -- PRIORIZA JOGADORES SE ESTIVER EM PVP, SENÃO NPCS
+    for _, v in ipairs(Players:GetPlayers()) do
+        if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") and v.Character:FindFirstChild("Humanoid") and v.Character.Humanoid.Health > 0 then
+            local dist = (LocalPlayer.Character.HumanoidRootPart.Position - v.Character.HumanoidRootPart.Position).Magnitude
+            if dist < 250 and dist < minDist then
+                minDist = dist
+                target = v.Character.HumanoidRootPart
+            end
+        end
+    end
+    
+    if target then
+        local cam = workspace.CurrentCamera
+        cam.CFrame = CFrame.new(cam.CFrame.Position, target.Position)
+    end
+end
+
+-- AUTO BOUNTY / PLAYER HUNTER
+function CombatModule.AutoBountyLogic()
+    if not _G.Settings.AutoBounty then return end
+    
+    local targetName = _G.Settings.SelectedPlayer
+    local target = Players:FindFirstChild(targetName)
+    
+    if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") and target.Character.Humanoid.Health > 0 then
+        local targetCF = target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 5)
+        _G.Utils.TweenTo(targetCF)
+        
+        -- AUTO ATTACK
+        _G.Settings.FastAttack = true
+        _G.Settings.KillAura = true
+        
+        -- AUTO COMBO
+        if _G.Settings.AutoCombo then
+            local fruit = _G.Settings.SelectedFruit
+            local combo = _G.Data.Combos[fruit]
+            if combo then
+                for _, step in ipairs(combo) do
+                    CombatModule.UseSkill(step.Key)
+                    task.wait(step.Wait)
+                end
+            end
+        end
+    end
+end
+
 function CombatModule.UseSkill(key, holdTime)
     pcall(function()
         VirtualInputManager:SendKeyEvent(true, Enum.KeyCode[key], false, game)

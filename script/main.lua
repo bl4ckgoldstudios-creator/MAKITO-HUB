@@ -76,12 +76,14 @@ function AddTask(priority, name, func) Scheduler[priority][name] = func end
 -- TAREFAS DE ALTA PRIORIDADE
 AddTask("High", "Combat", function()
     if _G.Settings.FastAttack then Combat.StartFastAttack() else Combat.StopFastAttack() end
-    Combat.KillAuraLogic() -- GERENCIA O INÍCIO/FIM DA KILL AURA V3
+    Combat.KillAuraLogic()
+    Combat.AimBotLogic()
 end)
 
 -- TAREFAS DE MÉDIA PRIORIDADE
 AddTask("Medium", "Farm", function()
     Farming.SupremeAutoFarm()
+    Farming.AutoFarmNearestLogic()
 end)
 
 AddTask("Medium", "AutomationLoop", function()
@@ -93,6 +95,39 @@ AddTask("Medium", "AutomationLoop", function()
     Farming.AutoStatsLogic()
     Farming.FruitLogic()
     Farming.LeviathanLogic()
+    Farming.RaidLogic()
+    Farming.ShopLogic()
+    Farming.ChestFarmLogic()
+    Combat.AutoBountyLogic()
+end)
+
+AddTask("Medium", "Visuals", function()
+    Utils.SetFullBright(_G.Settings.FullBright)
+    Utils.RemoveFog(_G.Settings.RemoveFog)
+    
+    -- ESP UPDATE LOOP
+    Utils.ClearESP()
+    if _G.Settings.PlayerESP then
+        for _, v in ipairs(Players:GetPlayers()) do
+            if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
+                Utils.CreateESP(v.Character.HumanoidRootPart, v.Name .. " [" .. math.floor(v.Character.Humanoid.Health) .. "]", Color3.new(1, 0, 0))
+            end
+        end
+    end
+    if _G.Settings.EspFruits then
+        for _, v in ipairs(workspace:GetChildren()) do
+            if v:IsA("Tool") and (v.Name:find("Fruit") or v:FindFirstChild("Handle")) then
+                Utils.CreateESP(v.Handle, v.Name, Color3.new(1, 1, 0))
+            end
+        end
+    end
+    if _G.Settings.EspChests then
+        for _, v in ipairs(workspace:GetChildren()) do
+            if v.Name:find("Chest") then
+                Utils.CreateESP(v, "Chest", Color3.new(0, 1, 0))
+            end
+        end
+    end
 end)
 
 AddTask("Medium", "Webhook", function()
