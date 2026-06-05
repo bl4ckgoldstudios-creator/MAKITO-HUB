@@ -5,25 +5,45 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
 -- 1. LOAD MODULES (SMART LOADER PC/GITHUB)
-local function LoadModule(name)
-    local localPath = "modules/" .. name .. ".lua"
-    local githubBase = "https://raw.githubusercontent.com/SEU_USUARIO/SEU_REPOSITORIO/main/modules/"
-    
-    local success, result = pcall(function()
-        if isfile and isfile(localPath) then
-            return loadstring(readfile(localPath))()
-        else
-            return loadstring(game:HttpGet(githubBase .. name .. ".lua"))()
-        end
-    end)
-    
-    if success then
-        return result
-    else
-        warn("[MAKITO HUB ERROR]: Falha ao carregar modulo " .. name .. " -> " .. tostring(result))
-        return nil
-    end
-end
+ local function LoadModule(name)
+     local localPath = "modules/" .. name .. ".lua"
+     local githubBase = "https://raw.githubusercontent.com/bl4ckgoldstudios-creator/MAKITO-HUB/refs/heads/main/script/modules/"
+     
+     print("[MAKITO DEBUG]: Tentando carregar " .. name)
+     
+     local success, result = pcall(function()
+         if isfile and isfile(localPath) then
+             print("[MAKITO DEBUG]: Carregando local: " .. localPath)
+             return loadstring(readfile(localPath))()
+         else
+             local url = githubBase .. name .. ".lua"
+             print("[MAKITO DEBUG]: Baixando do GitHub: " .. url)
+             local content = game:HttpGet(url)
+             if content and content ~= "" then
+                 return loadstring(content)()
+             else
+                 error("Conteudo vazio retornado do GitHub")
+             end
+         end
+     end)
+     
+     if success then
+         print("[MAKITO DEBUG]: Modulo " .. name .. " carregado com sucesso!")
+         return result
+     else
+         local err = "[MAKITO HUB ERROR]: Falha ao carregar modulo " .. name .. " -> " .. tostring(result)
+         warn(err)
+         -- Tenta notificar na tela se o Utils ja existir
+         pcall(function() 
+             game:GetService("StarterGui"):SetCore("SendNotification", {
+                 Title = "Erro de Carregamento",
+                 Text = "Falha no modulo: " .. name,
+                 Duration = 10
+             })
+         end)
+         return nil
+     end
+ end
 
 local Settings = LoadModule("Settings")
 local Data = LoadModule("Data")

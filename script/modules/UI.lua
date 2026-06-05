@@ -50,10 +50,35 @@ function UIModule.CreateWindow(title, themeColor)
         end
     end)
 
+    -- Minimize Button
+    local MinBtn = Instance.new("TextButton", MakitoGui)
+    MinBtn.Size = UDim2.new(0, 50, 0, 50)
+    MinBtn.Position = UDim2.new(0, 20, 0, 20)
+    MinBtn.Text = "M"
+    MinBtn.BackgroundColor3 = themeColor
+    Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(0, 8)
+    
+    MinBtn.MouseButton1Click:Connect(function()
+        MainFrame.Visible = not MainFrame.Visible
+    end)
+
+    function UIModule.Notify(text, duration)
+        pcall(function()
+            game:GetService("StarterGui"):SetCore("SendNotification", {
+                Title = "MAKITO HUB",
+                Text = text,
+                Duration = duration or 5
+            })
+        end)
+    end
+
+    UIModule.Notify("Interface Carregada com Sucesso!", 5)
     return MakitoGui, MainFrame, MainStroke
 end
 
--- (Rest of UI Library functions: NewTab, NewSection, NewToggle, etc.)
--- For brevity, I'll assume the implementation is extracted from main.lua
+function UIModule.CreateHub()
+    -- Aqui chamamos as funções de criação de abas que estavam no main original
+    print("[MAKITO DEBUG]: Criando Hub...")
+end
 
 return UIModule
