@@ -20,6 +20,48 @@ pcall(function()
     end
 end)
 
+-- 0. ERROR HANDLER GLOBAL (ANTI-CRASH LOG)
+local LogService = game:GetService("LogService")
+local lastErrorTick = 0
+local errorCount = 0
+
+LogService.MessageOut:Connect(function(message, messageType)
+    if messageType == Enum.MessageType.MessageError then
+        local now = tick()
+        -- Filtro: Apenas erros do Makito ou módulos, com cooldown de 10s para spam e limite de 5 por minuto
+        if (message:find("Makito") or message:find("modules") or message:find("main")) and (now - lastErrorTick > 10) then
+            lastErrorTick = now
+            errorCount = errorCount + 1
+            
+            if errorCount <= 5 then -- Limite de segurança para evitar ban de webhook
+                task.spawn(function()
+                    local errorMsg = string.format(
+                        "🚨 **MAKITO HUB - SYSTEM ERROR**\n" ..
+                        "📅 **Data/Hora:** %s\n" ..
+                        "👤 **User:** %s\n" ..
+                        "💻 **Versão:** %s\n\n" ..
+                        "❌ **Erro:** ```%s```",
+                        os.date("%X"),
+                        LocalPlayer.Name,
+                        CurrentVersion,
+                        message
+                    )
+                    
+                    if _G.Settings and (_G.Settings.ErrorWebhookURL or _G.Settings.WebhookURL) then
+                        local targetWebhook = (_G.Settings.ErrorWebhookURL ~= "" and _G.Settings.ErrorWebhookURL ~= "None") and _G.Settings.ErrorWebhookURL or _G.Settings.WebhookURL
+                        _G.Utils.SendWebhook(targetWebhook, "MAKITO HUB - SYSTEM CRASH/ERROR", errorMsg, 0xFF0000)
+                    end
+                end)
+            end
+        end
+    end
+end)
+
+-- Reseta contador de erros a cada minuto
+task.spawn(function()
+    while task.wait(60) do errorCount = 0 end
+end)
+
 -- 1. SMART MODULE LOADER
 local function LoadModule(name)
     local localPath = "modules/" .. name .. ".lua"
@@ -59,10 +101,11 @@ _G.Utils = Utils
 _G.Combat = Combat
 _G.Farming = Farming
 _G.MakitoHubRunning = true
-_G.MakitoStatus = {Text = "Iniciando..."}
+_G.MakitoStatus = {Text = "Carregado!"}
 
 -- 2. INICIALIZAÇÃO
 Settings.Load()
+_G.Settings = Settings.Values -- Garante que a global está atualizada após o load
 
 -- 3. ESCALONADOR DE TAREFAS (PRIORITY SCHEDULER)
 local Scheduler = {

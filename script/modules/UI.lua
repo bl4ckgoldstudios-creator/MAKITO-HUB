@@ -558,7 +558,8 @@ function UIModule.CreateHub()
 
     local ConfigTab = UIModule.NewTab("Config")
     UIModule.NewSection(ConfigTab, "Discord Webhook")
-    UIModule.NewTextBox(ConfigTab, "Webhook URL", "Paste URL here", "WebhookURL")
+    UIModule.NewTextBox(ConfigTab, "Stats Webhook", "URL para Logs de Level/Beli", "WebhookURL")
+    UIModule.NewTextBox(ConfigTab, "Error Webhook", "URL para Logs de Erros/Crash", "ErrorWebhookURL")
     UIModule.NewSection(ConfigTab, "Script Control")
     UIModule.NewToggle(ConfigTab, "Enable Script", "MakitoHubRunning", function(val)
         _G.MakitoHubRunning = val

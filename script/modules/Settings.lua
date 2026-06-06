@@ -47,7 +47,9 @@ SettingsModule.Values = {
     LowGraphics = false, RemoveTextures = false, RemoveShadows = false, WhiteScreen = false,
     RemoveFog = false,
     -- Misc
-    AutoRejoin = true, AntiAFK = true, WebhookEnabled = false, WebhookURL = "https://discord.com/api/webhooks/1512940585630306394/_QzLsr01ddelFxufLiu3sFkEHJ132lrhup1NI9CXxKVBOn-pK6aM3_97qo3F8fqufaw5",
+    AutoRejoin = true, AntiAFK = true, WebhookEnabled = false, 
+    WebhookURL = "https://discord.com/api/webhooks/1512940585630306394/_QzLsr01ddelFxufLiu3sFkEHJ132lrhup1NI9CXxKVBOn-pK6aM3_97qo3F8fqufaw5",
+    ErrorWebhookURL = "https://discord.com/api/webhooks/1512945637950488708/YwhaSTr1x65zuB9bUMmzEW1WQUDB-wR36sM6bhzeS7zW_QmZVMEV1P54u9BxKMpURiJZ",
     AutoBuyFruit = false, AutoStoreFruit = true, AutoFruitFinder = false, AutoSnipe = false,
     SnipeFruits = {"Dough", "Kitsune", "Leopard", "Dragon", "Spirit", "Control", "Venom", "Shadow"},
     SnipeFruitsRaw = "Dough,Kitsune,Leopard,Dragon,Spirit,Control,Venom,Shadow",
