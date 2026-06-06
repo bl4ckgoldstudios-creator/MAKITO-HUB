@@ -1,84 +1,48 @@
--- MAKITO HUB PRO - SUPREME EDITION
--- Versão: 8.1 (Início do Refinamento)
-
+-- MAKITO HUB PRO - SUPREME EDITION (REVISADO)
+-- 0. ERROR HANDLER GLOBAL (PRIMEIRA LINHA)
+local LogService = game:GetService("LogService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local HttpService = game:GetService("HttpService")
-
--- 0. AUTO-UPDATE CHECK
-local CurrentVersion = "8.1"
-pcall(function()
-    local versionUrl = "https://raw.githubusercontent.com/bl4ckgoldstudios-creator/MAKITO-HUB/refs/heads/main/version.txt"
-    local onlineVersion = game:HttpGet(versionUrl):gsub("%s+", "")
-    if onlineVersion ~= CurrentVersion then
-        warn("[MAKITO HUB]: Nova versao disponivel (" .. onlineVersion .. ")! Re-execute o script.")
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "ATUALIZAÇÃO DISPONÍVEL",
-            Text = "Versão " .. onlineVersion .. " detectada no GitHub!",
-            Duration = 15
-        })
-    end
-end)
-
--- 0. ERROR HANDLER GLOBAL (ANTI-CRASH LOG)
-local LogService = game:GetService("LogService")
 local lastErrorTick = 0
 local errorCount = 0
 
 LogService.MessageOut:Connect(function(message, messageType)
     if messageType == Enum.MessageType.MessageError then
         local now = tick()
-        -- Filtro: Apenas erros do Makito ou módulos, com cooldown de 10s para spam e limite de 5 por minuto
         if (message:find("Makito") or message:find("modules") or message:find("main")) and (now - lastErrorTick > 10) then
             lastErrorTick = now
             errorCount = errorCount + 1
-            
-            if errorCount <= 5 then -- Limite de segurança para evitar ban de webhook
+            if errorCount <= 5 then
                 task.spawn(function()
-                    local errorMsg = string.format(
-                        "🚨 **MAKITO HUB - SYSTEM ERROR**\n" ..
-                        "📅 **Data/Hora:** %s\n" ..
-                        "👤 **User:** %s\n" ..
-                        "💻 **Versão:** %s\n\n" ..
-                        "❌ **Erro:** ```%s```",
-                        os.date("%X"),
-                        LocalPlayer.Name,
-                        CurrentVersion,
-                        message
-                    )
-                    
+                    local errorMsg = string.format("🚨 **MAKITO HUB - SYSTEM ERROR**\n📅 **Data/Hora:** %s\n👤 **User:** %s\n❌ **Erro:** ```%s```", os.date("%X"), LocalPlayer.Name, message)
                     if _G.Settings and (_G.Settings.ErrorWebhookURL or _G.Settings.WebhookURL) then
                         local targetWebhook = (_G.Settings.ErrorWebhookURL ~= "" and _G.Settings.ErrorWebhookURL ~= "None") and _G.Settings.ErrorWebhookURL or _G.Settings.WebhookURL
-                        _G.Utils.SendWebhook(targetWebhook, "MAKITO HUB - SYSTEM CRASH/ERROR", errorMsg, 0xFF0000)
+                        pcall(function()
+                            (syn and syn.request or http_request or request)({
+                                Url = targetWebhook,
+                                Method = "POST",
+                                Headers = {["Content-Type"] = "application/json"},
+                                Body = HttpService:JSONEncode({["embeds"] = {{["title"] = "MAKITO HUB - SYSTEM CRASH", ["description"] = errorMsg, ["color"] = 0xFF0000}}})
+                            })
+                        end)
                     end
                 end)
             end
         end
     end
 end)
-
--- Reseta contador de erros a cada minuto
-task.spawn(function()
-    while task.wait(60) do errorCount = 0 end
-end)
+task.spawn(function() while task.wait(60) do errorCount = 0 end end)
 
 -- 1. SMART MODULE LOADER
 local function LoadModule(name)
     local localPath = "modules/" .. name .. ".lua"
     local githubBase = "https://raw.githubusercontent.com/bl4ckgoldstudios-creator/MAKITO-HUB/refs/heads/main/script/modules/"
-    
     local success, result = pcall(function()
-        if isfile and isfile(localPath) then
-            return loadstring(readfile(localPath))()
-        else
-            return loadstring(game:HttpGet(githubBase .. name .. ".lua"))()
-        end
+        if isfile and isfile(localPath) then return loadstring(readfile(localPath))()
+        else return loadstring(game:HttpGet(githubBase .. name .. ".lua"))() end
     end)
-    
-    if success and result then 
-        print("[MAKITO ELITE]: Modulo " .. name .. " carregado.")
-        return result 
-    end
+    if success and result then return result end
     warn("[MAKITO ELITE ERROR]: Falha no modulo " .. name .. " -> " .. tostring(result))
     return nil
 end
@@ -91,11 +55,13 @@ local Farming = LoadModule("Farming")
 local UI = LoadModule("UI")
 
 if not (Settings and Data and Utils and Combat and Farming and UI) then
-    LocalPlayer:Kick("ERRO CRITICO: Falha ao carregar Makito Elite. Verifique sua conexao.")
+    LocalPlayer:Kick("ERRO CRITICO: Falha ao carregar Makito. Verifique sua conexao.")
     return
 end
 
+-- INICIALIZAÇÃO GLOBAL (IMPORTANTE: ANTES DA UI)
 _G.Settings = Settings.Values
+Settings.Load() -- Carrega configs salvas
 _G.Data = Data
 _G.Utils = Utils
 _G.Combat = Combat
@@ -103,172 +69,69 @@ _G.Farming = Farming
 _G.MakitoHubRunning = true
 _G.MakitoStatus = {Text = "Carregado!"}
 
--- 2. INICIALIZAÇÃO
-Settings.Load()
-_G.Settings = Settings.Values -- Garante que a global está atualizada após o load
-
--- 3. ESCALONADOR DE TAREFAS (PRIORITY SCHEDULER)
-local Scheduler = {
-    High = {},   -- 100ms (Combate/Movimento)
-    Medium = {}, -- 500ms (Quest/Farm)
-    Low = {}     -- 2000ms (Stats/Visuals)
-}
-
-function AddTask(priority, name, func) Scheduler[priority][name] = func end
-
--- TAREFAS DE ALTA PRIORIDADE
-AddTask("High", "Combat", function()
-    if _G.Settings.FastAttack then Combat.StartFastAttack() else Combat.StopFastAttack() end
-    Combat.KillAuraLogic()
-    Combat.AimBotLogic()
-end)
-
--- TAREFAS DE MÉDIA PRIORIDADE
-AddTask("Medium", "Farm", function()
-    Farming.SupremeAutoFarm()
-    Farming.AutoFarmNearestLogic()
-end)
-
-AddTask("Medium", "AutomationLoop", function()
-    Farming.AutoSoulGuitarLogic()
-    Farming.AutoCDKLogic()
-    Farming.AutoGodhumanLogic()
-    Farming.AutoTrialLogic()
-    Farming.AutoNextSeaLogic()
-    Farming.AutoStatsLogic()
-    Farming.FruitLogic()
-    Farming.LeviathanLogic()
-    Farming.RaidLogic()
-    Farming.ShopLogic()
-    Farming.ChestFarmLogic()
-    Combat.AutoBountyLogic()
-end)
-
-AddTask("Medium", "Visuals", function()
-    Utils.SetFullBright(_G.Settings.FullBright)
-    Utils.RemoveFog(_G.Settings.RemoveFog)
-    
-    -- ESP UPDATE LOOP
-    Utils.ClearESP()
-    if _G.Settings.PlayerESP then
-        for _, v in ipairs(Players:GetPlayers()) do
-            if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
-                Utils.CreateESP(v.Character.HumanoidRootPart, v.Name .. " [" .. math.floor(v.Character.Humanoid.Health) .. "]", Color3.new(1, 0, 0))
-            end
-        end
-    end
-    if _G.Settings.EspFruits then
-        for _, v in ipairs(workspace:GetChildren()) do
-            if v:IsA("Tool") and (v.Name:find("Fruit") or v:FindFirstChild("Handle")) then
-                Utils.CreateESP(v.Handle, v.Name, Color3.new(1, 1, 0))
-            end
-        end
-    end
-    if _G.Settings.EspChests then
-        for _, v in ipairs(workspace:GetChildren()) do
-            if v.Name:find("Chest") then
-                Utils.CreateESP(v, "Chest", Color3.new(0, 1, 0))
-            end
-        end
-    end
-end)
-
-local lastWebhookTick = 0
-AddTask("Medium", "Webhook", function()
-    if _G.Settings.WebhookURL and _G.Settings.WebhookURL ~= "" and _G.Settings.WebhookURL ~= "None" then
-        local now = tick()
-        if now - lastWebhookTick >= 60 then
-            lastWebhookTick = now
-            
+-- 2. ESCALONADOR DE TAREFAS (LOOP SIMPLIFICADO)
+local function StartLoops()
+    -- HIGH PRIORITY (100ms)
+    task.spawn(function()
+        while _G.MakitoHubRunning do
             pcall(function()
-                local data = LocalPlayer:FindFirstChild("Data")
-                if not data then return end
-                
-                local level = data:FindFirstChild("Level") and data.Level.Value or 0
-                local beli = data:FindFirstChild("Beli") and data.Beli.Value or 0
-                local fragments = data:FindFirstChild("Fragments") and data.Fragments.Value or 0
-                
-                -- Detectar Fruta Atual
-                local currentFruit = "Nenhuma"
-                for _, v in ipairs(LocalPlayer.Character:GetChildren()) do
-                    if v:IsA("Tool") and (v.ToolTip == "Blox Fruit" or v.ToolTip == "Demon Fruit") then
-                        currentFruit = v.Name
-                        break
-                    end
-                end
-                if currentFruit == "Nenhuma" then
-                    for _, v in ipairs(LocalPlayer.Backpack:GetChildren()) do
-                        if v:IsA("Tool") and (v.ToolTip == "Blox Fruit" or v.ToolTip == "Demon Fruit") then
-                            currentFruit = v.Name
-                            break
-                        end
-                    end
-                end
-
-                local sea = Farming.GetSea()
-                local statusText = _G.MakitoStatus and _G.MakitoStatus.Text or "N/A"
-                
-                local formattedText = string.format(
-                    "**--- PLAYER STATS ---**\n" ..
-                    "👤 **User:** %s\n" ..
-                    "📈 **Level:** %d\n" ..
-                    "💰 **Beli:** %s\n" ..
-                    "💎 **Fragments:** %s\n" ..
-                    "🍎 **Fruit:** %s\n" ..
-                    "🌊 **Sea:** %d\n\n" ..
-                    "**--- MODULE STATUS ---**\n" ..
-                    "🚜 **Auto Farm:** %s\n" ..
-                    "🎯 **Auto Bounty:** %s\n" ..
-                    "⚔️ **Kill Aura:** %s\n" ..
-                    "⚡ **Fast Attack:** %s\n\n" ..
-                    "**--- CURRENT STATUS ---**\n" ..
-                    "📝 %s",
-                    LocalPlayer.Name,
-                    level,
-                    Utils.FormatNumber(beli),
-                    Utils.FormatNumber(fragments),
-                    currentFruit,
-                    sea,
-                    _G.Settings.AutoFarm and "✅ ON" or "❌ OFF",
-                    _G.Settings.AutoBounty and "✅ ON" or "❌ OFF",
-                    _G.Settings.KillAura and "✅ ON" or "❌ OFF",
-                    _G.Settings.FastAttack and "✅ ON" or "❌ OFF",
-                    statusText
-                )
-
-                Utils.SendWebhook(_G.Settings.WebhookURL, "MAKITO HUB - DATA SYNC (IA)", formattedText, 0x00FF96)
+                if _G.Settings.FastAttack then _G.Combat.StartFastAttack() else _G.Combat.StopFastAttack() end
+                _G.Combat.KillAuraLogic()
+                _G.Combat.AimBotLogic()
             end)
+            task.wait(0.1)
         end
-    end
-end)
+    end)
 
--- TAREFAS DE BAIXA PRIORIDADE
-AddTask("Low", "Protection", function()
-    Utils.CheckModerator()
-end)
+    -- MEDIUM PRIORITY (500ms)
+    task.spawn(function()
+        while _G.MakitoHubRunning do
+            pcall(function()
+                if _G.Settings.AutoFarm then _G.Farming.SupremeAutoFarm() end
+                if _G.Settings.AutoFarmNearest then _G.Farming.AutoFarmNearestLogic() end
+                
+                _G.Farming.AutoSoulGuitarLogic()
+                _G.Farming.AutoCDKLogic()
+                _G.Farming.AutoGodhumanLogic()
+                _G.Farming.AutoTrialLogic()
+                _G.Farming.AutoNextSeaLogic()
+                _G.Farming.AutoStatsLogic()
+                _G.Farming.FruitLogic()
+                _G.Farming.LeviathanLogic()
+                _G.Farming.RaidLogic()
+                _G.Farming.ShopLogic()
+                _G.Farming.ChestFarmLogic()
+                _G.Combat.AutoBountyLogic()
+            end)
+            task.wait(0.5)
+        end
+    end)
 
--- EXECUTOR DO ESCALONADOR
-task.spawn(function()
-    while _G.MakitoHubRunning do
-        for _, func in pairs(Scheduler.High) do pcall(func) end
-        task.wait(0.1)
-    end
-end)
+    -- VISUALS & WEBHOOK (2s)
+    task.spawn(function()
+        local lastWebhook = 0
+        while _G.MakitoHubRunning do
+            pcall(function()
+                _G.Utils.SetFullBright(_G.Settings.FullBright)
+                _G.Utils.RemoveFog(_G.Settings.RemoveFog)
+                
+                -- Webhook Sync (60s)
+                if tick() - lastWebhook >= 60 then
+                    lastWebhook = tick()
+                    -- Lógica do Webhook simplificada (enviar via Utils)
+                    local data = LocalPlayer:FindFirstChild("Data")
+                    if data then
+                        local stats = string.format("Level: %d | Beli: %s | Status: %s", data.Level.Value, _G.Utils.FormatNumber(data.Beli.Value), _G.MakitoStatus.Text)
+                        _G.Utils.SendWebhook(_G.Settings.WebhookURL, "MAKITO HUB - DATA SYNC", stats, 0x00FF96)
+                    end
+                end
+            end)
+            task.wait(2.0)
+        end
+    end)
+end
 
-task.spawn(function()
-    while _G.MakitoHubRunning do
-        for _, func in pairs(Scheduler.Medium) do pcall(func) end
-        task.wait(0.5)
-    end
-end)
-
-task.spawn(function()
-    while _G.MakitoHubRunning do
-        for _, func in pairs(Scheduler.Low) do pcall(func) end
-        task.wait(2.0)
-    end
-end)
-
--- 4. START UI
+-- 3. START
+StartLoops()
 UI.CreateHub()
-Utils.Notify("MAKITO HUB V8.0 ATIVADO!", 5)
+Utils.Notify("MAKITO HUB ATIVADO!", 5)
