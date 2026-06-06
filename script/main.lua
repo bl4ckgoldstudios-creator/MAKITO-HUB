@@ -1,38 +1,22 @@
--- MAKITO HUB PRO - SUPREME EDITION (REVISADO)
--- 0. ERROR HANDLER GLOBAL (PRIMEIRA LINHA)
+-- MAKITO HUB PRO - SUPREME EDITION (REVISADO V9)
+-- 0. ERROR HANDLER GLOBAL (LINHA 1 - ABSOLUTO)
 local LogService = game:GetService("LogService")
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local HttpService = game:GetService("HttpService")
-local lastErrorTick = 0
-local errorCount = 0
-
 LogService.MessageOut:Connect(function(message, messageType)
-    if messageType == Enum.MessageType.MessageError then
-        local now = tick()
-        if (message:find("Makito") or message:find("modules") or message:find("main")) and (now - lastErrorTick > 10) then
-            lastErrorTick = now
-            errorCount = errorCount + 1
-            if errorCount <= 5 then
-                task.spawn(function()
-                    local errorMsg = string.format("🚨 **MAKITO HUB - SYSTEM ERROR**\n📅 **Data/Hora:** %s\n👤 **User:** %s\n❌ **Erro:** ```%s```", os.date("%X"), LocalPlayer.Name, message)
-                    if _G.Settings and (_G.Settings.ErrorWebhookURL or _G.Settings.WebhookURL) then
-                        local targetWebhook = (_G.Settings.ErrorWebhookURL ~= "" and _G.Settings.ErrorWebhookURL ~= "None") and _G.Settings.ErrorWebhookURL or _G.Settings.WebhookURL
-                        pcall(function()
-                            (syn and syn.request or http_request or request)({
-                                Url = targetWebhook,
-                                Method = "POST",
-                                Headers = {["Content-Type"] = "application/json"},
-                                Body = HttpService:JSONEncode({["embeds"] = {{["title"] = "MAKITO HUB - SYSTEM CRASH", ["description"] = errorMsg, ["color"] = 0xFF0000}}})
-                            })
-                        end)
-                    end
-                end)
-            end
+    if messageType == Enum.MessageType.MessageOutputReg or messageType == Enum.MessageType.MessageError then
+        if string.find(message:lower(), "makito") or string.find(message:lower(), "fail") or string.find(message:lower(), "nil") then
+            pcall(function()
+                if _G.Utils and _G.Settings and (_G.Settings.ErrorWebhookURL or _G.Settings.WebhookURL) then
+                    local target = (_G.Settings.ErrorWebhookURL ~= "" and _G.Settings.ErrorWebhookURL ~= "None") and _G.Settings.ErrorWebhookURL or _G.Settings.WebhookURL
+                    _G.Utils.SendWebhook(target, "⚠️ MAKITO HUB - ERRO DETECTADO", "```\n" .. message .. "\n```", 0xFF0000)
+                end
+            end)
         end
     end
 end)
-task.spawn(function() while task.wait(60) do errorCount = 0 end end)
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local HttpService = game:GetService("HttpService")
 
 -- 1. SMART MODULE LOADER
 local function LoadModule(name)
@@ -43,7 +27,7 @@ local function LoadModule(name)
         else return loadstring(game:HttpGet(githubBase .. name .. ".lua"))() end
     end)
     if success and result then return result end
-    warn("[MAKITO ELITE ERROR]: Falha no modulo " .. name .. " -> " .. tostring(result))
+    warn("[MAKITO ERROR]: Falha ao carregar modulo " .. name .. " -> " .. tostring(result))
     return nil
 end
 
@@ -55,13 +39,13 @@ local Farming = LoadModule("Farming")
 local UI = LoadModule("UI")
 
 if not (Settings and Data and Utils and Combat and Farming and UI) then
-    LocalPlayer:Kick("ERRO CRITICO: Falha ao carregar Makito. Verifique sua conexao.")
+    LocalPlayer:Kick("ERRO CRITICO: Falha na conexao com Makito Hub.")
     return
 end
 
--- INICIALIZAÇÃO GLOBAL (IMPORTANTE: ANTES DA UI)
+-- 2. INICIALIZAÇÃO GLOBAL (ORDEM CRITICA)
 _G.Settings = Settings.Values
-Settings.Load() -- Carrega configs salvas
+Settings.Load() -- Sincroniza JSON local com _G.Settings
 _G.Data = Data
 _G.Utils = Utils
 _G.Combat = Combat
@@ -69,9 +53,9 @@ _G.Farming = Farming
 _G.MakitoHubRunning = true
 _G.MakitoStatus = {Text = "Carregado!"}
 
--- 2. ESCALONADOR DE TAREFAS (LOOP SIMPLIFICADO)
+-- 3. ESCALONADOR DE TAREFAS (LOOPS ATIVOS)
 local function StartLoops()
-    -- HIGH PRIORITY (100ms)
+    -- LOOP DE ALTA PRIORIDADE (COMBATE)
     task.spawn(function()
         while _G.MakitoHubRunning do
             pcall(function()
@@ -83,13 +67,20 @@ local function StartLoops()
         end
     end)
 
-    -- MEDIUM PRIORITY (500ms)
+    -- LOOP DE MÉDIA PRIORIDADE (FARM/AUTOMAÇÕES)
     task.spawn(function()
         while _G.MakitoHubRunning do
             pcall(function()
-                if _G.Settings.AutoFarm then _G.Farming.SupremeAutoFarm() end
-                if _G.Settings.AutoFarmNearest then _G.Farming.AutoFarmNearestLogic() end
+                -- LÓGICA DE FARM SUPREMO
+                if _G.Settings.AutoFarm then 
+                    _G.Farming.SupremeAutoFarm() 
+                end
                 
+                if _G.Settings.AutoFarmNearest then 
+                    _G.Farming.AutoFarmNearestLogic() 
+                end
+                
+                -- OUTRAS AUTOMAÇÕES
                 _G.Farming.AutoSoulGuitarLogic()
                 _G.Farming.AutoCDKLogic()
                 _G.Farming.AutoGodhumanLogic()
@@ -107,7 +98,7 @@ local function StartLoops()
         end
     end)
 
-    -- VISUALS & WEBHOOK (2s)
+    -- LOOP DE TELEMETRIA E VISUAIS (WEBHOOK DETALHADO)
     task.spawn(function()
         local lastWebhook = 0
         while _G.MakitoHubRunning do
@@ -115,23 +106,64 @@ local function StartLoops()
                 _G.Utils.SetFullBright(_G.Settings.FullBright)
                 _G.Utils.RemoveFog(_G.Settings.RemoveFog)
                 
-                -- Webhook Sync (60s)
-                if tick() - lastWebhook >= 60 then
-                    lastWebhook = tick()
-                    -- Lógica do Webhook simplificada (enviar via Utils)
+                -- WEBHOOK SYNC (FORMATO DETALHADO RESTAURADO)
+                local now = tick()
+                if now - lastWebhook >= 60 then
+                    lastWebhook = now
                     local data = LocalPlayer:FindFirstChild("Data")
-                    if data then
-                        local stats = string.format("Level: %d | Beli: %s | Status: %s", data.Level.Value, _G.Utils.FormatNumber(data.Beli.Value), _G.MakitoStatus.Text)
-                        _G.Utils.SendWebhook(_G.Settings.WebhookURL, "MAKITO HUB - DATA SYNC", stats, 0x00FF96)
+                    if data and _G.Settings.WebhookURL ~= "" then
+                        -- DETECÇÃO DE FRUTA
+                        local currentFruit = "Nenhuma"
+                        for _, v in ipairs(LocalPlayer.Character:GetChildren()) do
+                            if v:IsA("Tool") and (v.ToolTip == "Blox Fruit" or v.ToolTip == "Demon Fruit") then
+                                currentFruit = v.Name break
+                            end
+                        end
+                        if currentFruit == "Nenhuma" then
+                            for _, v in ipairs(LocalPlayer.Backpack:GetChildren()) do
+                                if v:IsA("Tool") and (v.ToolTip == "Blox Fruit" or v.ToolTip == "Demon Fruit") then
+                                    currentFruit = v.Name break
+                                end
+                            end
+                        end
+
+                        local formattedText = string.format(
+                            "**--- PLAYER STATS ---**\n" ..
+                            "👤 **User:** %s\n" ..
+                            "📈 **Level:** %d\n" ..
+                            "💰 **Beli:** %s\n" ..
+                            "💎 **Fragments:** %s\n" ..
+                            "🍎 **Fruit:** %s\n" ..
+                            "🌊 **Sea:** %d\n\n" ..
+                            "**--- MODULE STATUS ---**\n" ..
+                            "🚜 **Auto Farm:** %s\n" ..
+                            "🎯 **Auto Bounty:** %s\n" ..
+                            "⚔️ **Kill Aura:** %s\n" ..
+                            "⚡ **Fast Attack:** %s\n\n" ..
+                            "**--- CURRENT STATUS ---**\n" ..
+                            "📝 %s",
+                            LocalPlayer.Name,
+                            data.Level.Value,
+                            _G.Utils.FormatNumber(data.Beli.Value),
+                            _G.Utils.FormatNumber(data.Fragments.Value),
+                            currentFruit,
+                            _G.Farming.GetSea(),
+                            _G.Settings.AutoFarm and "✅ ON" or "❌ OFF",
+                            _G.Settings.AutoBounty and "✅ ON" or "❌ OFF",
+                            _G.Settings.KillAura and "✅ ON" or "❌ OFF",
+                            _G.Settings.FastAttack and "✅ ON" or "❌ OFF",
+                            _G.MakitoStatus.Text
+                        )
+                        _G.Utils.SendWebhook(_G.Settings.WebhookURL, "MAKITO HUB - DATA SYNC (IA)", formattedText, 0x00FF96)
                     end
                 end
             end)
-            task.wait(2.0)
+            task.wait(2)
         end
     end)
 end
 
--- 3. START
+-- 4. START
 StartLoops()
 UI.CreateHub()
-Utils.Notify("MAKITO HUB ATIVADO!", 5)
+Utils.Notify("MAKITO HUB V9 ATIVADO!", 5)
