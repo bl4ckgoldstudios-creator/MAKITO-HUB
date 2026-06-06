@@ -29,9 +29,13 @@ end
 
 -- SUPREME QUEST HANDLER (ZERO DELAY)
 function FarmingModule.SupremeQuestHandler(QuestData)
-    local level = LocalPlayer.Data.Level.Value
+    local data = LocalPlayer:FindFirstChild("Data")
+    if not data or not data:FindFirstChild("Level") then return nil end
+    
+    local level = data.Level.Value
     local sea = FarmingModule.GetSea()
     local currentQuests = QuestData[sea]
+    if not currentQuests then return nil end
     
     -- IDENTIFICAÇÃO INSTANTÂNEA DA MELHOR MISSÃO
     local BestQuest = nil
@@ -45,11 +49,11 @@ function FarmingModule.SupremeQuestHandler(QuestData)
 
     if not BestQuest then return nil end
 
-    -- VERIFICAÇÃO DE MISSÃO ATIVA SEM DEPENDER DA UI (MAIS RÁPIDO)
+    -- VERIFICAÇÃO DE MISSÃO ATIVA (ROBUSTA)
     local hasQuest = false
     pcall(function()
-        local questContainer = LocalPlayer.PlayerGui.Main.Quest.Container
-        if questContainer.Visible and questContainer.QuestTitle.Title.Text ~= "" then
+        local questGui = LocalPlayer.PlayerGui:FindFirstChild("Main") and LocalPlayer.PlayerGui.Main:FindFirstChild("Quest")
+        if questGui and questGui.Visible and questGui.Container.QuestTitle.Title.Text ~= "" then
             hasQuest = true
         end
     end)
@@ -62,10 +66,8 @@ function FarmingModule.SupremeQuestHandler(QuestData)
         if dist > 15 then
             _G.Utils.TweenTo(npcPos * CFrame.new(0, 15, 0), 500)
         else
-            -- SPAM DE REMOTOS COM BYPASS DE COOLDOWN
-            for i = 1, 5 do
-                _G.Utils.SafeRemote("StartQuest", BestQuest.Name, BestQuest.ID)
-            end
+            -- INTERAÇÃO COM NPC E START QUEST
+            _G.Utils.SafeRemote("StartQuest", BestQuest.Name, BestQuest.ID)
         end
     end
     

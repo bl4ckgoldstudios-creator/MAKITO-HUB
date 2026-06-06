@@ -10,28 +10,27 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
 LogService.MessageOut:Connect(function(message, messageType)
-    if messageType == Enum.MessageType.MessageOutputReg or messageType == Enum.MessageType.MessageError then
-        local lowerMsg = message:lower()
-        if lowerMsg:find("makito") or lowerMsg:find("fail") or lowerMsg:find("nil") or messageType == Enum.MessageType.MessageError then
-            pcall(function()
-                local data = {
-                    ["embeds"] = {{
-                        ["title"] = "⚠️ MAKITO HUB - ERRO DETECTADO",
-                        ["description"] = "```\n" .. message .. "\n```",
-                        ["color"] = 0xFF0000,
-                        ["footer"] = {["text"] = "User: " .. LocalPlayer.Name .. " | " .. os.date("%X")}
-                    }}
-                }
-                local success, err = pcall(function()
-                    (syn and syn.request or http_request or request)({
-                        Url = ERROR_WEBHOOK,
-                        Method = "POST",
-                        Headers = {["Content-Type"] = "application/json"},
-                        Body = HttpService:JSONEncode(data)
-                    })
-                end)
-            end)
-        end
+    if messageType == Enum.MessageType.MessageError then
+        pcall(function()
+            local data = {
+                ["embeds"] = {{
+                    ["title"] = "🚨 MAKITO HUB - CRITICAL ERROR",
+                    ["description"] = "```lua\n" .. message .. "\n```",
+                    ["color"] = 0xFF0000,
+                    ["fields"] = {
+                        {["name"] = "👤 Player", ["value"] = LocalPlayer.Name, ["inline"] = true},
+                        {["name"] = "📈 Level", ["value"] = tostring(LocalPlayer:FindFirstChild("Data") and LocalPlayer.Data.Level.Value or "Unknown"), ["inline"] = true},
+                        {["name"] = "🕒 Time", ["value"] = os.date("%X"), ["inline"] = true}
+                    }
+                }}
+            }
+            (syn and syn.request or http_request or request)({
+                Url = ERROR_WEBHOOK,
+                Method = "POST",
+                Headers = {["Content-Type"] = "application/json"},
+                Body = HttpService:JSONEncode(data)
+            })
+        end)
     end
 end)
 

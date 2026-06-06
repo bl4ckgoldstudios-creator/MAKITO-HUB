@@ -69,13 +69,44 @@ DataModule.QuestData = {
         {Min = 700, Name = "Area1Quest", NPC = "Quest Giver", ID = 1, Enemy = "Raider", Pos = CFrame.new(-425, 72, 1836)},
         {Min = 725, Name = "Area1Quest", NPC = "Quest Giver", ID = 2, Enemy = "Mercenary", Pos = CFrame.new(-425, 72, 1836)},
         {Min = 750, Name = "Area2Quest", NPC = "Quest Giver", ID = 1, Enemy = "Swan Pirate", Pos = CFrame.new(-425, 72, 1836)},
-        {Min = 775, Name = "Area2Quest", NPC = "Quest Giver", ID = 2, Enemy = "Factory Worker", Pos = CFrame.new(-425, 72, 1836)}
-        -- ... Adicionar mais conforme necessário
+        {Min = 775, Name = "Area2Quest", NPC = "Quest Giver", ID = 2, Enemy = "Factory Worker", Pos = CFrame.new(-425, 72, 1836)},
+        {Min = 800, Name = "FajitaQuest", NPC = "Quest Giver", ID = 1, Enemy = "Marine Lieutenant", Pos = CFrame.new(-425, 72, 1836)},
+        {Min = 875, Name = "ZombieQuest", NPC = "Quest Giver", ID = 1, Enemy = "Zombie", Pos = CFrame.new(-5497, 47, -795)},
+        {Min = 900, Name = "ZombieQuest", NPC = "Quest Giver", ID = 2, Enemy = "Vampire", Pos = CFrame.new(-5497, 47, -795)},
+        {Min = 925, Name = "SnowMountainQuest", NPC = "Quest Giver", ID = 1, Enemy = "Snow Trooper", Pos = CFrame.new(609, 401, -5372)},
+        {Min = 950, Name = "SnowMountainQuest", NPC = "Quest Giver", ID = 2, Enemy = "Winter Warrior", Pos = CFrame.new(609, 401, -5372)},
+        {Min = 1000, Name = "IceCastleQuest", NPC = "Quest Giver", ID = 1, Enemy = "Reborn Skeleton", Pos = CFrame.new(6061, 26, -6370)},
+        {Min = 1050, Name = "IceCastleQuest", NPC = "Quest Giver", ID = 2, Enemy = "Awakened Ice Admiral", Pos = CFrame.new(6061, 26, -6370)},
+        {Min = 1100, Name = "FireSideQuest", NPC = "Quest Giver", ID = 1, Enemy = "Magma Ninja", Pos = CFrame.new(-541, 70, -12133)},
+        {Min = 1125, Name = "FireSideQuest", NPC = "Quest Giver", ID = 2, Enemy = "Lava Pirate", Pos = CFrame.new(-541, 70, -12133)},
+        {Min = 1150, Name = "ColdSideQuest", NPC = "Quest Giver", ID = 1, Enemy = "Lab Subordinate", Pos = CFrame.new(-541, 70, -12133)},
+        {Min = 1175, Name = "ColdSideQuest", NPC = "Quest Giver", ID = 2, Enemy = "Horned Warrior", Pos = CFrame.new(-541, 70, -12133)},
+        {Min = 1250, Name = "ShipQuest1", NPC = "Quest Giver", ID = 1, Enemy = "Ship Deckhand", Pos = CFrame.new(1037, 125, 32911)},
+        {Min = 1275, Name = "ShipQuest1", NPC = "Quest Giver", ID = 2, Enemy = "Ship Engineer", Pos = CFrame.new(1037, 125, 32911)},
+        {Min = 1300, Name = "ShipQuest2", NPC = "Quest Giver", ID = 1, Enemy = "Ship Steward", Pos = CFrame.new(1037, 125, 32911)},
+        {Min = 1325, Name = "ShipQuest2", NPC = "Quest Giver", ID = 2, Enemy = "Ship Officer", Pos = CFrame.new(1037, 125, 32911)}
     },
     [3] = {
         {Min = 1500, Name = "PortTownQuest", NPC = "Quest Giver", ID = 1, Enemy = "Pirate Millionaire", Pos = CFrame.new(-8053, 10, 5233)},
-        {Min = 1525, Name = "PortTownQuest", NPC = "Quest Giver", ID = 2, Enemy = "Pistol Billionaire", Pos = CFrame.new(-8053, 10, 5233)}
-        -- ... Adicionar mais conforme necessário
+        {Min = 1525, Name = "PortTownQuest", NPC = "Quest Giver", ID = 2, Enemy = "Pistol Billionaire", Pos = CFrame.new(-8053, 10, 5233)},
+        {Min = 1575, Name = "HydraIslandQuest", NPC = "Quest Giver", ID = 1, Enemy = "Dragon Crew Warrior", Pos = CFrame.new(5259, 604, 346)},
+        {Min = 1600, Name = "HydraIslandQuest", NPC = "Quest Giver", ID = 2, Enemy = "Dragon Crew Archer", Pos = CFrame.new(5259, 604, 346)},
+        {Min = 1625, Name = "HydraIslandQuest", NPC = "Quest Giver", ID = 3, Enemy = "Female Island Pirate", Pos = CFrame.new(5259, 604, 346)},
+        {Min = 1700, Name = "TurtleQuest", NPC = "Quest Giver", ID = 1, Enemy = "Fishman Raider", Pos = CFrame.new(-13233, 532, -7594)},
+        {Min = 1725, Name = "TurtleQuest", NPC = "Quest Giver", ID = 2, Enemy = "Fishman Captain", Pos = CFrame.new(-13233, 532, -7594)},
+        {Min = 1775, Name = "TurtleQuest", NPC = "Quest Giver", ID = 3, Enemy = "Forest Pirate", Pos = CFrame.new(-13233, 532, -7594)},
+        {Min = 1800, Name = "TurtleQuest", NPC = "Quest Giver", ID = 4, Enemy = "Mythical Pirate", Pos = CFrame.new(-13233, 532, -7594)},
+        {Min = 1900, Name = "HauntedCastleQuest", NPC = "Quest Giver", ID = 1, Enemy = "Reborn Skeleton", Pos = CFrame.new(-9515, 164, -5785)},
+        {Min = 1925, Name = "HauntedCastleQuest", NPC = "Quest Giver", ID = 2, Enemy = "Living Zombie", Pos = CFrame.new(-9515, 164, -5785)},
+        {Min = 1975, Name = "HauntedCastleQuest", NPC = "Quest Giver", ID = 3, Enemy = "Demonic Soul", Pos = CFrame.new(-9515, 164, -5785)},
+        {Min = 2000, Name = "HauntedCastleQuest", NPC = "Quest Giver", ID = 4, Enemy = "Posessed Mummy", Pos = CFrame.new(-9515, 164, -5785)},
+        {Min = 2100, Name = "IceCreamQuest", NPC = "Quest Giver", ID = 1, Enemy = "Cookie Crafter", Pos = CFrame.new(-1147, 14, -11514)},
+        {Min = 2125, Name = "IceCreamQuest", NPC = "Quest Giver", ID = 2, Enemy = "Cake Guard", Pos = CFrame.new(-1147, 14, -11514)},
+        {Min = 2200, Name = "CakeQuest", NPC = "Quest Giver", ID = 1, Enemy = "Baking Staff", Pos = CFrame.new(-1147, 14, -11514)},
+        {Min = 2275, Name = "ChocolateQuest", NPC = "Quest Giver", ID = 1, Enemy = "Cocoa Warrior", Pos = CFrame.new(-1147, 14, -11514)},
+        {Min = 2300, Name = "ChocolateQuest", NPC = "Quest Giver", ID = 2, Enemy = "Chocolate Bar Battler", Pos = CFrame.new(-1147, 14, -11514)},
+        {Min = 2450, Name = "TikiQuest1", NPC = "Quest Giver", ID = 1, Enemy = "Sun-kissed Warrior", Pos = CFrame.new(-16234, 12, 467)},
+        {Min = 2500, Name = "TikiQuest1", NPC = "Quest Giver", ID = 2, Enemy = "Isle Outlaw", Pos = CFrame.new(-16234, 12, 467)}
     }
 }
 
