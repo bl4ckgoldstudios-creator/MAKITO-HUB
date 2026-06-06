@@ -228,4 +228,14 @@ function UtilsModule.CheckModerator()
     end
 end
 
+-- FORMATTING UTILS
+function UtilsModule.FormatNumber(val)
+    local formatted = tostring(val)
+    while true do  
+        formatted, k = string.gsub(formatted, "^(-?%d+)(%d%d%d)", '%1.%2')
+        if (k == 0) then break end
+    end
+    return formatted
+end
+
 return UtilsModule

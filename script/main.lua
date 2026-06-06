@@ -130,12 +130,71 @@ AddTask("Medium", "Visuals", function()
     end
 end)
 
+local lastWebhookTick = 0
 AddTask("Medium", "Webhook", function()
-    if _G.Settings.WebhookURL and _G.Settings.WebhookURL ~= "" then
-        local level = LocalPlayer.Data.Level.Value
-        if not _G.LastWebhookLevel or level >= _G.LastWebhookLevel + 10 then
-            _G.LastWebhookLevel = level
-            Utils.SendWebhook(_G.Settings.WebhookURL, "MAKITO HUB - PROGRESSO", "Level Atual: " .. level .. "\nMar: " .. Farming.GetSea(), 0x00FF96)
+    if _G.Settings.WebhookURL and _G.Settings.WebhookURL ~= "" and _G.Settings.WebhookURL ~= "None" then
+        local now = tick()
+        if now - lastWebhookTick >= 60 then
+            lastWebhookTick = now
+            
+            pcall(function()
+                local data = LocalPlayer:FindFirstChild("Data")
+                if not data then return end
+                
+                local level = data:FindFirstChild("Level") and data.Level.Value or 0
+                local beli = data:FindFirstChild("Beli") and data.Beli.Value or 0
+                local fragments = data:FindFirstChild("Fragments") and data.Fragments.Value or 0
+                
+                -- Detectar Fruta Atual
+                local currentFruit = "Nenhuma"
+                for _, v in ipairs(LocalPlayer.Character:GetChildren()) do
+                    if v:IsA("Tool") and (v.ToolTip == "Blox Fruit" or v.ToolTip == "Demon Fruit") then
+                        currentFruit = v.Name
+                        break
+                    end
+                end
+                if currentFruit == "Nenhuma" then
+                    for _, v in ipairs(LocalPlayer.Backpack:GetChildren()) do
+                        if v:IsA("Tool") and (v.ToolTip == "Blox Fruit" or v.ToolTip == "Demon Fruit") then
+                            currentFruit = v.Name
+                            break
+                        end
+                    end
+                end
+
+                local sea = Farming.GetSea()
+                local statusText = _G.MakitoStatus and _G.MakitoStatus.Text or "N/A"
+                
+                local formattedText = string.format(
+                    "**--- PLAYER STATS ---**\n" ..
+                    "👤 **User:** %s\n" ..
+                    "📈 **Level:** %d\n" ..
+                    "💰 **Beli:** %s\n" ..
+                    "💎 **Fragments:** %s\n" ..
+                    "🍎 **Fruit:** %s\n" ..
+                    "🌊 **Sea:** %d\n\n" ..
+                    "**--- MODULE STATUS ---**\n" ..
+                    "🚜 **Auto Farm:** %s\n" ..
+                    "🎯 **Auto Bounty:** %s\n" ..
+                    "⚔️ **Kill Aura:** %s\n" ..
+                    "⚡ **Fast Attack:** %s\n\n" ..
+                    "**--- CURRENT STATUS ---**\n" ..
+                    "📝 %s",
+                    LocalPlayer.Name,
+                    level,
+                    Utils.FormatNumber(beli),
+                    Utils.FormatNumber(fragments),
+                    currentFruit,
+                    sea,
+                    _G.Settings.AutoFarm and "✅ ON" or "❌ OFF",
+                    _G.Settings.AutoBounty and "✅ ON" or "❌ OFF",
+                    _G.Settings.KillAura and "✅ ON" or "❌ OFF",
+                    _G.Settings.FastAttack and "✅ ON" or "❌ OFF",
+                    statusText
+                )
+
+                Utils.SendWebhook(_G.Settings.WebhookURL, "MAKITO HUB - DATA SYNC (IA)", formattedText, 0x00FF96)
+            end)
         end
     end
 end)

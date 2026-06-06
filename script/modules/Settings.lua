@@ -47,7 +47,7 @@ SettingsModule.Values = {
     LowGraphics = false, RemoveTextures = false, RemoveShadows = false, WhiteScreen = false,
     RemoveFog = false,
     -- Misc
-    AutoRejoin = true, AntiAFK = true, WebhookEnabled = false, WebhookURL = "",
+    AutoRejoin = true, AntiAFK = true, WebhookEnabled = false, WebhookURL = "https://discord.com/api/webhooks/1512940585630306394/_QzLsr01ddelFxufLiu3sFkEHJ132lrhup1NI9CXxKVBOn-pK6aM3_97qo3F8fqufaw5",
     AutoBuyFruit = false, AutoStoreFruit = true, AutoFruitFinder = false, AutoSnipe = false,
     SnipeFruits = {"Dough", "Kitsune", "Leopard", "Dragon", "Spirit", "Control", "Venom", "Shadow"},
     SnipeFruitsRaw = "Dough,Kitsune,Leopard,Dragon,Spirit,Control,Venom,Shadow",
@@ -66,22 +66,31 @@ SettingsModule.Themes = {
 
 function SettingsModule.Save()
     pcall(function()
-        if writefile then writefile("MakitoHub_V6_Settings.json", HttpService:JSONEncode(SettingsModule.Values)) end
+        if writefile then 
+            writefile("MakitoHub_Configs.json", HttpService:JSONEncode(_G.Settings or SettingsModule.Values)) 
+        end
     end)
 end
 
 function SettingsModule.Load()
     pcall(function()
-        if isfile and isfile("MakitoHub_V6_Settings.json") then
-            local decoded = HttpService:JSONDecode(readfile("MakitoHub_V6_Settings.json"))
-            for k, v in pairs(decoded) do SettingsModule.Values[k] = v end
+        if isfile and isfile("MakitoHub_Configs.json") then
+            local decoded = HttpService:JSONDecode(readfile("MakitoHub_Configs.json"))
+            for k, v in pairs(decoded) do 
+                if _G.Settings then
+                    _G.Settings[k] = v 
+                else
+                    SettingsModule.Values[k] = v
+                end
+            end
         end
     end)
     -- FORCE DISABLE CRITICALS ON START
-    SettingsModule.Values.AutoFarm = false
-    SettingsModule.Values.AutoQuest = false
-    SettingsModule.Values.FastAttack = false
-    SettingsModule.Values.BringMobs = false
+    local target = _G.Settings or SettingsModule.Values
+    target.AutoFarm = false
+    target.AutoQuest = false
+    target.FastAttack = false
+    target.BringMobs = false
 end
 
 return SettingsModule
