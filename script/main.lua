@@ -1,9 +1,30 @@
--- MAKITO HUB PRO - SUPREME EDITION (HARDCODED & SECURE)
--- 0. CONFIGURAÇÕES PRIVADAS (HARDCODED)
+-- MAKITO HUB PRO - V9.6 (DIAGNÓSTICO POR ETAPAS)
 local MAIN_WEBHOOK = "https://discord.com/api/webhooks/1512940585630306394/_QzLsr01ddelFxufLiu3sFkEHJ132lrhup1NI9CXxKVBOn-pK6aM3_97qo3F8fqufaw5"
 local ERROR_WEBHOOK = "https://discord.com/api/webhooks/1512945637950488708/YwhaSTr1x65zuB9bUMmzEW1WQUDB-wR36sM6bhzeS7zW_QmZVMEV1P54u9BxKMpURiJZ"
 
--- 0. ERROR HANDLER GLOBAL (LINHA 1 - IMEDIATO)
+-- 0. FUNÇÃO DE APITO (DEBUG LOGS)
+_G.MakitoDebug = function(step, detail)
+    pcall(function()
+        local requestFunc = syn and syn.request or http_request or request
+        if requestFunc then
+            requestFunc({
+                Url = ERROR_WEBHOOK,
+                Method = "POST",
+                Headers = {["Content-Type"] = "application/json"},
+                Body = game:GetService("HttpService"):JSONEncode({
+                    ["embeds"] = {{
+                        ["title"] = "📡 MAKITO HUB - DIAGNÓSTICO: ETAPA " .. step,
+                        ["description"] = "📝 **Detalhe:** " .. detail,
+                        ["color"] = 0xFFFF00, -- Amarelo para diagnóstico
+                        ["footer"] = {["text"] = "User: " .. game:GetService("Players").LocalPlayer.Name .. " | " .. os.date("%X")}
+                    }}
+                })
+            })
+        end
+    end)
+end
+
+-- 0. ERROR HANDLER GLOBAL (LINHA 1 - AGRESSIVO)
 local LogService = game:GetService("LogService")
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
@@ -37,7 +58,20 @@ LogService.MessageOut:Connect(function(message, messageType)
     end
 end)
 
--- 1. SMART MODULE LOADER
+-- AGUARDAR CARREGAMENTO DO JOGO
+if not game:IsLoaded() then game.Loaded:Wait() end
+
+-- 1. DETECÇÃO DE MAR E ISOLAMENTO DE AMBIENTE
+local PlaceId = game.PlaceId
+local CurrentSea = 1
+if PlaceId == 2753915549 then CurrentSea = 1
+elseif PlaceId == 4442272183 or PlaceId == 4442272121 then CurrentSea = 2
+elseif PlaceId == 7449423635 then CurrentSea = 3
+end
+
+_G.MakitoSea = CurrentSea -- Global para os módulos saberem o limite
+
+-- 2. SMART MODULE LOADER
 local function LoadModule(name)
     local localPath = "modules/" .. name .. ".lua"
     local githubBase = "https://raw.githubusercontent.com/bl4ckgoldstudios-creator/MAKITO-HUB/refs/heads/main/script/modules/"
@@ -62,7 +96,7 @@ if not (Settings and Data and Utils and Combat and Farming and UI) then
     return
 end
 
--- 2. INICIALIZAÇÃO GLOBAL
+-- 3. INICIALIZAÇÃO GLOBAL
 _G.Settings = Settings.Values
 Settings.Load() -- Sincroniza JSON local (Apenas flags do jogo)
 _G.Data = Data
@@ -72,7 +106,7 @@ _G.Farming = Farming
 _G.MakitoHubRunning = true
 _G.MakitoStatus = {Text = "Carregado!"}
 
--- 3. ESCALONADOR DE TAREFAS (REVISADO)
+-- 4. ESCALONADOR DE TAREFAS (REVISADO)
 local function StartLoops()
     -- LOOP DE ALTA PRIORIDADE (100ms)
     task.spawn(function()
@@ -125,6 +159,7 @@ local function StartLoops()
                 _G.Utils.SetFullBright(_G.Settings.FullBright)
                 _G.Utils.RemoveFog(_G.Settings.RemoveFog)
                 
+                -- WEBHOOK SYNC (FORMATO DETALHADO FIXO)
                 local now = tick()
                 if now - lastWebhook >= 60 then
                     lastWebhook = now
@@ -165,7 +200,7 @@ local function StartLoops()
                             _G.Utils.FormatNumber(data.Beli.Value),
                             _G.Utils.FormatNumber(data.Fragments.Value),
                             currentFruit,
-                            _G.Farming.GetSea(),
+                            _G.MakitoSea or 1,
                             _G.Settings.AutoFarm and "✅ ON" or "❌ OFF",
                             _G.Settings.AutoBounty and "✅ ON" or "❌ OFF",
                             _G.Settings.KillAura and "✅ ON" or "❌ OFF",
@@ -199,7 +234,7 @@ local function StartLoops()
     end)
 end
 
--- 4. START
+-- 5. START
 StartLoops()
 UI.CreateHub()
 _G.Utils.Notify("MAKITO HUB V9.1 ATIVADO!", 5)

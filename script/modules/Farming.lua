@@ -132,16 +132,39 @@ function FarmingModule.BlackHoleBringMobs(targetEnemy)
 end
 
 -- SUPREME AUTO FARM LOGIC
+local lastDebugTick = 0
 function FarmingModule.SupremeAutoFarm()
     if not _G.Settings.AutoFarm then return end
     
+    -- ETAPA 1: BOTÃO PRESSIONADO
+    if tick() - lastDebugTick > 30 then -- Debug a cada 30s para não dar spam
+        lastDebugTick = tick()
+        if _G.MakitoDebug then _G.MakitoDebug(1, "Botão pressionado. Flag _G.Settings.AutoFarm está TRUE.") end
+    end
+
     pcall(function()
         local Quest = FarmingModule.SupremeQuestHandler(_G.Data.QuestData)
-        if not Quest then return end
+        
+        -- ETAPA 2: BUSCA DE DADOS
+        if not Quest then
+            if _G.MakitoDebug then _G.MakitoDebug(2, "FALHA: Nenhuma missao encontrada para o Level " .. tostring(LocalPlayer.Data.Level.Value)) end
+            return
+        end
+
+        -- ETAPA 3: VERIFICAÇÃO DE CFRAME
+        if not Quest.Pos then
+            if _G.MakitoDebug then _G.MakitoDebug(3, "FALHA: CFrame do NPC nulo para a missao: " .. Quest.Name) end
+            return
+        end
 
         local enemy = _G.Utils.GetNearestEnemy(Quest.Enemy)
         
         if enemy then
+            -- ETAPA 4: MOVIMENTO
+            if _G.MakitoStatus and _G.MakitoStatus.Text ~= "Status: Atacando " .. Quest.Enemy then
+                if _G.MakitoDebug then _G.MakitoDebug(4, "Iniciando movimento Tween ate o monstro: " .. Quest.Enemy) end
+            end
+
             -- 1. EQUIPAMENTO
             FarmingModule.EquipWeapon(_G.Settings.Weapon)
             

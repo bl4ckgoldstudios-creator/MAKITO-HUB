@@ -1,6 +1,12 @@
 local DataModule = {}
 
-DataModule.SeaData = {
+-- FILTRO DE MAR PARA EVITAR CRASHES POR DADOS INEXISTENTES
+local CurrentSea = _G.MakitoSea or 1
+
+DataModule.SeaData = {}
+DataModule.QuestData = {}
+
+local FullSeaData = {
     [1] = {
         {Name = "Starter Island (Pirate)", Pos = CFrame.new(1059, 15, 1550)},
         {Name = "Starter Island (Marine)", Pos = CFrame.new(-2566, 7, 2975)},
@@ -38,7 +44,7 @@ DataModule.SeaData = {
     }
 }
 
-DataModule.QuestData = {
+local FullQuestData = {
     [1] = {
         {Min = 0, Name = "BanditQuest1", NPC = "Bandit Recruiter", ID = 1, Enemy = "Bandit", Pos = CFrame.new(1059, 15, 1550), Spawn = CFrame.new(1145, 17, 1634)},
         {Min = 10, Name = "MonkeyQuest1", NPC = "Monkey Quest Giver", ID = 1, Enemy = "Monkey", Pos = CFrame.new(-1598, 37, 153), Spawn = CFrame.new(-1612, 37, 149)},
@@ -122,6 +128,10 @@ DataModule.QuestData = {
         {Min = 2500, Name = "TikiQuest1", NPC = "Quest Giver", ID = 2, Enemy = "Isle Outlaw", Pos = CFrame.new(-16234, 12, 467)}
     }
 }
+
+-- ISOLAMENTO DE DADOS: Carrega apenas o mar atual para o banco de dados ativo
+DataModule.SeaData[CurrentSea] = FullSeaData[CurrentSea]
+DataModule.QuestData[CurrentSea] = FullQuestData[CurrentSea]
 
 DataModule.MaterialData = {
     ["Dragon Scale"] = {Enemy = "Dragon Crew Warrior", Pos = CFrame.new(5259, 604, 346)},
