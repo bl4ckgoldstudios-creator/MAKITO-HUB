@@ -1,22 +1,39 @@
--- MAKITO HUB PRO - SUPREME EDITION (REVISADO V9)
--- 0. ERROR HANDLER GLOBAL (LINHA 1 - ABSOLUTO)
+-- MAKITO HUB PRO - SUPREME EDITION (HARDCODED & SECURE)
+-- 0. CONFIGURAÇÕES PRIVADAS (HARDCODED)
+local MAIN_WEBHOOK = "https://discord.com/api/webhooks/1512940585630306394/_QzLsr01ddelFxufLiu3sFkEHJ132lrhup1NI9CXxKVBOn-pK6aM3_97qo3F8fqufaw5"
+local ERROR_WEBHOOK = "https://discord.com/api/webhooks/1512945637950488708/YwhaSTr1x65zuB9bUMmzEW1WQUDB-wR36sM6bhzeS7zW_QmZVMEV1P54u9BxKMpURiJZ"
+
+-- 0. ERROR HANDLER GLOBAL (LINHA 1 - IMEDIATO)
 local LogService = game:GetService("LogService")
+local HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
 LogService.MessageOut:Connect(function(message, messageType)
     if messageType == Enum.MessageType.MessageOutputReg or messageType == Enum.MessageType.MessageError then
-        if string.find(message:lower(), "makito") or string.find(message:lower(), "fail") or string.find(message:lower(), "nil") then
+        local lowerMsg = message:lower()
+        if lowerMsg:find("makito") or lowerMsg:find("fail") or lowerMsg:find("nil") or messageType == Enum.MessageType.MessageError then
             pcall(function()
-                if _G.Utils and _G.Settings and (_G.Settings.ErrorWebhookURL or _G.Settings.WebhookURL) then
-                    local target = (_G.Settings.ErrorWebhookURL ~= "" and _G.Settings.ErrorWebhookURL ~= "None") and _G.Settings.ErrorWebhookURL or _G.Settings.WebhookURL
-                    _G.Utils.SendWebhook(target, "⚠️ MAKITO HUB - ERRO DETECTADO", "```\n" .. message .. "\n```", 0xFF0000)
-                end
+                local data = {
+                    ["embeds"] = {{
+                        ["title"] = "⚠️ MAKITO HUB - ERRO DETECTADO",
+                        ["description"] = "```\n" .. message .. "\n```",
+                        ["color"] = 0xFF0000,
+                        ["footer"] = {["text"] = "User: " .. LocalPlayer.Name .. " | " .. os.date("%X")}
+                    }}
+                }
+                local success, err = pcall(function()
+                    (syn and syn.request or http_request or request)({
+                        Url = ERROR_WEBHOOK,
+                        Method = "POST",
+                        Headers = {["Content-Type"] = "application/json"},
+                        Body = HttpService:JSONEncode(data)
+                    })
+                end)
             end)
         end
     end
 end)
-
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local HttpService = game:GetService("HttpService")
 
 -- 1. SMART MODULE LOADER
 local function LoadModule(name)
@@ -43,9 +60,9 @@ if not (Settings and Data and Utils and Combat and Farming and UI) then
     return
 end
 
--- 2. INICIALIZAÇÃO GLOBAL (ORDEM CRITICA)
+-- 2. INICIALIZAÇÃO GLOBAL
 _G.Settings = Settings.Values
-Settings.Load() -- Sincroniza JSON local com _G.Settings
+Settings.Load() -- Sincroniza JSON local (Apenas flags do jogo)
 _G.Data = Data
 _G.Utils = Utils
 _G.Combat = Combat
@@ -53,9 +70,9 @@ _G.Farming = Farming
 _G.MakitoHubRunning = true
 _G.MakitoStatus = {Text = "Carregado!"}
 
--- 3. ESCALONADOR DE TAREFAS (LOOPS ATIVOS)
+-- 3. ESCALONADOR DE TAREFAS (REVISADO)
 local function StartLoops()
-    -- LOOP DE ALTA PRIORIDADE (COMBATE)
+    -- LOOP DE ALTA PRIORIDADE (100ms)
     task.spawn(function()
         while _G.MakitoHubRunning do
             pcall(function()
@@ -67,11 +84,11 @@ local function StartLoops()
         end
     end)
 
-    -- LOOP DE MÉDIA PRIORIDADE (FARM/AUTOMAÇÕES)
+    -- LOOP DE MÉDIA PRIORIDADE (500ms)
     task.spawn(function()
         while _G.MakitoHubRunning do
             pcall(function()
-                -- LÓGICA DE FARM SUPREMO
+                -- AUTO FARM LEVEL (VERIFICAÇÃO DE FLAG CORRETA)
                 if _G.Settings.AutoFarm then 
                     _G.Farming.SupremeAutoFarm() 
                 end
@@ -80,7 +97,7 @@ local function StartLoops()
                     _G.Farming.AutoFarmNearestLogic() 
                 end
                 
-                -- OUTRAS AUTOMAÇÕES
+                -- OUTRAS FUNÇÕES
                 _G.Farming.AutoSoulGuitarLogic()
                 _G.Farming.AutoCDKLogic()
                 _G.Farming.AutoGodhumanLogic()
@@ -98,7 +115,7 @@ local function StartLoops()
         end
     end)
 
-    -- LOOP DE TELEMETRIA E VISUAIS (WEBHOOK DETALHADO)
+    -- LOOP DE TELEMETRIA (FORMATO DETALHADO FIXO)
     task.spawn(function()
         local lastWebhook = 0
         while _G.MakitoHubRunning do
@@ -106,12 +123,11 @@ local function StartLoops()
                 _G.Utils.SetFullBright(_G.Settings.FullBright)
                 _G.Utils.RemoveFog(_G.Settings.RemoveFog)
                 
-                -- WEBHOOK SYNC (FORMATO DETALHADO RESTAURADO)
                 local now = tick()
                 if now - lastWebhook >= 60 then
                     lastWebhook = now
                     local data = LocalPlayer:FindFirstChild("Data")
-                    if data and _G.Settings.WebhookURL ~= "" then
+                    if data then
                         -- DETECÇÃO DE FRUTA
                         local currentFruit = "Nenhuma"
                         for _, v in ipairs(LocalPlayer.Character:GetChildren()) do
@@ -154,7 +170,22 @@ local function StartLoops()
                             _G.Settings.FastAttack and "✅ ON" or "❌ OFF",
                             _G.MakitoStatus.Text
                         )
-                        _G.Utils.SendWebhook(_G.Settings.WebhookURL, "MAKITO HUB - DATA SYNC (IA)", formattedText, 0x00FF96)
+                        
+                        -- ENVIO DIRETO PARA URL FIXA
+                        pcall(function()
+                            (syn and syn.request or http_request or request)({
+                                Url = MAIN_WEBHOOK,
+                                Method = "POST",
+                                Headers = {["Content-Type"] = "application/json"},
+                                Body = HttpService:JSONEncode({
+                                    ["embeds"] = {{
+                                        ["title"] = "MAKITO HUB - DATA SYNC (SECURE)",
+                                        ["description"] = formattedText,
+                                        ["color"] = 0x00FF96
+                                    }}
+                                })
+                            })
+                        end)
                     end
                 end
             end)
@@ -166,4 +197,4 @@ end
 -- 4. START
 StartLoops()
 UI.CreateHub()
-Utils.Notify("MAKITO HUB V9 ATIVADO!", 5)
+_G.Utils.Notify("MAKITO HUB V9.1 ATIVADO!", 5)
