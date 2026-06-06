@@ -47,7 +47,16 @@ function FarmingModule.SupremeQuestHandler(QuestData)
         end
     end
 
-    if not BestQuest then return nil end
+    if not BestQuest then 
+        warn("[MAKITO ERROR]: Nenhuma missao encontrada para o Level " .. tostring(level))
+        return nil 
+    end
+
+    -- VERIFICAÇÃO DE POSIÇÃO DO NPC
+    if not BestQuest.Pos then
+        warn("[MAKITO ERROR]: CFrame do NPC nulo para a missao: " .. BestQuest.Name)
+        return BestQuest
+    end
 
     -- VERIFICAÇÃO DE MISSÃO ATIVA (ROBUSTA)
     local hasQuest = false
@@ -64,8 +73,10 @@ function FarmingModule.SupremeQuestHandler(QuestData)
         local dist = (LocalPlayer.Character.HumanoidRootPart.Position - npcPos.Position).Magnitude
         
         if dist > 15 then
+            if _G.MakitoStatus then _G.MakitoStatus.Text = "Status: Indo ate NPC " .. BestQuest.NPC end
             _G.Utils.TweenTo(npcPos * CFrame.new(0, 15, 0), 500)
         else
+            if _G.MakitoStatus then _G.MakitoStatus.Text = "Status: Aceitando Missao " .. BestQuest.Enemy end
             -- INTERAÇÃO COM NPC E START QUEST
             _G.Utils.SafeRemote("StartQuest", BestQuest.Name, BestQuest.ID)
         end
@@ -154,7 +165,8 @@ function FarmingModule.SupremeAutoFarm()
             _G.Combat.StartFastAttack()
         else
             -- ESPERA INTELIGENTE NO SPAWN
-            _G.Utils.TweenTo(Quest.Pos * CFrame.new(0, 30, 0))
+            local waitPos = Quest.Spawn or Quest.Pos
+            _G.Utils.TweenTo(waitPos * CFrame.new(0, 30, 0))
             if _G.MakitoStatus then _G.MakitoStatus.Text = "Status: Aguardando Spawn de " .. Quest.Enemy end
         end
     end)
