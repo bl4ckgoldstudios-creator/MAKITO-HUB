@@ -14,6 +14,10 @@ SettingsModule.Values = {
     AutoSkill = false, SkillZ = true, SkillX = true, SkillC = true, SkillV = true,
     AutoMastery = false, MasteryHealth = 20, MasteryWeapon = "Sword",
     FastAttackSpeed = 0.05, AutoHaki = false, AutoKen = false, AutoStats = false, SelectedStat = "Melee",
+    -- Update 29 Features
+    AutoDungeonV2 = false, AutoCollectTrinkets = false, AutoEquipBestTrinket = true,
+    AutoLucienQuest = false, AutoPvPArena = false,
+    AutoCollectCandy = false, AutoCandyGacha = false,
     -- Sea Events
     AutoSeaEvent = false, AutoMirage = false, AutoFindGear = false, AutoKitsune = false, AutoLeviathan = false, AutoMirageLever = false,
     AutoEliteHunter = false, AutoFactory = false, AutoDoughKing = false, AutoCakePrince = false, AutoBone = false,

@@ -42,9 +42,15 @@ local function IsCombatWeapon(tool)
     local name = tool.Name:lower()
     
     -- Verifica por ToolTip ou por nomes comuns se o ToolTip falhar
-    if tt == "Melee" or tt == "Sword" then return true end
+    if tt == "Melee" or tt == "Sword" or tt == "Blox Fruit" then return true end
     if name:find("sword") or name:find("blade") or name:find("katana") or name:find("saber") then return true end
     if name:find("combat") or name:find("dark step") or name:find("electro") or name:find("fishman") then return true end
+    
+    -- Update 29: Fruits with M1 support (Control, Kitsune, T-Rex, etc.)
+    local m1Fruits = {"control", "kitsune", "t-rex", "mammoth", "leopard", "ice", "light", "magma"}
+    for _, f in ipairs(m1Fruits) do
+        if name:find(f) then return true end
+    end
     
     return false
 end

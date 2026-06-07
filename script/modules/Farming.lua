@@ -609,6 +609,73 @@ function FarmingModule.AutoNextSeaLogic()
     end
 end
 
+function FarmingModule.DungeonV2Logic()
+    if not _G.Settings or not _G.Settings.AutoDungeonV2 then return end
+    
+    -- Lógica para o novo sistema de Dungeon do Update 29 (Lucien)
+    local dungeonFolder = workspace:FindFirstChild("Dungeons") or workspace:FindFirstChild("DungeonV2")
+    if dungeonFolder then
+        local enemy = _G.Utils.GetNearestEnemyAny()
+        if enemy then
+            _G.Utils.TweenTo(enemy.HumanoidRootPart.CFrame * CFrame.new(0, 15, 0))
+            _G.Combat.StartFastAttack()
+        end
+        
+        -- Auto Collect Trinkets
+        if _G.Settings.AutoCollectTrinkets then
+            for _, v in ipairs(dungeonFolder:GetChildren()) do
+                if v.Name:find("Trinket") or v:FindFirstChild("Handle") then
+                    _G.Utils.TweenTo(v:FindFirstChild("Handle").CFrame or v.CFrame)
+                    firetouchinterest(LocalPlayer.Character.HumanoidRootPart, v:FindFirstChild("Handle") or v, 0)
+                    firetouchinterest(LocalPlayer.Character.HumanoidRootPart, v:FindFirstChild("Handle") or v, 1)
+                end
+            end
+        end
+    else
+        -- Se não estiver na dungeon, vai até o NPC Lucien
+        if _G.Settings.AutoLucienQuest then
+            local lucien = workspace.NPCs:FindFirstChild("Lucien")
+            if lucien then
+                _G.Utils.TweenTo(lucien.HumanoidRootPart.CFrame)
+                _G.Utils.SafeRemote("LucienQuest", "StartDungeon")
+            end
+        end
+    end
+end
+
+function FarmingModule.PvPArenaLogic()
+    if not _G.Settings or not _G.Settings.AutoPvPArena then return end
+    
+    local arena = workspace:FindFirstChild("PvPArena")
+    if arena then
+        local opponent = _G.Utils.GetNearestEnemyAny() -- Na arena, o oponente é considerado inimigo
+        if opponent then
+            _G.Utils.TweenTo(opponent.HumanoidRootPart.CFrame * CFrame.new(0, 10, 0))
+            _G.Combat.StartFastAttack()
+            _G.Combat.AimBotLogic(opponent.HumanoidRootPart)
+        end
+    end
+end
+
+function FarmingModule.ChristmasEventLogic()
+    if not _G.Settings or not _G.Settings.AutoCollectCandy then return end
+    
+    -- Lógica para coletar Candy (Moeda de Evento)
+    local candyFolder = workspace:FindFirstChild("Candy") or workspace:FindFirstChild("ChristmasEvent")
+    if candyFolder then
+        for _, v in ipairs(candyFolder:GetChildren()) do
+            if v.Name:find("Candy") then
+                _G.Utils.TweenTo(v.CFrame)
+                task.wait(0.1)
+            end
+        end
+    end
+    
+    if _G.Settings.AutoCandyGacha then
+        _G.Utils.SafeRemote("CandyGacha", "Roll")
+    end
+end
+
 function FarmingModule.LeviathanLogic()
     if not _G.Settings or not _G.Settings.AutoLeviathan then return end
     local SeaEvents = workspace:FindFirstChild("SeaEvents") or workspace:FindFirstChild("Sea")
