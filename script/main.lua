@@ -103,38 +103,59 @@ elseif placeId == 4442272183 then _G.MakitoSea = 2
 elseif placeId == 7449423635 then _G.MakitoSea = 3
 end
 
+local moduleErrors = {}
+
 local function LoadModule(name)
     local localPath = "modules/" .. name .. ".lua"
-    local githubBase = "https://raw.githubusercontent.com/bl4ckgoldstudios-creator/MAKITO-HUB/refs/heads/main/script/modules/"
     
-    local function TryLoad(source, isRaw)
-        local code = isRaw and source or game:HttpGet(source)
+    local function TryLoad(code, sourceName)
+        if not code or code == "" then return nil, "Código está vazio ou nulo" end
         local fn, err = loadstring(code)
-        if not fn then return false, "Syntax Error in " .. name .. ": " .. tostring(err) end
+        if not fn then return nil, "Erro de Sintaxe: " .. tostring(err) end
         
         local success, result = pcall(fn)
-        if not success then return false, "Runtime Error in " .. name .. ": " .. tostring(result) end
-        return true, result
+        if not success then return nil, "Erro de Execução (Runtime): " .. tostring(result) end
+        return result
     end
 
-    -- Tentar Local primeiro (várias formas de path)
-    if isfile then
-        local paths = {localPath, "./" .. localPath, "script/" .. localPath}
-        for _, path in ipairs(paths) do
-            if isfile(path) then
-                local success, res = TryLoad(readfile(path), true)
-                if success then return res end -- RETORNA O MÓDULO (TABELA)
-                warn("[MAKITO] Falha ao carregar local " .. path .. ": " .. tostring(res))
+    -- Tentar carregar do workspace (várias possibilidades de caminho)
+    local possiblePaths = {
+        localPath,
+        "./" .. localPath,
+        "script/" .. localPath,
+        "workspace/script/" .. localPath,
+        "workspace/modules/" .. name .. ".lua",
+        name .. ".lua"
+    }
+    
+    local checkedPaths = {}
+    for _, path in ipairs(possiblePaths) do
+        table.insert(checkedPaths, path)
+        local exists = false
+        pcall(function() if isfile and isfile(path) then exists = true end end)
+        
+        if exists then
+            local success, res = pcall(function() return readfile(path) end)
+            if success and res then
+                local module, err = TryLoad(res, path)
+                if module then 
+                    print("[MAKITO] ✅ Módulo carregado: " .. name .. " via " .. path)
+                    return module 
+                else
+                    moduleErrors[name] = "Falha no arquivo [" .. path .. "]: " .. tostring(err)
+                    warn("[MAKITO] ❌ " .. moduleErrors[name])
+                end
+            else
+                moduleErrors[name] = "Existe, mas não pôde ler o arquivo: " .. path
             end
         end
     end
 
-    -- Fallback remoto desativado: carregamento apenas de modulos locais.
-    local githubSuccess, githubRes = false, nil
+    if not moduleErrors[name] then
+        moduleErrors[name] = "Arquivo não encontrado. Caminhos verificados: " .. table.concat(checkedPaths, ", ")
+    end
     
-    if githubSuccess and githubRes then return githubRes end
-    
-    warn("[MAKITO] Não foi possível carregar o módulo: " .. name)
+    warn("[MAKITO] ❌ Erro ao carregar " .. name .. ": " .. moduleErrors[name])
     return nil
 end
 
@@ -146,28 +167,37 @@ local Farming = LoadModule("Farming")
 local UI = LoadModule("UI")
 
 if not (Settings and Data and Utils and Combat and Farming and UI) then
-    local missing = {}
-    if not Settings then table.insert(missing, "Settings") end
-    if not Data then table.insert(missing, "Data") end
-    if not Utils then table.insert(missing, "Utils") end
-    if not Combat then table.insert(missing, "Combat") end
-    if not Farming then table.insert(missing, "Farming") end
-    if not UI then table.insert(missing, "UI") end
+    local missingDetails = ""
+    for mod, err in pairs(moduleErrors) do
+        missingDetails = missingDetails .. "\n• [" .. mod .. "]: " .. err .. "\n"
+    end
     
-    local errorMsg = "FALHA AO CARREGAR MAKITO HUB\nModulos ausentes: " .. table.concat(missing, ", ")
+    local errorMsg = "🛑 FALHA CRÍTICA AO CARREGAR MAKITO HUB\n" .. missingDetails
     warn(errorMsg)
     
-    -- Criar aviso na tela antes de fechar
+    -- Criar aviso detalhado na tela para Mobile
     local sg = Instance.new("ScreenGui", game:GetService("CoreGui"))
-    local txt = Instance.new("TextLabel", sg)
-    txt.Size = UDim2.new(1, 0, 1, 0)
-    txt.BackgroundColor3 = Color3.new(0,0,0)
-    txt.TextColor3 = Color3.new(1,0,0)
-    txt.Text = errorMsg .. "\n\nVerifique o Console (F9) para mais detalhes."
-    txt.TextSize = 20
-    txt.Font = Enum.Font.GothamBold
+    sg.Name = "MakitoErrorScreen"
     
-    task.wait(10)
+    local frame = Instance.new("ScrollingFrame", sg)
+    frame.Size = UDim2.new(0.8, 0, 0.8, 0)
+    frame.Position = UDim2.new(0.1, 0, 0.1, 0)
+    frame.BackgroundColor3 = Color3.new(0,0,0)
+    frame.BorderSizePixel = 2
+    frame.CanvasSize = UDim2.new(0, 0, 2, 0)
+    
+    local txt = Instance.new("TextLabel", frame)
+    txt.Size = UDim2.new(1, -20, 1, 0)
+    txt.Position = UDim2.new(0, 10, 0, 10)
+    txt.BackgroundTransparency = 1
+    txt.TextColor3 = Color3.new(1,0.2,0.2)
+    txt.Text = errorMsg .. "\n\n💡 Verifique se os arquivos estão na pasta 'workspace' do seu executor.\nConsole (F9) para logs técnicos."
+    txt.TextSize = 14
+    txt.Font = Enum.Font.Code
+    txt.TextWrapped = true
+    txt.TextYAlignment = Enum.TextYAlignment.Top
+    txt.TextXAlignment = Enum.TextXAlignment.Left
+    
     return
 end
 
