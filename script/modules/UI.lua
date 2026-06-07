@@ -216,6 +216,35 @@ function UIModule.CreateHub()
     UIModule.NewDropdown(StatsTab, "Mastery Weapon", {"Melee", "Sword", "Fruit"}, "MasteryWeapon")
     UIModule.NewSlider(StatsTab, "Health % to Switch", 0, 100, 20, "MasteryHealth")
 
+    local TeleportTab = UIModule.NewTab("Teleport", TabContainer, ContentArea)
+    UIModule.NewSection(TeleportTab, "Island Teleport (Tween)")
+    
+    local islandNames = {}
+    local currentSeaIslands = _G.Data and _G.Data.GetIslands(_G.MakitoSea) or {}
+    for _, island in ipairs(currentSeaIslands) do
+        table.insert(islandNames, island.Name)
+    end
+    
+    UIModule.NewDropdown(TeleportTab, "Select Island", islandNames, "SelectedIsland")
+    UIModule.NewButton(TeleportTab, "Teleport to Selected Island", function()
+        if _G.Settings and _G.Settings.SelectedIsland then
+            local island = _G.Data.GetIslandByName(_G.Settings.SelectedIsland, _G.MakitoSea)
+            if island then
+                _G.Utils.TweenTo(island.Pos)
+            end
+        end
+    end)
+
+    UIModule.NewSection(TeleportTab, "World Teleport")
+    UIModule.NewButton(TeleportTab, "Travel to Sea 2 (Lvl 700+)", function() 
+        _G.Utils.TweenTo(CFrame.new(-10332, 730, 7866))
+        _G.Utils.SafeRemote("TravelMain") 
+    end)
+    UIModule.NewButton(TeleportTab, "Travel to Sea 3 (Lvl 1500+)", function() 
+        _G.Utils.TweenTo(CFrame.new(-541, 314, -2821))
+        _G.Utils.SafeRemote("TravelZou") 
+    end)
+
     local ShopTab = UIModule.NewTab("Shop & Items", TabContainer, ContentArea)
     UIModule.NewSection(ShopTab, "Fighting Styles")
     UIModule.NewToggle(ShopTab, "Auto Buy All Styles", "AutoBuyFightingStyle")

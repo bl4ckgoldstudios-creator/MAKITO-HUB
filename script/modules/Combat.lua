@@ -14,45 +14,13 @@ local CombatFrameworkRoot = nil
 local CommF = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_")
 
 local function GetFramework()
-    if CombatFramework and CombatFrameworkRoot then return end
     pcall(function()
-        local possiblePaths = {
-            LocalPlayer.PlayerScripts:FindFirstChild("CombatFramework"),
-            LocalPlayer.PlayerScripts:FindFirstChild("CombatFrameworkR"),
-            ReplicatedStorage:FindFirstChild("CombatFramework")
-        }
+        if CombatFramework and CombatFramework.activeController then return end
         
-        for _, framework in ipairs(possiblePaths) do
-            if framework then
-                local success, result = pcall(require, framework)
-                if success and type(result) == "table" then
-                    CombatFramework = result
-                    break
-                end
-            end
-        end
-
-        if CombatFramework then
-            -- Busca recursiva pelo controlador ativo nos upvalues
-            local controller = CombatFramework.activeController
-            if not controller then
-                for _, v in pairs(CombatFramework) do
-                    if type(v) == "table" and v.activeController then
-                        controller = v.activeController
-                        break
-                    end
-                end
-            end
-
-            if controller and (controller.attack or controller.Attack) then
-                local attackFn = controller.attack or controller.Attack
-                local upvalues = debug.getupvalues(attackFn)
-                for _, v in pairs(upvalues) do
-                    if type(v) == "table" and v.activeController then
-                        CombatFrameworkRoot = v
-                        break
-                    end
-                end
+        for _, v in pairs(getgc(true)) do
+            if type(v) == "table" and v.activeController and v.activeController.attack then
+                CombatFramework = v
+                break
             end
         end
     end)
@@ -68,33 +36,31 @@ end
 function CombatModule.StartFastAttack()
     if FastAttackConn then return end
     
-    FastAttackConn = RunService.PostSimulation:Connect(function()
+    FastAttackConn = RunService.RenderStepped:Connect(function()
         if not _G.Settings or not _G.Settings.FastAttack then return end
         
         pcall(function()
-            GetFramework()
             local weapon = LocalPlayer.Character:FindFirstChildOfClass("Tool")
             if not weapon or (weapon.ToolTip ~= "Melee" and weapon.ToolTip ~= "Sword") then return end
             
-            local activeController = CombatFramework and CombatFramework.activeController
-            if not activeController and CombatFrameworkRoot then
-                activeController = CombatFrameworkRoot.activeController
-            end
-
-            if activeController then
-                -- Otimização extrema (Estilo Redz)
-                activeController.hitboxMagnitude = 100 -- Magnitude aumentada para alcance
-                activeController.attackCount = 0
-                activeController.timeToNextAttack = 0
-                activeController.increment = 0
-                activeController.active = true
+            GetFramework()
+            if CombatFramework and CombatFramework.activeController then
+                local controller = CombatFramework.activeController
                 
-                -- Spam de ataque contínuo
-                for i = 1, 3 do
-                    if activeController.attack then
-                        activeController.attack()
-                    elseif activeController.Attack then
-                        activeController.Attack()
+                -- ULTRA FAST BYPASS
+                controller.hitboxMagnitude = 100
+                controller.attackCount = 0
+                controller.timeToNextAttack = 0
+                controller.increment = 0
+                
+                -- Execução de ataque direto no framework (No Animation)
+                controller.attack()
+                
+                -- Dano extra via Remote (Opcional, mas garante hit em lag)
+                if tick() % 0.2 < 0.05 then
+                    local target = _G.Utils.GetNearestEnemyAny()
+                    if target and target:FindFirstChild("HumanoidRootPart") then
+                        CommF:InvokeServer("Attack", target.HumanoidRootPart)
                     end
                 end
             end

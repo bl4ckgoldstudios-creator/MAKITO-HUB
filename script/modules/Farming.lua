@@ -31,7 +31,7 @@ function FarmingModule.GetQuestData(QuestData)
     return data[1]
 end
 
--- SUPREME QUEST HANDLER V2 (ULTRA FAST)
+-- SUPREME QUEST HANDLER V2 (FIXED LOOP)
 function FarmingModule.SupremeQuestHandler(QuestData)
     local level = (LocalPlayer.Data and LocalPlayer.Data.Level.Value) or 0
     local sea = FarmingModule.GetSea()
@@ -50,24 +50,22 @@ function FarmingModule.SupremeQuestHandler(QuestData)
     if not BestQuest then return nil end
 
     local hasQuest = false
-    local questName = ""
     pcall(function()
-        local mainGui = LocalPlayer.PlayerGui:FindFirstChild("Main")
-        local questGui = mainGui and (mainGui:FindFirstChild("Quest") or mainGui:FindFirstChild("QuestGui"))
-        
-        if questGui and questGui.Visible then
-            local title = questGui:FindFirstChild("Title", true) or questGui:FindFirstChild("QuestTitle", true)
-            if title and title:IsA("TextLabel") and title.Text ~= "" and title.Text ~= "Missão" then
-                hasQuest = true
-                questName = title.Text
+        local questData = LocalPlayer.PlayerGui.Main:FindFirstChild("Quest")
+        if questData and questData.Visible then
+            local container = questData:FindFirstChild("Container")
+            local title = container and container:FindFirstChild("QuestTitle")
+            if title and title.Text ~= "" then
+                if title.Text:find(BestQuest.Enemy) then
+                    hasQuest = true
+                else
+                    -- Só abandona se a missão for realmente diferente da que precisamos
+                    _G.Utils.SafeRemote("AbandonQuest")
+                    task.wait(0.5)
+                end
             end
         end
     end)
-
-    if hasQuest and not questName:find(BestQuest.Enemy) then
-        _G.Utils.SafeRemote("AbandonQuest")
-        hasQuest = false
-    end
 
     if not hasQuest and _G.Settings and _G.Settings.AutoQuest then
         local npcPos = BestQuest.Pos
@@ -78,6 +76,7 @@ function FarmingModule.SupremeQuestHandler(QuestData)
             _G.Utils.TweenTo(npcPos)
         else
             if _G.MakitoStatus then _G.MakitoStatus.Text = "Status: Aceitando Missao " .. BestQuest.Enemy end
+            task.wait(0.2)
             _G.Utils.SafeRemote("StartQuest", BestQuest.Name, BestQuest.ID)
         end
     end
