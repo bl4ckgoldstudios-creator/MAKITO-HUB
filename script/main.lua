@@ -1,4 +1,4 @@
--- MAKITO HUB PRO - V9.7 (ANTI-STUCK & SECURE)
+-- MAKITO HUB PRO - V9.8 (UI + ESP + DEBUG)
 -- 0. CONFIGURAÇÕES PRIVADAS (HARDCODED)
 local MAIN_WEBHOOK = ""
 local ERROR_WEBHOOK = ""
@@ -69,13 +69,18 @@ end)
 -- 1. DETECÇÃO DE MAR E CARREGAMENTO
 if not game:IsLoaded() then game.Loaded:Wait() end
 
-local PlaceId = game.PlaceId
-local CurrentSea = 1
-if PlaceId == 2753915549 then CurrentSea = 1
-elseif PlaceId == 4442272183 or PlaceId == 4442272121 then CurrentSea = 2
-elseif PlaceId == 7449423635 then CurrentSea = 3
+local SEA_PLACE_IDS = {
+    [2753915549] = 1,
+    [4442272183] = 2,
+    [4442272121] = 2,
+    [7449423635] = 3,
+}
+
+local function GetSeaFromPlaceId(placeId)
+    return SEA_PLACE_IDS[placeId] or 1
 end
-_G.MakitoSea = CurrentSea
+
+_G.MakitoSea = GetSeaFromPlaceId(game.PlaceId)
 
 -- ESPERA DADOS COM TIMEOUT (ANTI-STUCK)
 local dataLoaded = false
@@ -94,69 +99,121 @@ task.spawn(function()
     end
 end)
 
--- 1. CONFIGURAÇÕES INICIAIS E SEA DETECTION
 _G.MakitoHubRunning = true
-_G.MakitoSea = 1
-local placeId = game.PlaceId
-if placeId == 2753915549 then _G.MakitoSea = 1
-elseif placeId == 4442272183 then _G.MakitoSea = 2
-elseif placeId == 7449423635 then _G.MakitoSea = 3
-end
 
 local moduleErrors = {}
+local loadReport = {}
 
-local function LoadModule(name)
-    local localPath = "modules/" .. name .. ".lua"
-    
-    local function TryLoad(code, sourceName)
-        if not code or code == "" then return nil, "Código está vazio ou nulo" end
-        local fn, err = loadstring(code)
-        if not fn then return nil, "Erro de Sintaxe: " .. tostring(err) end
-        
-        local success, result = pcall(fn)
-        if not success then return nil, "Erro de Execução (Runtime): " .. tostring(result) end
+local LOADER_PATHS = {
+    "modules/Loader.lua",
+    "script/modules/Loader.lua",
+    "workspace/script/modules/Loader.lua",
+}
+
+local function ReadFirstExisting(paths)
+    for _, path in ipairs(paths) do
+        local ok, content = pcall(function()
+            if isfile and isfile(path) then
+                return readfile(path)
+            end
+        end)
+        if ok and content and content ~= "" then
+            return content, path
+        end
+    end
+    return nil
+end
+
+local function BootstrapLoader()
+    local content, path = ReadFirstExisting(LOADER_PATHS)
+    if not content then
+        local url = "https://raw.githubusercontent.com/bl4ckgoldstudios-creator/MAKITO-HUB/refs/heads/main/script/modules/Loader.lua"
+        local ok, remote = pcall(function() return game:HttpGet(url) end)
+        if ok and remote and remote ~= "" then
+            content = remote
+            path = url
+        end
+    end
+
+    if not content then
+        warn("[MAKITO] Loader.lua nao encontrado. Usando carregador interno simplificado.")
+        return nil
+    end
+
+    local fn, err = loadstring(content, "Makito_Loader")
+    if not fn then
+        warn("[MAKITO] Erro ao compilar Loader.lua: " .. tostring(err))
+        return nil
+    end
+
+    local ok, result = pcall(fn)
+    if ok and type(result) == "table" then
+        print("[MAKITO] Loader inicializado via " .. tostring(path))
         return result
     end
 
-    -- Tentar carregar do workspace (várias possibilidades de caminho)
-    local possiblePaths = {
-        localPath,
-        "./" .. localPath,
-        "script/" .. localPath,
-        "workspace/script/" .. localPath,
-        "workspace/modules/" .. name .. ".lua",
-        name .. ".lua"
+    warn("[MAKITO] Erro ao executar Loader.lua: " .. tostring(result))
+    return nil
+end
+
+local Loader = BootstrapLoader()
+
+local function LoadModuleFallback(name)
+    local paths = {
+        "modules/" .. name .. ".lua",
+        "script/modules/" .. name .. ".lua",
+        "workspace/script/modules/" .. name .. ".lua",
     }
-    
-    local checkedPaths = {}
-    for _, path in ipairs(possiblePaths) do
-        table.insert(checkedPaths, path)
-        local exists = false
-        pcall(function() if isfile and isfile(path) then exists = true end end)
-        
-        if exists then
-            local success, res = pcall(function() return readfile(path) end)
-            if success and res then
-                local module, err = TryLoad(res, path)
-                if module then 
-                    print("[MAKITO] ✅ Módulo carregado: " .. name .. " via " .. path)
-                    return module 
-                else
-                    moduleErrors[name] = "Falha no arquivo [" .. path .. "]: " .. tostring(err)
-                    warn("[MAKITO] ❌ " .. moduleErrors[name])
+    local github = "https://raw.githubusercontent.com/bl4ckgoldstudios-creator/MAKITO-HUB/refs/heads/main/script/modules/" .. name .. ".lua"
+
+    for _, path in ipairs(paths) do
+        local ok, content = pcall(function()
+            if isfile and isfile(path) then return readfile(path) end
+        end)
+        if ok and content then
+            local fn, err = loadstring(content, "Makito_" .. name)
+            if fn then
+                local runOk, result = pcall(fn)
+                if runOk and type(result) == "table" then
+                    loadReport[name] = { success = true, source = path, attempts = {} }
+                    return result
                 end
+                moduleErrors[name] = tostring(result)
             else
-                moduleErrors[name] = "Existe, mas não pôde ler o arquivo: " .. path
+                moduleErrors[name] = tostring(err)
             end
         end
     end
 
-    if not moduleErrors[name] then
-        moduleErrors[name] = "Arquivo não encontrado. Caminhos verificados: " .. table.concat(checkedPaths, ", ")
+    local httpOk, content = pcall(function() return game:HttpGet(github) end)
+    if httpOk and content and content ~= "" then
+        local fn, err = loadstring(content, "Makito_" .. name)
+        if fn then
+            local runOk, result = pcall(fn)
+            if runOk and type(result) == "table" then
+                loadReport[name] = { success = true, source = github, attempts = {} }
+                return result
+            end
+        end
     end
-    
-    warn("[MAKITO] ❌ Erro ao carregar " .. name .. ": " .. moduleErrors[name])
+
+    moduleErrors[name] = moduleErrors[name] or "Modulo nao encontrado"
     return nil
+end
+
+local function LoadModule(name)
+    if Loader and Loader.Load then
+        local module, report = Loader.Load(name, loadReport)
+        if not module then
+            moduleErrors[name] = loadReport[name] and loadReport[name].error or "Falha desconhecida"
+            warn("[MAKITO] Falha ao carregar " .. name .. ": " .. tostring(moduleErrors[name]))
+        else
+            print("[MAKITO] Modulo carregado: " .. name .. " (" .. tostring(loadReport[name].source) .. ")")
+        end
+        return module
+    end
+
+    return LoadModuleFallback(name)
 end
 
 local Settings = LoadModule("Settings")
@@ -203,12 +260,25 @@ end
 
 _G.Settings = Settings.Values
 Settings.Load()
+_G.MakitoSaveSettings = Settings.Save
+_G.MakitoThemes = Settings.Themes
+_G.MakitoLoadReport = loadReport
+_G.MakitoCapabilities = Loader and Loader.GetCapabilities and Loader.GetCapabilities() or {}
+_G.MakitoDiscoveredFiles = Loader and Loader.DiscoverWorkspaceFiles and Loader.DiscoverWorkspaceFiles() or {}
+if Loader and Loader.FormatReport then
+    _G.MakitoDebugText = Loader.FormatReport(loadReport, _G.MakitoCapabilities, _G.MakitoDiscoveredFiles)
+    _G.LoaderFormat = Loader.FormatReport
+    print(_G.MakitoDebugText)
+end
+if Data.ValidationIssues and #Data.ValidationIssues > 0 then
+    warn("[MAKITO] Data.lua: " .. #Data.ValidationIssues .. " avisos de validacao")
+end
 _G.Data = Data
 _G.Utils = Utils
 _G.Combat = Combat
 _G.Farming = Farming
 _G.MakitoHubRunning = true
-_G.MakitoStatus = {Text = "Carregado!"}
+_G.MakitoStatus = { Text = "Carregado! Pressione RightControl para abrir o menu." }
 
 -- 2. ESCALONADOR DE TAREFAS
 local function StartLoops()
@@ -260,6 +330,7 @@ local function StartLoops()
                     if data then
                         local currentFruit = "Nenhuma"
                         pcall(function()
+                            if not LocalPlayer.Character then return end
                             for _, v in ipairs(LocalPlayer.Character:GetChildren()) do
                                 if v:IsA("Tool") and (v.ToolTip == "Blox Fruit" or v.ToolTip == "Demon Fruit") then currentFruit = v.Name break end
                             end
@@ -267,7 +338,11 @@ local function StartLoops()
 
                         local formattedText = string.format(
                             "**--- PLAYER STATS ---**\n👤 **User:** %s\n📈 **Level:** %d\n💰 **Beli:** %s\n🍎 **Fruit:** %s\n🌊 **Sea:** %d\n\n**--- MODULE STATUS ---**\n🚜 **Auto Farm:** %s\n⚡ **Fast Attack:** %s\n📝 **Status:** %s",
-                            LocalPlayer.Name, data.Level.Value, _G.Utils.FormatNumber(data.Beli.Value), currentFruit, _G.MakitoSea,
+                            LocalPlayer.Name,
+                            data:FindFirstChild("Level") and data.Level.Value or 0,
+                            _G.Utils.FormatNumber(data:FindFirstChild("Beli") and data.Beli.Value or 0),
+                            currentFruit,
+                            _G.MakitoSea,
                             _G.Settings.AutoFarm and "✅ ON" or "❌ OFF", _G.Settings.FastAttack and "✅ ON" or "❌ OFF", _G.MakitoStatus.Text
                         )
                         
@@ -291,5 +366,5 @@ end
 StartLoops()
 UI.CreateHub()
 UI.CreateWatermark()
-_G.Utils.Notify("MAKITO HUB V9.7 ATIVADO!", 5)
-print("[MAKITO] Hub e Loops iniciados com sucesso!")
+_G.Utils.Notify("MAKITO HUB V9.8 ATIVADO!", 5)
+print("[MAKITO] Hub v9.8 iniciado | Sea " .. tostring(_G.MakitoSea) .. " | Mobile: " .. tostring(game:GetService("UserInputService").TouchEnabled))

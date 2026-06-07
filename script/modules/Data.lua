@@ -4,7 +4,7 @@ local DataModule = {}
 local function GetSea()
     local placeId = game.PlaceId
     if placeId == 2753915549 then return 1
-    elseif placeId == 4442272183 then return 2
+    elseif placeId == 4442272183 or placeId == 4442272121 then return 2
     elseif placeId == 7449423635 then return 3
     end
     return 1
@@ -28,7 +28,9 @@ local FullSeaData = {
         {Name = "Skylands", Pos = CFrame.new(-4842, 718, -2621)},
         {Name = "Prison", Pos = CFrame.new(4875, 5, 749)},
         {Name = "Magma Village", Pos = CFrame.new(-5313, 12, 8515)},
-        {Name = "Underwater City", Pos = CFrame.new(61122, 18, 1565)}
+        {Name = "Underwater City", Pos = CFrame.new(61122, 18, 1565)},
+        {Name = "Colosseum", Pos = CFrame.new(-1580, 7, -2980)},
+        {Name = "Fountain City", Pos = CFrame.new(5259, 38, 4050)}
     },
     [2] = {
         {Name = "Kingdom of Rose", Pos = CFrame.new(-425, 72, 1836)},
@@ -39,7 +41,10 @@ local FullSeaData = {
         {Name = "Hot and Cold", Pos = CFrame.new(-541, 70, -12133)},
         {Name = "Cursed Ship", Pos = CFrame.new(1037, 125, 32911)},
         {Name = "Ice Castle", Pos = CFrame.new(6061, 26, -6370)},
-        {Name = "Forgotten Island", Pos = CFrame.new(-3056, 235, -10142)}
+        {Name = "Forgotten Island", Pos = CFrame.new(-3056, 235, -10142)},
+        {Name = "Cafe", Pos = CFrame.new(-382, 73, 291)},
+        {Name = "Bartilo", Pos = CFrame.new(-2840, 10, 5318)},
+        {Name = "Don Swan's Room", Pos = CFrame.new(2288, 15, 808)}
     },
     [3] = {
         {Name = "Port Town", Pos = CFrame.new(-8053, 10, 5233)},
@@ -49,7 +54,10 @@ local FullSeaData = {
         {Name = "Haunted Castle", Pos = CFrame.new(-9515, 164, -5785)},
         {Name = "Sea of Treats", Pos = CFrame.new(-1147, 14, -11514)},
         {Name = "Tiki Outpost", Pos = CFrame.new(-16234, 12, 467)},
-        {Name = "Submerged Island", Pos = CFrame.new(-19500, -500, -18000)}
+        {Name = "Submerged Island", Pos = CFrame.new(-19500, -500, -18000)},
+        {Name = "Mansion", Pos = CFrame.new(-12463, 332, -7548)},
+        {Name = "Peanut Land", Pos = CFrame.new(-20631, 50, -9050)},
+        {Name = "Beautiful Pirate Domain", Pos = CFrame.new(5319, 23, -93)}
     }
 }
 
@@ -94,25 +102,30 @@ local FullQuestData = {
         {Min = 700, Name = "FountainQuest", NPC = "Fountain Quest Giver", ID = 3, Enemy = "Cyborg", Pos = CFrame.new(5259, 38, 4050), Spawn = CFrame.new(5500, 50, 4100)}
     },
     [2] = {
-        {Min = 700, Name = "Area1Quest", NPC = "Quest Giver", ID = 1, Enemy = "Raider", Pos = CFrame.new(-425, 72, 1836)},
-        {Min = 725, Name = "Area1Quest", NPC = "Quest Giver", ID = 2, Enemy = "Mercenary", Pos = CFrame.new(-425, 72, 1836)},
-        {Min = 750, Name = "Area2Quest", NPC = "Quest Giver", ID = 1, Enemy = "Swan Pirate", Pos = CFrame.new(-425, 72, 1836)},
-        {Min = 775, Name = "Area2Quest", NPC = "Quest Giver", ID = 2, Enemy = "Factory Worker", Pos = CFrame.new(-425, 72, 1836)},
-        {Min = 800, Name = "FajitaQuest", NPC = "Quest Giver", ID = 1, Enemy = "Marine Lieutenant", Pos = CFrame.new(-425, 72, 1836)},
-        {Min = 875, Name = "ZombieQuest", NPC = "Quest Giver", ID = 1, Enemy = "Zombie", Pos = CFrame.new(-5497, 47, -795)},
-        {Min = 900, Name = "ZombieQuest", NPC = "Quest Giver", ID = 2, Enemy = "Vampire", Pos = CFrame.new(-5497, 47, -795)},
-        {Min = 925, Name = "SnowMountainQuest", NPC = "Quest Giver", ID = 1, Enemy = "Snow Trooper", Pos = CFrame.new(609, 401, -5372)},
-        {Min = 950, Name = "SnowMountainQuest", NPC = "Quest Giver", ID = 2, Enemy = "Winter Warrior", Pos = CFrame.new(609, 401, -5372)},
-        {Min = 1000, Name = "IceCastleQuest", NPC = "Quest Giver", ID = 1, Enemy = "Reborn Skeleton", Pos = CFrame.new(6061, 26, -6370)},
-        {Min = 1050, Name = "IceCastleQuest", NPC = "Quest Giver", ID = 2, Enemy = "Awakened Ice Admiral", Pos = CFrame.new(6061, 26, -6370)},
-        {Min = 1100, Name = "FireSideQuest", NPC = "Quest Giver", ID = 1, Enemy = "Magma Ninja", Pos = CFrame.new(-541, 70, -12133)},
-        {Min = 1125, Name = "FireSideQuest", NPC = "Quest Giver", ID = 2, Enemy = "Lava Pirate", Pos = CFrame.new(-541, 70, -12133)},
-        {Min = 1150, Name = "ColdSideQuest", NPC = "Quest Giver", ID = 1, Enemy = "Lab Subordinate", Pos = CFrame.new(-541, 70, -12133)},
-        {Min = 1175, Name = "ColdSideQuest", NPC = "Quest Giver", ID = 2, Enemy = "Horned Warrior", Pos = CFrame.new(-541, 70, -12133)},
-        {Min = 1250, Name = "ShipQuest1", NPC = "Quest Giver", ID = 1, Enemy = "Ship Deckhand", Pos = CFrame.new(1037, 125, 32911)},
-        {Min = 1275, Name = "ShipQuest1", NPC = "Quest Giver", ID = 2, Enemy = "Ship Engineer", Pos = CFrame.new(1037, 125, 32911)},
-        {Min = 1300, Name = "ShipQuest2", NPC = "Quest Giver", ID = 1, Enemy = "Ship Steward", Pos = CFrame.new(1037, 125, 32911)},
-        {Min = 1325, Name = "ShipQuest2", NPC = "Quest Giver", ID = 2, Enemy = "Ship Officer", Pos = CFrame.new(1037, 125, 32911)}
+        {Min = 700, Name = "Area1Quest", NPC = "Quest Giver", ID = 1, Enemy = "Raider", Pos = CFrame.new(-425, 72, 1836), Spawn = CFrame.new(-500, 72, 1900)},
+        {Min = 725, Name = "Area1Quest", NPC = "Quest Giver", ID = 2, Enemy = "Mercenary", Pos = CFrame.new(-425, 72, 1836), Spawn = CFrame.new(-500, 72, 1900)},
+        {Min = 750, Name = "Area2Quest", NPC = "Quest Giver", ID = 1, Enemy = "Swan Pirate", Pos = CFrame.new(-425, 72, 1836), Spawn = CFrame.new(-650, 72, 2100)},
+        {Min = 775, Name = "Area2Quest", NPC = "Quest Giver", ID = 2, Enemy = "Factory Staff", Pos = CFrame.new(-425, 72, 1836), Spawn = CFrame.new(400, 72, 2500)},
+        {Min = 800, Name = "MarineQuest3", NPC = "Quest Giver", ID = 1, Enemy = "Marine Lieutenant", Pos = CFrame.new(-425, 72, 1836), Spawn = CFrame.new(-2440, 19, 3065)},
+        {Min = 875, Name = "ZombieQuest", NPC = "Quest Giver", ID = 1, Enemy = "Zombie", Pos = CFrame.new(-5497, 47, -795), Spawn = CFrame.new(-5600, 47, -900)},
+        {Min = 900, Name = "ZombieQuest", NPC = "Quest Giver", ID = 2, Enemy = "Vampire", Pos = CFrame.new(-5497, 47, -795), Spawn = CFrame.new(-5600, 47, -900)},
+        {Min = 925, Name = "SnowMountainQuest", NPC = "Quest Giver", ID = 1, Enemy = "Snow Trooper", Pos = CFrame.new(609, 401, -5372), Spawn = CFrame.new(700, 401, -5500)},
+        {Min = 950, Name = "SnowMountainQuest", NPC = "Quest Giver", ID = 2, Enemy = "Winter Warrior", Pos = CFrame.new(609, 401, -5372), Spawn = CFrame.new(700, 401, -5500)},
+        {Min = 1000, Name = "IceCastleQuest", NPC = "Quest Giver", ID = 1, Enemy = "Reborn Skeleton", Pos = CFrame.new(6061, 26, -6370), Spawn = CFrame.new(6200, 26, -6500)},
+        {Min = 1050, Name = "IceCastleQuest", NPC = "Quest Giver", ID = 2, Enemy = "Rengoku", Pos = CFrame.new(6061, 26, -6370), Spawn = CFrame.new(6200, 26, -6500)},
+        {Min = 1100, Name = "FireSideQuest", NPC = "Quest Giver", ID = 1, Enemy = "Magma Ninja", Pos = CFrame.new(-541, 70, -12133), Spawn = CFrame.new(-600, 70, -12200)},
+        {Min = 1125, Name = "FireSideQuest", NPC = "Quest Giver", ID = 2, Enemy = "Lava Pirate", Pos = CFrame.new(-541, 70, -12133), Spawn = CFrame.new(-600, 70, -12200)},
+        {Min = 1150, Name = "ColdSideQuest", NPC = "Quest Giver", ID = 1, Enemy = "Lab Subordinate", Pos = CFrame.new(-541, 70, -12133), Spawn = CFrame.new(-400, 70, -12000)},
+        {Min = 1175, Name = "ColdSideQuest", NPC = "Quest Giver", ID = 2, Enemy = "Horned Warrior", Pos = CFrame.new(-541, 70, -12133), Spawn = CFrame.new(-400, 70, -12000)},
+        {Min = 1200, Name = "Area2Quest", NPC = "Quest Giver", ID = 3, Enemy = "Military Spy", Pos = CFrame.new(-425, 72, 1836), Spawn = CFrame.new(-650, 72, 2100)},
+        {Min = 1250, Name = "ShipQuest1", NPC = "Quest Giver", ID = 1, Enemy = "Ship Deckhand", Pos = CFrame.new(1037, 125, 32911), Spawn = CFrame.new(1100, 125, 32950)},
+        {Min = 1275, Name = "ShipQuest1", NPC = "Quest Giver", ID = 2, Enemy = "Ship Engineer", Pos = CFrame.new(1037, 125, 32911), Spawn = CFrame.new(1100, 125, 32950)},
+        {Min = 1300, Name = "ShipQuest2", NPC = "Quest Giver", ID = 1, Enemy = "Ship Steward", Pos = CFrame.new(1037, 125, 32911), Spawn = CFrame.new(1100, 125, 32950)},
+        {Min = 1325, Name = "ShipQuest2", NPC = "Quest Giver", ID = 2, Enemy = "Ship Officer", Pos = CFrame.new(1037, 125, 32911), Spawn = CFrame.new(1100, 125, 32950)},
+        {Min = 1350, Name = "ShipQuest2", NPC = "Quest Giver", ID = 3, Enemy = "Ship Captain", Pos = CFrame.new(1037, 125, 32911), Spawn = CFrame.new(1100, 125, 32950)},
+        {Min = 1375, Name = "ShipQuest3", NPC = "Quest Giver", ID = 1, Enemy = "Core", Pos = CFrame.new(1037, 125, 32911), Spawn = CFrame.new(1100, 125, 32950)},
+        {Min = 1425, Name = "OrderQuest", NPC = "Quest Giver", ID = 1, Enemy = "Dangerous Agent", Pos = CFrame.new(-425, 72, 1836), Spawn = CFrame.new(-500, 72, 1900)},
+        {Min = 1450, Name = "OrderQuest", NPC = "Quest Giver", ID = 2, Enemy = "Vice Admiral", Pos = CFrame.new(-425, 72, 1836), Spawn = CFrame.new(-2440, 19, 3065)}
     },
     [3] = {
         {Min = 1500, Name = "PortTownQuest", NPC = "Quest Giver", ID = 1, Enemy = "Pirate Millionaire", Pos = CFrame.new(-8053, 10, 5233)},
@@ -133,8 +146,12 @@ local FullQuestData = {
         {Min = 2200, Name = "CakeQuest", NPC = "Quest Giver", ID = 1, Enemy = "Baking Staff", Pos = CFrame.new(-1147, 14, -11514)},
         {Min = 2275, Name = "ChocolateQuest", NPC = "Quest Giver", ID = 1, Enemy = "Cocoa Warrior", Pos = CFrame.new(-1147, 14, -11514)},
         {Min = 2300, Name = "ChocolateQuest", NPC = "Quest Giver", ID = 2, Enemy = "Chocolate Bar Battler", Pos = CFrame.new(-1147, 14, -11514)},
-        {Min = 2450, Name = "TikiQuest1", NPC = "Quest Giver", ID = 1, Enemy = "Sun-kissed Warrior", Pos = CFrame.new(-16234, 12, 467)},
-        {Min = 2500, Name = "TikiQuest1", NPC = "Quest Giver", ID = 2, Enemy = "Isle Outlaw", Pos = CFrame.new(-16234, 12, 467)}
+        {Min = 2450, Name = "TikiQuest1", NPC = "Quest Giver", ID = 1, Enemy = "Sun-kissed Warrior", Pos = CFrame.new(-16234, 12, 467), Spawn = CFrame.new(-16300, 12, 500)},
+        {Min = 2500, Name = "TikiQuest1", NPC = "Quest Giver", ID = 2, Enemy = "Isle Outlaw", Pos = CFrame.new(-16234, 12, 467), Spawn = CFrame.new(-16300, 12, 500)},
+        {Min = 2550, Name = "TikiQuest2", NPC = "Quest Giver", ID = 1, Enemy = "Isle Champion", Pos = CFrame.new(-16234, 12, 467), Spawn = CFrame.new(-16300, 12, 500)},
+        {Min = 2575, Name = "TikiQuest2", NPC = "Quest Giver", ID = 2, Enemy = "Serpent Hunter", Pos = CFrame.new(-16234, 12, 467), Spawn = CFrame.new(-16300, 12, 500)},
+        {Min = 2625, Name = "PeanutQuest", NPC = "Quest Giver", ID = 1, Enemy = "Peanut Scout", Pos = CFrame.new(-20631, 50, -9050), Spawn = CFrame.new(-20700, 50, -9100)},
+        {Min = 2650, Name = "PeanutQuest", NPC = "Quest Giver", ID = 2, Enemy = "Peanut President", Pos = CFrame.new(-20631, 50, -9050), Spawn = CFrame.new(-20700, 50, -9100)}
     }
 }
 
@@ -216,13 +233,11 @@ end
 
 function DataModule.GetBestQuest(level, sea)
     level = tonumber(level) or 0
-
     local bestQuest = nil
+
     for _, quest in ipairs(DataModule.GetQuests(sea)) do
         if level >= (quest.Min or 0) then
             bestQuest = quest
-        else
-            break
         end
     end
 

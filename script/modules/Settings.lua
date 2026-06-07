@@ -38,16 +38,23 @@ SettingsModule.Values = {
     BountyHop = false,
     KillAura = false, KillAuraDistance = 60, AttackAura = false, WalkOnWater = false, InfGeppo = true, FlyHack = false,
     WalkSpeed = 16, JumpPower = 50, InfEnergy = true,
-    AimBot = false, PlayerESP = false, BoxESP = false, LineESP = false,
+    AimBot = false, Aimbot = false, PlayerESP = false, BoxESP = false, LineESP = false,
     -- Teleport Settings
     SelectedIsland = "None",
     -- Visual (ESP)
     EspPlayers = false, EspFruits = false, EspChests = false, EspFlower = false, FullBright = false, FPSBooster = false, NoClip = false, EspBox = false, EspTracer = false,
+    EspMaxDistance = 2500, EspTextSize = 13, EspShowDistance = true, EspShowHealth = true, EspFilterName = "",
+    EspPlayerColor = { R = 100, G = 200, B = 255 },
+    EspNpcColor = { R = 255, G = 80, B = 80 },
+    EspChestColor = { R = 255, G = 200, B = 0 },
+    EspFruitColor = { R = 255, G = 60, B = 60 },
+    EspFlowerColor = { R = 255, G = 120, B = 255 },
+    EspBossOnly = false,
     AutoChest = false,
     LowGraphics = false, RemoveTextures = false, RemoveShadows = false, WhiteScreen = false,
     RemoveFog = false,
     -- Misc
-    AutoRejoin = true, AntiAFK = true, WebhookEnabled = false, 
+    AutoRejoin = false, AntiAFK = false, WebhookEnabled = false, 
     AutoBuyFruit = false, AutoStoreFruit = true, AutoFruitFinder = false, AutoSnipe = false,
     SnipeFruits = {"Dough", "Kitsune", "Leopard", "Dragon", "Spirit", "Control", "Venom", "Shadow"},
     SnipeFruitsRaw = "Dough,Kitsune,Leopard,Dragon,Spirit,Control,Venom,Shadow",
@@ -66,9 +73,16 @@ SettingsModule.Themes = {
 
 function SettingsModule.Save()
     pcall(function()
-        if writefile then 
-            writefile("MakitoHub_Configs.json", HttpService:JSONEncode(_G.Settings or SettingsModule.Values)) 
+        if not writefile then return end
+        local source = _G.Settings or SettingsModule.Values
+        local toSave = {}
+        for k, v in pairs(source) do
+            local valueType = typeof(v)
+            if valueType ~= "Color3" and valueType ~= "EnumItem" and valueType ~= "Instance" then
+                toSave[k] = v
+            end
         end
+        writefile("MakitoHub_Configs.json", HttpService:JSONEncode(toSave))
     end)
 end
 
@@ -76,12 +90,12 @@ function SettingsModule.Load()
     pcall(function()
         if isfile and isfile("MakitoHub_Configs.json") then
             local decoded = HttpService:JSONDecode(readfile("MakitoHub_Configs.json"))
-            for k, v in pairs(decoded) do 
-                if _G.Settings then
-                    _G.Settings[k] = v 
-                else
-                    SettingsModule.Values[k] = v
-                end
+            local target = _G.Settings or SettingsModule.Values
+            for k, v in pairs(decoded) do
+                target[k] = v
+            end
+            if target.CurrentTheme and SettingsModule.Themes[target.CurrentTheme] then
+                target.ThemeColor = SettingsModule.Themes[target.CurrentTheme]
             end
         end
     end)
@@ -89,7 +103,7 @@ function SettingsModule.Load()
     local target = _G.Settings or SettingsModule.Values
     local disabled = {
         "AutoFarm", "AutoQuest", "FastAttack", "BringMobs", "AutoFarmNearest",
-        "KillAura", "AimBot", "AutoBounty", "AutoCombo", "AutoStats",
+        "KillAura", "AimBot", "Aimbot", "AutoBounty", "AutoCombo", "AutoStats",
         "AutoChest", "AutoCollectFruit", "AutoBringFruit", "AutoFruitFinder",
         "AutoSnipe", "AutoBuyFruit", "AutoGacha", "AutoBuyChip",
         "AutoStartRaid", "AutoDungeon", "AutoNextIsland", "AutoAwaken",

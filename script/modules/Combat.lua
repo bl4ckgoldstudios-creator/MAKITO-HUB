@@ -2,23 +2,24 @@ local CombatModule = {}
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
-local VirtualInputManager = game:GetService("VirtualInputManager")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local FastAttackConn = nil
+local KillAuraConn = nil
 local CombatFramework = nil
 local CombatFrameworkRoot = nil
-local FastAttackConn = nil
+
+-- CACHE DE REMOTOS PARA PERFORMANCE
+local CommF = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_")
 
 local function GetFramework()
     if CombatFramework and CombatFrameworkRoot then return end
     pcall(function()
-        -- Tenta vários caminhos possíveis para o framework
         local possiblePaths = {
             LocalPlayer.PlayerScripts:FindFirstChild("CombatFramework"),
             LocalPlayer.PlayerScripts:FindFirstChild("CombatFrameworkR"),
-            ReplicatedStorage:FindFirstChild("CombatFramework"),
-            LocalPlayer.PlayerScripts:FindFirstChild("CombatHandler")
+            ReplicatedStorage:FindFirstChild("CombatFramework")
         }
         
         for _, framework in ipairs(possiblePaths) do
@@ -31,28 +32,15 @@ local function GetFramework()
             end
         end
 
-        if CombatFramework then
-            -- Tenta localizar o controller ativo
-            local controller = CombatFramework.activeController or CombatFramework.controller
-            if not controller then
-                -- Fallback para busca em tabelas internas se o path padrão falhar
-                for _, v in pairs(CombatFramework) do
-                    if type(v) == "table" and (v.activeController or v.controller) then
-                        controller = v.activeController or v.controller
-                        break
-                    end
-                end
-            end
-
+        if CombatFramework and type(CombatFramework) == "table" then
+            local controller = CombatFramework.activeController
             if controller and (controller.attack or controller.Attack) then
                 local attackFn = controller.attack or controller.Attack
-                local success, upvalues = pcall(debug.getupvalues, attackFn)
-                if success and upvalues then
-                    for _, v in pairs(upvalues) do
-                        if type(v) == "table" and (v.activeController or v.controller) then
-                            CombatFrameworkRoot = v
-                            break
-                        end
+                local upvalues = debug.getupvalues(attackFn)
+                for _, v in pairs(upvalues) do
+                    if type(v) == "table" and v.activeController then
+                        CombatFrameworkRoot = v
+                        break
                     end
                 end
             end
@@ -61,126 +49,87 @@ local function GetFramework()
 end
 
 function CombatModule.StopFastAttack()
-    if FastAttackConn then FastAttackConn:Disconnect() FastAttackConn = nil end
+    if FastAttackConn then
+        FastAttackConn:Disconnect()
+        FastAttackConn = nil
+    end
 end
 
 function CombatModule.StartFastAttack()
-    CombatModule.StopFastAttack()
-    FastAttackConn = RunService.Heartbeat:Connect(function()
-        if _G.MakitoHubRunning and _G.Settings.FastAttack then
-            pcall(function()
-                GetFramework()
-                if CombatFramework and CombatFramework.activeController then
-                    local controller = CombatFrameworkRoot and CombatFrameworkRoot.activeController or CombatFramework.activeController
-                    
-                    -- SUPREME PACKET BYPASS (V24 ELITE)
-                    controller.hitboxMagnitude = 150 
-                    controller.attackCount = 0
-                    controller.timeToNextAttack = 0
-                    controller.increment = 0
-                    controller.active = true
-                    
-                    -- SUPREME BURST: Envia pacotes de dano em massa sem animação
-                    local weapon = LocalPlayer.Character:FindFirstChildOfClass("Tool")
-                    if weapon then
-                        -- Simula 5-10 ataques por frame de forma segura (Packet Burst)
-                        for i = 1, 5 do
-                            CombatFramework.activeController.attack()
-                        end
-                    end
-                    
-                    -- ANTI-LAG
-                    if tick() % 30 < 0.1 then collectgarbage("collect") end
+    if FastAttackConn then return end
+    
+    FastAttackConn = RunService.PostSimulation:Connect(function()
+        if not _G.Settings or not _G.Settings.FastAttack then return end
+        
+        pcall(function()
+            GetFramework()
+            local weapon = LocalPlayer.Character:FindFirstChildOfClass("Tool")
+            if not weapon or weapon.ToolTip ~= "Melee" and weapon.ToolTip ~= "Sword" then return end
+            
+            local controller = CombatFramework and CombatFramework.activeController
+            if controller then
+                -- Bypass de animação e delay
+                controller.hitboxMagnitude = 60
+                controller.attackCount = 0
+                controller.timeToNextAttack = 0
+                controller.increment = 0
+                controller.active = true
+                
+                -- Burst de ataques (Ajustado para não dar kick)
+                for i = 1, 3 do
+                    controller.attack()
                 end
-            end)
-        end
+            end
+        end)
     end)
 end
 
--- REDZ HUB STYLE KILL AURA V3 (SILENT & CONTINUOUS)
-local KillAuraConn = nil
-
 function CombatModule.StopKillAura()
-    if KillAuraConn then KillAuraConn:Disconnect() KillAuraConn = nil end
+    if KillAuraConn then
+        KillAuraConn:Disconnect()
+        KillAuraConn = nil
+    end
 end
 
 function CombatModule.StartKillAura()
-    CombatModule.StopKillAura()
+    if KillAuraConn then return end
     
     KillAuraConn = RunService.Heartbeat:Connect(function()
-        if _G.MakitoHubRunning and _G.Settings.KillAura then
-            pcall(function()
-                GetFramework()
-                if CombatFramework and CombatFramework.activeController then
-                    local enemiesFolder = workspace:FindFirstChild("Enemies") or workspace
-                    local playerPos = LocalPlayer.Character.HumanoidRootPart.Position
-                    local auraDist = _G.Settings.KillAuraDistance or 60
-                    
-                    for _, v in ipairs(enemiesFolder:GetChildren()) do
-                        if v:IsA("Model") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
-                            local enemyPos = v.HumanoidRootPart.Position
-                            local dist = (enemyPos - playerPos).Magnitude
-                            
-                            if dist <= auraDist then
-                                -- REDZ STYLE: Continuous Damage Packet
-                                -- Simula ataques ultra-rápidos sem animação para cada inimigo no raio
-                                local controller = CombatFrameworkRoot and CombatFrameworkRoot.activeController or CombatFramework.activeController
-                                
-                                controller.hitboxMagnitude = 150
-                                controller.active = true
-                                controller.timeToNextAttack = 0
-                                
-                                -- BURST DAMAGE: Hits por inimigo
-                                for i = 1, 2 do
-                                    pcall(function()
-                                        CombatFramework.activeController.attack()
-                                    end)
-                                end
-                            end
-                        end
+        if not _G.Settings or not _G.Settings.KillAura then return end
+        
+        pcall(function()
+            local enemies = workspace:FindFirstChild("Enemies") or workspace
+            local myPos = LocalPlayer.Character.HumanoidRootPart.Position
+            
+            for _, v in ipairs(enemies:GetChildren()) do
+                if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
+                    local dist = (myPos - v.HumanoidRootPart.Position).Magnitude
+                    if dist <= 65 then
+                        -- Simula ataque sem precisar de animação
+                        CommF:InvokeServer("Attack", v.HumanoidRootPart)
                     end
                 end
-            end)
-        end
+            end
+        end)
     end)
 end
 
 function CombatModule.KillAuraLogic()
-    -- Função mantida para compatibilidade com o main.lua anterior
-    if _G.Settings.KillAura then
-        if not KillAuraConn then CombatModule.StartKillAura() end
+    if _G.Settings and _G.Settings.KillAura then
+        CombatModule.StartKillAura()
     else
         CombatModule.StopKillAura()
     end
 end
 
--- AUTO BOUNTY (HUNT PLAYERS)
-function CombatModule.AutoBountyLogic()
-    if not _G.Settings.AutoBounty then return end
-    local target = nil
-    for _, v in ipairs(game:GetService("Players"):GetPlayers()) do
-        if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("Humanoid") and v.Character.Humanoid.Health > 0 then
-            target = v
-            break
-        end
-    end
-    
-    if target then
-        _G.Utils.TweenTo(target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 10, 0))
-        CombatModule.StartFastAttack()
-        CombatModule.AimBotLogic(target.Character.HumanoidRootPart)
-    end
-end
-
--- AIMBOT LOGIC REFINED
 function CombatModule.AimBotLogic(customTarget)
-    if not _G.Settings.Aimbot and not customTarget then return end
+    if not _G.Settings or (not _G.Settings.Aimbot and not customTarget) then return end
     
     local target = customTarget
     if not target then
         local nearest = nil
         local minDist = math.huge
-        for _, v in ipairs(game:GetService("Players"):GetPlayers()) do
+        for _, v in ipairs(Players:GetPlayers()) do
             if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
                 local dist = (LocalPlayer.Character.HumanoidRootPart.Position - v.Character.HumanoidRootPart.Position).Magnitude
                 if dist < minDist then
@@ -198,63 +147,101 @@ function CombatModule.AimBotLogic(customTarget)
     end
 end
 
-function CombatModule.UseSkill(key, holdTime)
+function CombatModule.AutoBountyLogic()
+    if not _G.Settings or not _G.Settings.AutoBounty then return end
+    local target = nil
+    for _, v in ipairs(Players:GetPlayers()) do
+        if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("Humanoid") and v.Character.Humanoid.Health > 0 then
+            target = v
+            break
+        end
+    end
+    
+    if target then
+        _G.Utils.TweenTo(target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 10, 0))
+        CombatModule.StartFastAttack()
+        CombatModule.AimBotLogic(target.Character.HumanoidRootPart)
+    end
+end
+
+function CombatModule.UseSkill(key)
     pcall(function()
-        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode[key], false, game)
-        if holdTime then task.wait(holdTime) end
-        VirtualInputManager:SendKeyEvent(false, Enum.KeyCode[key], false, game)
+        local virtualInput = game:GetService("VirtualInputManager")
+        virtualInput:SendKeyEvent(true, key, false, game)
+        task.wait(0.05)
+        virtualInput:SendKeyEvent(false, key, false, game)
     end)
 end
 
--- ESP & VISUAL LOGIC
 function CombatModule.ESPLogic()
+    if not _G.Utils then return end
     _G.Utils.ClearESP()
-    
-    -- 1. Player ESP
-    if _G.Settings.PlayerESP or _G.Settings.EspPlayers then
+
+    local playerColor = _G.Utils.ColorFromSettings("EspPlayerColor", Color3.fromRGB(100, 200, 255))
+    local npcColor = _G.Utils.ColorFromSettings("EspNpcColor", Color3.fromRGB(255, 80, 80))
+    local chestColor = _G.Utils.ColorFromSettings("EspChestColor", Color3.fromRGB(255, 200, 0))
+    local fruitColor = _G.Utils.ColorFromSettings("EspFruitColor", Color3.fromRGB(255, 60, 60))
+    local flowerColor = _G.Utils.ColorFromSettings("EspFlowerColor", Color3.fromRGB(255, 120, 255))
+    local showHealth = _G.Settings and _G.Settings.EspShowHealth ~= false
+
+    if _G.Settings and (_G.Settings.PlayerESP or _G.Settings.EspPlayers) then
         for _, v in ipairs(Players:GetPlayers()) do
             if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
-                local color = v.TeamColor.Color
-                local text = string.format("👤 %s (%d%%)", v.Name, math.floor((v.Character.Humanoid.Health/v.Character.Humanoid.MaxHealth)*100))
-                _G.Utils.CreateESP(v.Character.HumanoidRootPart, text, color, "Player")
+                local root = v.Character.HumanoidRootPart
+                local hum = v.Character:FindFirstChild("Humanoid")
+                if hum then
+                    local text = string.format("👤 %s (%d%%)", v.Name, math.floor((hum.Health / hum.MaxHealth) * 100))
+                    if _G.Utils.PassesESPFilter(v.Name, _G.Utils.GetDistanceTo(root)) then
+                        _G.Utils.CreateESP(root, text, playerColor, "Player")
+                    end
+                end
             end
         end
     end
 
-    -- 2. NPC / Enemy ESP
-    if _G.Settings.NpcESP then
+    if _G.Settings and _G.Settings.NpcESP then
         local enemiesFolder = workspace:FindFirstChild("Enemies") or workspace
         for _, v in ipairs(enemiesFolder:GetChildren()) do
             if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
-                _G.Utils.CreateESP(v.HumanoidRootPart, "👾 " .. v.Name, Color3.fromRGB(255, 50, 50), "NPC")
+                local isBoss = v.Name:find("Boss") or v.Name:find("King") or v.Name:find("Admiral")
+                if not _G.Settings.EspBossOnly or isBoss then
+                    local text = string.format("👾 %s (%d HP)", v.Name, math.floor(v.Humanoid.Health))
+                    if _G.Utils.PassesESPFilter(v.Name, _G.Utils.GetDistanceTo(v.HumanoidRootPart)) then
+                        _G.Utils.CreateESP(v.HumanoidRootPart, text, npcColor, "NPC")
+                    end
+                end
             end
         end
     end
 
-    -- 3. Chest ESP
-    if _G.Settings.EspChests or _G.Settings.AutoChest then
+    if _G.Settings and _G.Settings.EspChests then
         for _, v in ipairs(workspace:GetChildren()) do
-            if v.Name:find("Chest") and v:IsA("Part") then
-                _G.Utils.CreateESP(v, "💰 Baú", Color3.fromRGB(255, 200, 0), "Chest")
+            if v.Name:find("Chest") and v:IsA("BasePart") then
+                if _G.Utils.PassesESPFilter(v.Name, _G.Utils.GetDistanceTo(v)) then
+                    _G.Utils.CreateESP(v, "💰 Baú", chestColor, "Chest")
+                end
             end
         end
     end
 
-    -- 4. Fruit ESP
-    if _G.Settings.EspFruits or _G.Settings.AutoFruitESP then
+    if _G.Settings and (_G.Settings.EspFruits or _G.Settings.AutoFruitESP) then
         for _, v in ipairs(workspace:GetChildren()) do
             if v:IsA("Tool") and (v.Name:find("Fruit") or v:FindFirstChild("Handle")) then
-                _G.Utils.CreateESP(v:FindFirstChild("Handle") or v, "🍎 " .. v.Name, Color3.fromRGB(255, 0, 0), "Fruit")
+                local handle = v:FindFirstChild("Handle") or v
+                if _G.Utils.PassesESPFilter(v.Name, _G.Utils.GetDistanceTo(handle)) then
+                    _G.Utils.CreateESP(handle, "🍎 " .. v.Name, fruitColor, "Fruit")
+                end
             end
         end
     end
 
-    -- 5. Flower ESP (Sea 2 Race V2)
-    if _G.Settings.EspFlower then
+    if _G.Settings and _G.Settings.EspFlower then
         for _, v in ipairs(workspace:GetChildren()) do
             if v.Name:find("Flower") and v:IsA("BasePart") then
-                local color = v.Name:find("Red") and Color3.new(1,0,0) or v.Name:find("Blue") and Color3.new(0,0,1) or Color3.new(1,1,0)
-                _G.Utils.CreateESP(v, "🌸 " .. v.Name, color, "Flower")
+                local color = v.Name:find("Red") and Color3.new(1, 0, 0) or v.Name:find("Blue") and Color3.new(0, 0, 1) or flowerColor
+                if _G.Utils.PassesESPFilter(v.Name, _G.Utils.GetDistanceTo(v)) then
+                    _G.Utils.CreateESP(v, "🌸 " .. v.Name, color, "Flower")
+                end
             end
         end
     end
