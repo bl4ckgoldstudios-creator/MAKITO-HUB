@@ -261,10 +261,10 @@ function UtilsModule.SetStreamerMode(enabled)
                 if mainGui then
                     if mainGui:FindFirstChild("Data") then mainGui.Data.Visible = false end
                     if mainGui:FindFirstChild("Bounty") then mainGui.Bounty.Visible = false end
-                
+                end
                 -- Esconde o nome no Watermark se necessário
-            end) end)
-        end
+            end)
+        end)
     else
         if StreamerConn then StreamerConn:Disconnect() StreamerConn = nil end
         pcall(function()
