@@ -121,15 +121,20 @@ local function LoadModule(name)
         for _, path in ipairs(paths) do
             if isfile(path) then
                 local success, res = TryLoad(readfile(path), true)
-                if success then return res end
+                if success then return res end -- RETORNA O MÓDULO (TABELA)
                 warn("[MAKITO] Falha ao carregar local " .. path .. ": " .. tostring(res))
             end
         end
     end
 
     -- Tentar GitHub como fallback
-    local success, res = pcall(function() return TryLoad(githubBase .. name .. ".lua", false) end)
-    if success and res then return res end
+    local githubSuccess, githubRes = pcall(function() 
+        local success, res = TryLoad(githubBase .. name .. ".lua", false)
+        if success then return res end
+        return nil
+    end)
+    
+    if githubSuccess and githubRes then return githubRes end
     
     warn("[MAKITO] Não foi possível carregar o módulo: " .. name)
     return nil
