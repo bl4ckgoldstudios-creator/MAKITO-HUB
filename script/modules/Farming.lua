@@ -195,6 +195,39 @@ function FarmingModule.SupremeAutoFarm()
     end)
 end
 
+-- FRUIT FINDER & COLLECTOR (INSPIRED BY ALCHEMY)
+function FarmingModule.FruitLogic()
+    if _G.Settings.AutoFruitESP then
+        _G.Utils.ClearESP()
+        for _, v in ipairs(workspace:GetChildren()) do
+            if v:IsA("Tool") and (v.Name:find("Fruit") or v:FindFirstChild("Handle")) then
+                _G.Utils.CreateESP(v, "🍎 " .. v.Name, Color3.fromRGB(255, 0, 0))
+            end
+        end
+    end
+
+    if _G.Settings.AutoCollectFruit then
+        for _, v in ipairs(workspace:GetChildren()) do
+            if v:IsA("Tool") and (v.Name:find("Fruit") or v:FindFirstChild("Handle")) then
+                local handle = v:FindFirstChild("Handle") or v
+                local targetCF = handle.CFrame
+                _G.Utils.TweenTo(targetCF)
+                firetouchinterest(LocalPlayer.Character.HumanoidRootPart, handle, 0)
+                firetouchinterest(LocalPlayer.Character.HumanoidRootPart, handle, 1)
+                break
+            end
+        end
+    end
+
+    if _G.Settings.AutoStoreFruit then
+        for _, v in ipairs(LocalPlayer.Backpack:GetChildren()) do
+            if v:IsA("Tool") and (v.ToolTip == "Blox Fruit" or v.ToolTip == "Demon Fruit") then
+                _G.Utils.SafeRemote("StoreFruit", v.Name, v)
+            end
+        end
+    end
+end
+
 function FarmingModule.AutoFarmNearestLogic()
     if not _G.Settings.AutoFarmNearest then return end
     

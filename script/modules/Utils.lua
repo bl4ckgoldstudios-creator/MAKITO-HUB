@@ -197,6 +197,38 @@ function UtilsModule.ClearESP()
     ESPObjects = {}
 end
 
+-- SERVER UTILITIES (INSPIRADO NO ALCHEMY)
+function UtilsModule.ServerHop()
+    local Http = game:GetService("HttpService")
+    local TPS = game:GetService("TeleportService")
+    local Api = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Desc&limit=100"
+    
+    local function ListServers(cursor)
+        local raw = game:HttpGet(Api .. (cursor and "&cursor=" .. cursor or ""))
+        return Http:JSONDecode(raw)
+    end
+    
+    local nextCursor = nil
+    for i = 1, 10 do
+        local servers = ListServers(nextCursor)
+        for _, server in ipairs(servers.data) do
+            if server.playing < server.maxPlayers and server.id ~= game.JobId then
+                TPS:TeleportToPlaceInstance(game.PlaceId, server.id, LocalPlayer)
+                return
+            end
+        end
+        if servers.nextPageCursor then
+            nextCursor = servers.nextPageCursor
+        else
+            break
+        end
+    end
+end
+
+function UtilsModule.Rejoin()
+    game:GetService("TeleportService"):Teleport(game.PlaceId, LocalPlayer)
+end
+
 -- WORLD VISUALS
 function UtilsModule.SetFullBright(enabled)
     if enabled then
@@ -217,6 +249,73 @@ function UtilsModule.RemoveFog(enabled)
             if v:IsA("Atmosphere") then v:Destroy() end
         end
     end
+end
+
+-- PROTEÇÕES E MISC (ESTILO ALCHEMY)
+local StreamerConn = nil
+function UtilsModule.SetStreamerMode(enabled)
+    if enabled then
+        StreamerConn = RunService.RenderStepped:Connect(function()
+            pcall(function()
+                local mainGui = LocalPlayer.PlayerGui:FindFirstChild("Main")
+                if mainGui then
+                    if mainGui:FindFirstChild("Data") then mainGui.Data.Visible = false end
+                    if mainGui:FindFirstChild("Bounty") then mainGui.Bounty.Visible = false end
+                
+                -- Esconde o nome no Watermark se necessário
+            end) end)
+        end
+    else
+        if StreamerConn then StreamerConn:Disconnect() StreamerConn = nil end
+        pcall(function()
+            local mainGui = LocalPlayer.PlayerGui:FindFirstChild("Main")
+            if mainGui then
+                if mainGui:FindFirstChild("Data") then mainGui.Data.Visible = true end
+                if mainGui:FindFirstChild("Bounty") then mainGui.Bounty.Visible = true end
+            end
+        end)
+    end
+end
+
+local OverlayGui = nil
+function UtilsModule.SetScreenOverlay(type) -- "None", "Black", "White"
+    if OverlayGui then OverlayGui:Destroy() OverlayGui = nil end
+    if type == "None" then return end
+    
+    OverlayGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
+    OverlayGui.Name = "MakitoOverlay"
+    OverlayGui.DisplayOrder = 9999
+    
+    local frame = Instance.new("Frame", OverlayGui)
+    frame.Size = UDim2.new(1, 0, 1, 0)
+    frame.BackgroundColor3 = type == "Black" and Color3.new(0, 0, 0) or Color3.new(1, 1, 1)
+    frame.BorderSizePixel = 0
+    
+    local label = Instance.new("TextLabel", frame)
+    label.Size = UDim2.new(1, 0, 0, 50)
+    label.Position = UDim2.new(0, 0, 0.5, -25)
+    label.BackgroundTransparency = 1
+    label.Text = "MAKITO HUB - " .. type:upper() .. " SCREEN MODE ACTIVE\n(Pressione Shift+F1 para alternar GUI)"
+    label.TextColor3 = type == "Black" and Color3.new(1, 1, 1) or Color3.new(0, 0, 0)
+    label.Font = Enum.Font.GothamBold
+    label.TextSize = 20
+end
+
+function UtilsModule.AntiAFK()
+    local virtualUser = game:GetService("VirtualUser")
+    LocalPlayer.Idled:Connect(function()
+        virtualUser:CaptureController()
+        virtualUser:ClickButton2(Vector2.new())
+    end)
+end
+
+function UtilsModule.ChatSpam(message, delay)
+    task.spawn(function()
+        while _G.Settings.ChatSpam do
+            game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest:FireServer(message, "All")
+            task.wait(delay or 5)
+        end
+    end)
 end
 
 -- MODERATOR CHECK (SAFE EXIT)

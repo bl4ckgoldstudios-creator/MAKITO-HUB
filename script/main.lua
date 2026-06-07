@@ -126,9 +126,12 @@ _G.MakitoStatus = {Text = "Carregado!"}
 
 -- 2. ESCALONADOR DE TAREFAS
 local function StartLoops()
+    _G.Utils.AntiAFK() -- Inicia Anti-AFK por padrão
+
     task.spawn(function()
         while _G.MakitoHubRunning do
             pcall(function()
+                if _G.Settings.AutoKickMod then _G.Utils.CheckModerator() end
                 if _G.Settings.FastAttack then _G.Combat.StartFastAttack() else _G.Combat.StopFastAttack() end
                 _G.Combat.KillAuraLogic()
                 _G.Combat.AimBotLogic()
@@ -191,4 +194,5 @@ end
 
 StartLoops()
 UI.CreateHub()
+UI.CreateWatermark()
 _G.Utils.Notify("MAKITO HUB V9.7 ATIVADO!", 5)

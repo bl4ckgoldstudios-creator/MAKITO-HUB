@@ -8,6 +8,7 @@ local LocalPlayer = Players.LocalPlayer
 
 local Tabs = {}
 local CurrentTab = nil
+local Watermark = {}
 
 -- UTILS PARA DESIGN
 local function Ripple(obj)
@@ -63,6 +64,13 @@ function UIModule.CreateWindow(title, themeColor)
     
     FloatingBtn.MouseButton1Click:Connect(function()
         MainFrame.Visible = not MainFrame.Visible
+    end)
+
+    -- Keyboard Toggle (RightControl)
+    UserInputService.InputBegan:Connect(function(input, gpe)
+        if not gpe and input.KeyCode == Enum.KeyCode.RightControl then
+            MainFrame.Visible = not MainFrame.Visible
+        end
     end)
 
     local MainCorner = Instance.new("UICorner", MainFrame)
@@ -492,13 +500,44 @@ function UIModule.CreateHub()
     UIModule.NewToggle(FruitTab, "Teleport to Spawned Fruit", "AutoFruitFinder")
     UIModule.NewToggle(FruitTab, "Auto Bring Fruits", "AutoBringFruit")
     UIModule.NewToggle(FruitTab, "Auto Store Fruits", "AutoStoreFruit")
+    UIModule.NewToggle(FruitTab, "Fruit ESP", "AutoFruitESP")
+    UIModule.NewToggle(FruitTab, "Auto Collect Fruits", "AutoCollectFruit")
     UIModule.NewTextBox(FruitTab, "Snipe List", "Ex: Dragon,Kitsune", "SnipeFruitsRaw", function(val)
         local fruits = {}
         for s in val:gmatch("([^,]+)") do 
             local clean = s:gsub("^%s*(.-)%s*$", "%1")
-            table.insert(fruits, clean) 
+            table.insert(fruits, clean)
         end
         _G.Settings.SnipeFruits = fruits
+    end)
+
+    local MiscTab = UIModule.NewTab("Misc")
+    UIModule.NewSection(MiscTab, "Safety & Protection")
+    UIModule.NewToggle(MiscTab, "Auto Kick Moderator", "AutoKickMod")
+    UIModule.NewToggle(MiscTab, "Streamer Mode", "StreamerMode", function(v) _G.Utils.SetStreamerMode(v) end)
+    UIModule.NewDropdown(MiscTab, "Screen Overlay", {"None", "Black", "White"}, "OverlayType", function(v) _G.Utils.SetScreenOverlay(v) end)
+    UIModule.NewSection(MiscTab, "Server")
+    UIModule.NewButton(MiscTab, "Server Hop", function() _G.Utils.ServerHop() end)
+    UIModule.NewButton(MiscTab, "Rejoin Server", function() _G.Utils.Rejoin() end)
+    UIModule.NewSection(MiscTab, "Visuals")
+    UIModule.NewButton(MiscTab, "Full Bright", function() _G.Utils.SetFullBright(true) end)
+    UIModule.NewButton(MiscTab, "Remove Fog", function() 
+        game:GetService("Lighting").FogEnd = 9e9
+        for _, v in ipairs(game:GetService("Lighting"):GetChildren()) do
+            if v:IsA("Atmosphere") then v:Destroy() end
+        end
+    end)
+    UIModule.NewSection(MiscTab, "Social")
+    UIModule.NewTextBox(MiscTab, "Spam Message", "Ex: Makito Hub on Top!", "SpamMessage")
+    UIModule.NewToggle(MiscTab, "Chat Spam", "ChatSpam", function(v) if v then _G.Utils.ChatSpam(_G.Settings.SpamMessage) end end)
+    UIModule.NewSection(MiscTab, "Performance")
+    UIModule.NewButton(MiscTab, "Boost FPS", function() 
+        for _, v in ipairs(game:GetDescendants()) do
+            if v:IsA("BasePart") or v:IsA("Decal") then
+                v.Material = Enum.Material.SmoothPlastic
+                if v:IsA("Decal") then v.Transparency = 1 end
+            end
+        end
     end)
 
     local DungeonTab = UIModule.NewTab("Dungeon & Raid")
@@ -577,6 +616,48 @@ function UIModule.Notify(text, duration)
             Duration = duration or 5
         })
     end)
+end
+
+function UIModule.CreateWatermark()
+    local watermark = Instance.new("ScreenGui")
+    watermark.Name = "MakitoWatermark"
+    watermark.Parent = CoreGui
+    watermark.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    watermark.ResetOnSpawn = false
+
+    local Frame = Instance.new("Frame")
+    Frame.Parent = watermark
+    Frame.AnchorPoint = Vector2.new(0.5, 0)
+    Frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    Frame.BorderSizePixel = 0
+    Frame.Position = UDim2.new(0.5, 0, 0, 10)
+    Frame.Size = UDim2.new(0, 300, 0, 25)
+
+    local UICorner = Instance.new("UICorner", Frame)
+    UICorner.CornerRadius = UDim.new(0, 8)
+    
+    local UIStroke = Instance.new("UIStroke", Frame)
+    UIStroke.Color = Color3.fromRGB(0, 255, 150)
+    UIStroke.Thickness = 1.5
+
+    local TextLabel = Instance.new("TextLabel", Frame)
+    TextLabel.Size = UDim2.new(1, 0, 1, 0)
+    TextLabel.BackgroundTransparency = 1
+    TextLabel.Font = Enum.Font.GothamBold
+    TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    TextLabel.TextSize = 13
+    TextLabel.RichText = true
+
+    task.spawn(function()
+        while task.wait(1) do
+            local fps = math.floor(1 / task.wait())
+            local ping = game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValueString():split(" ")[1]
+            local time = os.date("%X")
+            TextLabel.Text = string.format("MAKITO <font color='#00FF96'>HUB</font> | FPS: %d | PING: %s | %s", fps, ping, time)
+        end
+    end)
+    
+    return watermark
 end
 
 return UIModule
