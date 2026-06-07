@@ -189,16 +189,21 @@ function FarmingModule.SupremeAutoFarm()
             
             FarmingModule.BlackHoleBringMobs(enemy)
             
-            -- POSITIONING V3 (BEHIND OR ABOVE)
-            local offset = _G.Settings.Distance or 10
+            -- POSITIONING V3 (FLOAT ABOVE)
+            local offset = _G.Settings.Distance or 12
             local targetCF = enemy.HumanoidRootPart.CFrame * CFrame.new(0, offset, 0)
             
-            -- Smooth Rotation
+            -- Look at enemy to keep it in focus
             targetCF = CFrame.new(targetCF.Position, enemy.HumanoidRootPart.Position)
             
             local dist = (LocalPlayer.Character.HumanoidRootPart.Position - targetCF.Position).Magnitude
-            if dist > 5 then
-                if dist > 300 or _G.Settings.InfiniteSpeed then
+            
+            -- Garantir Float e NoClip ativos durante o farm
+            _G.Utils.Float(true)
+            _G.Utils.SetNoClip(true)
+
+            if dist > 2 then
+                if dist > 150 or _G.Settings.InfiniteSpeed then
                     _G.Utils.TweenTo(targetCF)
                 else
                     LocalPlayer.Character.HumanoidRootPart.CFrame = targetCF

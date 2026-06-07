@@ -82,18 +82,20 @@ function CombatModule.StartFastAttack()
             end
 
             if activeController then
-                -- Otimização extrema do estado do controlador
-                activeController.hitboxMagnitude = 60
+                -- Otimização extrema (Estilo Redz)
+                activeController.hitboxMagnitude = 100 -- Magnitude aumentada para alcance
                 activeController.attackCount = 0
                 activeController.timeToNextAttack = 0
                 activeController.increment = 0
                 activeController.active = true
                 
-                -- Execução de ataque via framework
-                if activeController.attack then
-                    activeController.attack()
-                elseif activeController.Attack then
-                    activeController.Attack()
+                -- Spam de ataque contínuo
+                for i = 1, 3 do
+                    if activeController.attack then
+                        activeController.attack()
+                    elseif activeController.Attack then
+                        activeController.Attack()
+                    end
                 end
             end
         end)
@@ -110,33 +112,40 @@ end
 function CombatModule.StartKillAura()
     if KillAuraConn then return end
     
-    KillAuraConn = RunService.Heartbeat:Connect(function()
+    KillAuraConn = RunService.Stepped:Connect(function()
         if not _G.Settings or not _G.Settings.KillAura then return end
         
         pcall(function()
             local enemies = workspace:FindFirstChild("Enemies") or workspace
             local myPos = LocalPlayer.Character.HumanoidRootPart.Position
+            local targets = {}
             
             for _, v in ipairs(enemies:GetChildren()) do
                 if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
                     local dist = (myPos - v.HumanoidRootPart.Position).Magnitude
-                    if dist <= 65 then
-                        GetFramework()
-                        local activeController = CombatFramework and CombatFramework.activeController
-                        if not activeController and CombatFrameworkRoot then
-                            activeController = CombatFrameworkRoot.activeController
-                        end
+                    if dist <= 100 then -- Alcance da Aura
+                        table.insert(targets, v.HumanoidRootPart)
+                    end
+                end
+            end
 
-                        if activeController then
-                            -- Força o ataque no inimigo da aura
-                            if activeController.attack then
-                                activeController.attack()
-                            elseif activeController.Attack then
-                                activeController.Attack()
-                            end
-                            -- Fallback via remoto se o framework falhar em registrar dano
-                            CommF:InvokeServer("Attack", v.HumanoidRootPart)
+            if #targets > 0 then
+                GetFramework()
+                local activeController = CombatFramework and CombatFramework.activeController
+                if not activeController and CombatFrameworkRoot then
+                    activeController = CombatFrameworkRoot.activeController
+                end
+
+                if activeController then
+                    -- Redz Hub Style: Ataca todos os alvos simultaneamente via Framework
+                    for _, target in ipairs(targets) do
+                        if activeController.attack then
+                            activeController.attack()
+                        elseif activeController.Attack then
+                            activeController.Attack()
                         end
+                        -- Dano direto via Remoto (Garantia de Hitbox)
+                        CommF:InvokeServer("Attack", target)
                     end
                 end
             end

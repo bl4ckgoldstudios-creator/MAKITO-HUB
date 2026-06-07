@@ -54,6 +54,8 @@ local FullSeaData = {
         {Name = "Haunted Castle", Pos = CFrame.new(-9515, 164, -5785)},
         {Name = "Sea of Treats", Pos = CFrame.new(-1147, 14, -11514)},
         {Name = "Tiki Outpost", Pos = CFrame.new(-16234, 12, 467)},
+        {Name = "Submerged Outpost", Pos = CFrame.new(-18500, -550, -18500)},
+        {Name = "Dragon Palace", Pos = CFrame.new(-21000, -800, -21000)},
         {Name = "Submerged Island", Pos = CFrame.new(-19500, -500, -18000)},
         {Name = "Mansion", Pos = CFrame.new(-12463, 332, -7548)},
         {Name = "Peanut Land", Pos = CFrame.new(-20631, 50, -9050)},
@@ -154,9 +156,9 @@ local FullQuestData = {
         {Min = 2575, Name = "TikiQuest2", NPC = "Quest Giver", ID = 2, Enemy = "Serpent Hunter", Pos = CFrame.new(-16234, 12, 467), Spawn = CFrame.new(-16300, 12, 500)},
         {Min = 2625, Name = "PeanutQuest", NPC = "Quest Giver", ID = 1, Enemy = "Peanut Scout", Pos = CFrame.new(-20631, 50, -9050), Spawn = CFrame.new(-20700, 50, -9100)},
         {Min = 2650, Name = "PeanutQuest", NPC = "Quest Giver", ID = 2, Enemy = "Peanut President", Pos = CFrame.new(-20631, 50, -9050), Spawn = CFrame.new(-20700, 50, -9100)},
-        {Min = 2700, Name = "TikiQuest3", NPC = "Quest Giver", ID = 1, Enemy = "Ancient Guardian", Pos = CFrame.new(-16234, 12, 467), Spawn = CFrame.new(-16400, 20, 600)},
-        {Min = 2750, Name = "TikiQuest3", NPC = "Quest Giver", ID = 2, Enemy = "Abyssal Warrior", Pos = CFrame.new(-16234, 12, 467), Spawn = CFrame.new(-16450, 20, 650)},
-        {Min = 2800, Name = "TikiQuest3", NPC = "Quest Giver", ID = 3, Enemy = "Tiki Overlord", Pos = CFrame.new(-16234, 12, 467), Spawn = CFrame.new(-16500, 30, 700)}
+        {Min = 2700, Name = "SubmergedQuest1", NPC = "Submerged Quest Giver", ID = 1, Enemy = "Ancient Guardian", Pos = CFrame.new(-18500, -540, -18500), Spawn = CFrame.new(-18600, -540, -18600)},
+        {Min = 2750, Name = "SubmergedQuest1", NPC = "Submerged Quest Giver", ID = 2, Enemy = "Abyssal Warrior", Pos = CFrame.new(-18500, -540, -18500), Spawn = CFrame.new(-18700, -540, -18700)},
+        {Min = 2800, Name = "DragonPalaceQuest", NPC = "Palace Quest Giver", ID = 1, Enemy = "Tiki Overlord", Pos = CFrame.new(-21000, -790, -21000), Spawn = CFrame.new(-21100, -790, -21100)}
     }
 }
 

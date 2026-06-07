@@ -89,16 +89,26 @@ function UtilsModule.Float(enabled)
     if not root then return end
     
     local float = root:FindFirstChild("MakitoFloat")
+    local gyro = root:FindFirstChild("MakitoGyro")
+    
     if enabled then
         if not float then
             float = Instance.new("BodyVelocity")
             float.Name = "MakitoFloat"
             float.Velocity = Vector3.new(0, 0, 0)
-            float.MaxForce = Vector3.new(0, math.huge, 0)
+            float.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
             float.Parent = root
+        end
+        if not gyro then
+            gyro = Instance.new("BodyGyro")
+            gyro.Name = "MakitoGyro"
+            gyro.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+            gyro.CFrame = root.CFrame
+            gyro.Parent = root
         end
     else
         if float then float:Destroy() end
+        if gyro then gyro:Destroy() end
     end
 end
 
