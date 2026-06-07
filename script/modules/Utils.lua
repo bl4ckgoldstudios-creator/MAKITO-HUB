@@ -430,7 +430,14 @@ end
 function UtilsModule.CheckModerator()
     for _, v in ipairs(Players:GetPlayers()) do
         if v:GetRankInGroup(4442272) >= 100 then
-            LocalPlayer:Kick("MODERADOR DETECTADO: " .. v.Name .. "\nO MAKITO HUB te protegeu de um possivel banimento.")
+            if _G.Settings.AutoModeratorHop then
+                UtilsModule.Notify("MODERADOR DETECTADO: " .. v.Name .. ". Trocando de servidor...", 10)
+                UtilsModule.ServerHop()
+            elseif _G.Settings.AutoModeratorShutdown then
+                LocalPlayer:Kick("MODERADOR DETECTADO: " .. v.Name .. "\nO MAKITO HUB te protegeu de um possivel banimento.")
+            else
+                UtilsModule.Notify("⚠️ MODERADOR NO SERVIDOR: " .. v.Name, 5)
+            end
         end
     end
 end
@@ -451,17 +458,84 @@ function UtilsModule.AutomationLogic()
         end
     end
 
+    -- AUTO BUFFS
+    if _G.Settings.AutoHaki then
+        if char and not char:FindFirstChild("HasBuso") then
+            UtilsModule.SafeRemote("Buso")
+        end
+    end
+
+    if _G.Settings.AutoKen then
+        pcall(function()
+            local ken = LocalPlayer.PlayerGui:FindFirstChild("Ken")
+            if not ken or not ken.Visible then
+                local vim = game:GetService("VirtualInputManager")
+                vim:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+                task.wait(0.05)
+                vim:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+            end
+        end)
+    end
+
+    if _G.Settings.InfEnergy then
+        LocalPlayer.Character:SetAttribute("Energy", 999999)
+        LocalPlayer.Character:SetAttribute("MaxEnergy", 999999)
+    end
+
     if _G.Settings.InfGeppo then
         LocalPlayer.Character:SetAttribute("JumpCount", 0)
     end
 
     if _G.Settings.WalkOnWater then
         pcall(function()
-            local water = workspace:FindFirstChild("Water") or workspace:FindFirstChild("Sea")
-            if water then
-                -- Logica simplificada: se estiver perto da agua, cria plataforma invisivel
+            local root = char and char:FindFirstChild("HumanoidRootPart")
+            if root then
+                local ray = Ray.new(root.Position, Vector3.new(0, -10, 0))
+                local part, pos = workspace:FindPartOnRayWithIgnoreList(ray, {char})
+                if part and (part.Name == "Water" or part.Name == "Sea") then
+                    local platform = workspace:FindFirstChild("MakitoWaterPlatform")
+                    if not platform then
+                        platform = Instance.new("Part", workspace)
+                        platform.Name = "MakitoWaterPlatform"
+                        platform.Size = Vector3.new(20, 1, 20)
+                        platform.Transparency = 1
+                        platform.Anchored = true
+                        platform.CanCollide = true
+                    end
+                    platform.CFrame = CFrame.new(root.Position.X, part.Position.Y + part.Size.Y/2, root.Position.Z)
+                else
+                    local platform = workspace:FindFirstChild("MakitoWaterPlatform")
+                    if platform then platform:Destroy() end
+                end
             end
         end)
+    end
+end
+
+-- VISUAL OPTIMIZATIONS
+function UtilsModule.OptimizeGraphics()
+    if not _G.Settings then return end
+    
+    if _G.Settings.LowGraphics or _G.Settings.RemoveTextures then
+        for _, v in ipairs(workspace:GetDescendants()) do
+            if v:IsA("BasePart") and not v:IsA("MeshPart") then
+                v.Material = Enum.Material.SmoothPlastic
+                v.Reflectance = 0
+            elseif v:IsA("Texture") or v:IsA("Decal") then
+                v.Transparency = 1
+            elseif v:IsA("ParticleEmitter") or v:IsA("Trail") then
+                v.Enabled = false
+            end
+        end
+    end
+
+    if _G.Settings.RemoveShadows then
+        game:GetService("Lighting").GlobalShadows = false
+    end
+
+    if _G.Settings.FPSBooster then
+        setfpscap(999)
+        settings().Rendering.QualityLevel = 1
     end
 end
 

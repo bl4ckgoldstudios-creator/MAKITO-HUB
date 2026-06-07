@@ -31,7 +31,7 @@ function FarmingModule.GetQuestData(QuestData)
     return data[1]
 end
 
--- SUPREME QUEST HANDLER V2 (FIXED LOOP)
+-- SUPREME QUEST HANDLER V3 (ANTI-LOOP & ROBUST DETECTION)
 function FarmingModule.SupremeQuestHandler(QuestData)
     local level = (LocalPlayer.Data and LocalPlayer.Data.Level.Value) or 0
     local sea = FarmingModule.GetSea()
@@ -50,16 +50,23 @@ function FarmingModule.SupremeQuestHandler(QuestData)
     if not BestQuest then return nil end
 
     local hasQuest = false
+    local activeQuestName = ""
+    
     pcall(function()
-        local questData = LocalPlayer.PlayerGui.Main:FindFirstChild("Quest")
-        if questData and questData.Visible then
-            local container = questData:FindFirstChild("Container")
+        local mainGui = LocalPlayer.PlayerGui:FindFirstChild("Main")
+        local questGui = mainGui and mainGui:FindFirstChild("Quest")
+        
+        if questGui and questGui.Visible then
+            local container = questGui:FindFirstChild("Container")
             local title = container and container:FindFirstChild("QuestTitle")
-            if title and title.Text ~= "" then
-                if title.Text:find(BestQuest.Enemy) then
+            local titleText = title and title.Text or ""
+            
+            if titleText ~= "" then
+                -- Verifica se a missão atual é a que queremos (ou se é uma variação do inimigo)
+                if titleText:lower():find(BestQuest.Enemy:lower()) or titleText:lower():find(BestQuest.Name:lower()) then
                     hasQuest = true
                 else
-                    -- Só abandona se a missão for realmente diferente da que precisamos
+                    -- Missão errada, abandona
                     _G.Utils.SafeRemote("AbandonQuest")
                     task.wait(0.5)
                 end
@@ -67,7 +74,13 @@ function FarmingModule.SupremeQuestHandler(QuestData)
         end
     end)
 
+    -- Debounce para evitar spam de NPC se a UI demorar a aparecer
     if not hasQuest and _G.Settings and _G.Settings.AutoQuest then
+        -- Verifica se já enviamos o comando de StartQuest recentemente (cache de 2 segundos)
+        if _G.LastQuestTime and tick() - _G.LastQuestTime < 2 then
+            return BestQuest
+        end
+
         local npcPos = BestQuest.Pos
         local dist = (LocalPlayer.Character.HumanoidRootPart.Position - npcPos.Position).Magnitude
         
@@ -76,8 +89,9 @@ function FarmingModule.SupremeQuestHandler(QuestData)
             _G.Utils.TweenTo(npcPos)
         else
             if _G.MakitoStatus then _G.MakitoStatus.Text = "Status: Aceitando Missao " .. BestQuest.Enemy end
-            task.wait(0.2)
             _G.Utils.SafeRemote("StartQuest", BestQuest.Name, BestQuest.ID)
+            _G.LastQuestTime = tick() -- Marca o tempo que pegou a missão
+            task.wait(0.5)
         end
     end
     
@@ -406,6 +420,50 @@ function FarmingModule.RaidLogic()
     if _G.Settings.AutoAwaken then _G.Utils.SafeRemote("AwakenSkill") end
 end
 
+function FarmingModule.PuzzleLogic()
+    if not _G.Settings then return end
+
+    if _G.Settings.AutoSaber then
+        -- Lógica simplificada: Clica nos botões da selva
+        local buttons = {"Button1", "Button2", "Button3", "Button4", "Button5"}
+        for _, b in ipairs(buttons) do
+            local part = workspace.Map.Jungle:FindFirstChild(b)
+            if part then
+                _G.Utils.TweenTo(part.CFrame)
+                task.wait(0.5)
+            end
+        end
+        _G.Utils.SafeRemote("SaberQuest")
+    end
+
+    if _G.Settings.AutoPole then
+        local boss = workspace.Enemies:FindFirstChild("Thunder God")
+        if boss and boss:FindFirstChild("Humanoid") and boss.Humanoid.Health > 0 then
+            _G.Utils.TweenTo(boss.HumanoidRootPart.CFrame * CFrame.new(0, 15, 0))
+            _G.Combat.StartFastAttack()
+        end
+    end
+
+    if _G.Settings.AutoYama then
+        _G.Utils.TweenTo(CFrame.new(-5247, 5, 4488))
+        _G.Utils.SafeRemote("YamaQuest")
+    end
+
+    if _G.Settings.AutoTushita then
+        _G.Utils.TweenTo(CFrame.new(5259, 604, 346))
+        _G.Utils.SafeRemote("TushitaQuest")
+    end
+end
+
+function FarmingModule.SnipeLogic()
+    if not _G.Settings or not _G.Settings.AutoSnipe then return end
+    
+    local fruitNames = _G.Settings.SnipeFruits or {}
+    for _, fruit in ipairs(fruitNames) do
+        _G.Utils.SafeRemote("BuyFruit", fruit)
+    end
+end
+
 function FarmingModule.SeaEventLogic()
     if not _G.Settings then return end
     
@@ -430,6 +488,22 @@ function FarmingModule.SeaEventLogic()
             _G.Utils.TweenTo(ts.HumanoidRootPart.CFrame * CFrame.new(0, 40, 0))
             _G.Combat.StartFastAttack()
             return
+        end
+    end
+
+    if _G.Settings.AutoRumbling then
+        local rumble = SeaEvents:FindFirstChild("Rumbling")
+        if rumble then
+            _G.Utils.TweenTo(rumble:GetModelCFrame() * CFrame.new(0, 50, 0))
+            _G.Combat.StartFastAttack()
+        end
+    end
+
+    if _G.Settings.AutoShipRaid then
+        local ship = SeaEvents:FindFirstChild("Ship")
+        if ship then
+            _G.Utils.TweenTo(ship:GetModelCFrame() * CFrame.new(0, 50, 0))
+            _G.Combat.StartFastAttack()
         end
     end
 
