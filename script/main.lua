@@ -291,6 +291,8 @@ local function StartLoops()
                 if _G.Settings.FastAttack then _G.Combat.StartFastAttack() else _G.Combat.StopFastAttack() end
                 _G.Combat.KillAuraLogic()
                 _G.Combat.AimBotLogic()
+                _G.Combat.AutoComboLogic()
+                _G.Utils.AutomationLogic()
             end)
             task.wait(0.1)
         end

@@ -356,6 +356,9 @@ function FarmingModule.SeaEventLogic()
     if not _G.Settings then return end
     
     local SeaEvents = workspace:FindFirstChild("SeaEvents") or workspace:FindFirstChild("Sea")
+    
+    if _G.Settings.AutoMirage then FarmingModule.MirageSolver() end
+
     if not SeaEvents then return end
 
     if _G.Settings.AutoSeaBeast then
@@ -496,7 +499,23 @@ function FarmingModule.MirageSolver()
     if not _G.Settings or not _G.Settings.AutoMirage then return end
     local mirage = workspace:FindFirstChild("MirageIsland")
     if mirage then
-        _G.Utils.TweenTo(mirage:GetModelCFrame())
+        if _G.Settings.AutoFindGear then
+            local gear = mirage:FindFirstChild("BlueGear") or workspace:FindFirstChild("BlueGear")
+            if gear then
+                _G.Utils.TweenTo(gear.CFrame)
+                return
+            end
+        end
+        
+        if _G.Settings.AutoMirageLever then
+            local lever = mirage:FindFirstChild("Lever") or workspace:FindFirstChild("Lever")
+            if lever then
+                _G.Utils.TweenTo(lever.CFrame)
+                return
+            end
+        end
+
+        _G.Utils.TweenTo(mirage:GetModelCFrame() * CFrame.new(0, 100, 0))
     end
 end
 

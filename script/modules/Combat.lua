@@ -212,9 +212,50 @@ function CombatModule.UseSkill(key)
     end)
 end
 
+function CombatModule.AutoComboLogic()
+    if not _G.Settings or not _G.Settings.AutoCombo or not _G.Settings.SelectedFruit then return end
+    
+    local combo = _G.Data.Combos[_G.Settings.SelectedFruit]
+    if not combo then return end
+
+    local nearest = nil
+    local minDist = 150
+    for _, v in ipairs(Players:GetPlayers()) do
+        if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") and v.Character:FindFirstChild("Humanoid") and v.Character.Humanoid.Health > 0 then
+            local dist = (LocalPlayer.Character.HumanoidRootPart.Position - v.Character.HumanoidRootPart.Position).Magnitude
+            if dist < minDist then
+                minDist = dist
+                nearest = v.Character
+            end
+        end
+    end
+
+    if nearest then
+        for _, step in ipairs(combo) do
+            if not _G.Settings.AutoCombo then break end
+            CombatModule.AimBotLogic(nearest.HumanoidRootPart)
+            CombatModule.UseSkill(step.Key)
+            task.wait(step.Wait or 0.5)
+        end
+    end
+end
+
 function CombatModule.ESPLogic()
     if not _G.Utils then return end
-    _G.Utils.ClearESP()
+    
+    local anyEspEnabled = _G.Settings and (
+        _G.Settings.EspPlayers or 
+        _G.Settings.NpcESP or 
+        _G.Settings.EspChests or 
+        _G.Settings.EspFruits or 
+        _G.Settings.AutoFruitESP or 
+        _G.Settings.EspFlower
+    )
+
+    if not anyEspEnabled then
+        _G.Utils.ClearESP()
+        return
+    end
 
     local playerColor = _G.Utils.ColorFromSettings("EspPlayerColor", Color3.fromRGB(100, 200, 255))
     local npcColor = _G.Utils.ColorFromSettings("EspNpcColor", Color3.fromRGB(255, 80, 80))

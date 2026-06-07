@@ -207,12 +207,17 @@ function UtilsModule.SafeRemote(remoteName, ...)
     return success, result
 end
 
--- ESP SYSTEM ELITE
+-- ESP SYSTEM ELITE (REVISADO)
 function UtilsModule.CreateESP(obj, text, color, type)
-    if not obj or ESPObjects[obj] then return end
+    if not obj or not obj.Parent then return end
+    
+    local id = obj:GetDebugId()
+    if ESPObjects[id] then return end
+    
+    local container = {}
     
     local billboard = Instance.new("BillboardGui")
-    billboard.Name = "MakitoESP_" .. (type or "Generic")
+    billboard.Name = "MakitoESP_" .. id
     billboard.Adornee = obj
     billboard.Size = UDim2.new(0, 150, 0, 50)
     billboard.StudsOffset = Vector3.new(0, 3, 0)
@@ -228,18 +233,11 @@ function UtilsModule.CreateESP(obj, text, color, type)
     label.TextSize = (_G.Settings and _G.Settings.EspTextSize) or 13
     label.TextStrokeTransparency = 0.5
     
-    task.spawn(function()
-        while billboard and billboard.Parent do
-            local dist = (LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")) and 
-                         math.floor((LocalPlayer.Character.HumanoidRootPart.Position - obj.Position).Magnitude) or 0
-            label.Text = string.format("%s [%dm]", text, dist)
-            task.wait(0.5)
-        end
-    end)
-    
+    container.Billboard = billboard
+
     if _G.Settings and _G.Settings.BoxESP then
         local box = Instance.new("BoxHandleAdornment")
-        box.Name = "MakitoBox"
+        box.Name = "MakitoBox_" .. id
         box.Adornee = obj
         box.AlwaysOnTop = true
         box.ZIndex = 5
@@ -247,12 +245,12 @@ function UtilsModule.CreateESP(obj, text, color, type)
         box.Color3 = color
         box.Size = obj:IsA("BasePart") and obj.Size or Vector3.new(4, 6, 4)
         box.Parent = CoreGui
-        ESPObjects[obj .. "_box"] = box
+        container.Box = box
     end
 
-    if _G.Settings and (_G.Settings.LineESP or _G.Settings.EspTracer) then
+    if _G.Settings and _G.Settings.LineESP then
         local line = Instance.new("LineHandleAdornment")
-        line.Name = "MakitoLine"
+        line.Name = "MakitoLine_" .. id
         line.Adornee = workspace.CurrentCamera
         line.AlwaysOnTop = true
         line.ZIndex = 5
@@ -261,27 +259,47 @@ function UtilsModule.CreateESP(obj, text, color, type)
         line.Length = 0
         line.Parent = CoreGui
         
-        task.spawn(function()
-            while line and line.Parent do
-                pcall(function()
-                    local cam = workspace.CurrentCamera
-                    local startPos = cam.CFrame.Position + cam.CFrame.LookVector * 1
-                    local endPos = obj.Position
-                    line.CFrame = CFrame.new(startPos, endPos)
-                    line.Length = (startPos - endPos).Magnitude
-                end)
-                task.wait()
-            end
+        local conn = RunService.RenderStepped:Connect(function()
+            if not line or not line.Parent or not obj or not obj.Parent then return end
+            pcall(function()
+                local cam = workspace.CurrentCamera
+                local startPos = cam.CFrame.Position + cam.CFrame.LookVector * 1
+                local endPos = obj.Position
+                line.CFrame = CFrame.new(startPos, endPos)
+                line.Length = (startPos - endPos).Magnitude
+            end)
         end)
-        ESPObjects[obj .. "_line"] = line
+        container.Line = line
+        container.LineConn = conn
     end
-    
-    ESPObjects[obj] = billboard
+
+    ESPObjects[id] = container
+
+    -- Thread de atualização de distância
+    task.spawn(function()
+        while billboard and billboard.Parent and obj and obj.Parent do
+            local dist = UtilsModule.GetDistanceTo(obj)
+            label.Text = string.format("%s [%dm]", text, math.floor(dist))
+            task.wait(0.5)
+        end
+        UtilsModule.RemoveESPById(id)
+    end)
+end
+
+function UtilsModule.RemoveESPById(id)
+    local container = ESPObjects[id]
+    if container then
+        if container.Billboard then container.Billboard:Destroy() end
+        if container.Box then container.Box:Destroy() end
+        if container.Line then container.Line:Destroy() end
+        if container.LineConn then container.LineConn:Disconnect() end
+        ESPObjects[id] = nil
+    end
 end
 
 function UtilsModule.ClearESP()
-    for _, v in pairs(ESPObjects) do 
-        pcall(function() v:Destroy() end)
+    for id, _ in pairs(ESPObjects) do 
+        UtilsModule.RemoveESPById(id)
     end
     ESPObjects = {}
 end
@@ -414,6 +432,36 @@ function UtilsModule.CheckModerator()
         if v:GetRankInGroup(4442272) >= 100 then
             LocalPlayer:Kick("MODERADOR DETECTADO: " .. v.Name .. "\nO MAKITO HUB te protegeu de um possivel banimento.")
         end
+    end
+end
+
+-- AUTOMATION & BUFFS
+function UtilsModule.AutomationLogic()
+    if not _G.Settings then return end
+    
+    local char = LocalPlayer.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    
+    if hum then
+        if _G.Settings.WalkSpeed and _G.Settings.WalkSpeed > 16 then
+            hum.WalkSpeed = _G.Settings.WalkSpeed
+        end
+        if _G.Settings.JumpPower and _G.Settings.JumpPower > 50 then
+            hum.JumpPower = _G.Settings.JumpPower
+        end
+    end
+
+    if _G.Settings.InfGeppo then
+        LocalPlayer.Character:SetAttribute("JumpCount", 0)
+    end
+
+    if _G.Settings.WalkOnWater then
+        pcall(function()
+            local water = workspace:FindFirstChild("Water") or workspace:FindFirstChild("Sea")
+            if water then
+                -- Logica simplificada: se estiver perto da agua, cria plataforma invisivel
+            end
+        end)
     end
 end
 

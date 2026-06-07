@@ -150,15 +150,17 @@ local FullQuestData = {
         {Min = 2200, Name = "CakeQuest", NPC = "Quest Giver", ID = 1, Enemy = "Baking Staff", Pos = CFrame.new(-1147, 14, -11514)},
         {Min = 2275, Name = "ChocolateQuest", NPC = "Quest Giver", ID = 1, Enemy = "Cocoa Warrior", Pos = CFrame.new(-1147, 14, -11514)},
         {Min = 2300, Name = "ChocolateQuest", NPC = "Quest Giver", ID = 2, Enemy = "Chocolate Bar Battler", Pos = CFrame.new(-1147, 14, -11514)},
+        {Min = 2325, Name = "CandyQuest", NPC = "Quest Giver", ID = 1, Enemy = "Candy Rebel", Pos = CFrame.new(-1151, 14, -11514), Spawn = CFrame.new(-1100, 14, -11600)},
+        {Min = 2350, Name = "CandyQuest", NPC = "Quest Giver", ID = 2, Enemy = "Sweet Thief", Pos = CFrame.new(-1151, 14, -11514), Spawn = CFrame.new(-1100, 14, -11600)},
+        {Min = 2400, Name = "PeanutQuest", NPC = "Quest Giver", ID = 1, Enemy = "Peanut Scout", Pos = CFrame.new(-20631, 50, -9050), Spawn = CFrame.new(-20700, 50, -9100)},
+        {Min = 2425, Name = "PeanutQuest", NPC = "Quest Giver", ID = 2, Enemy = "Peanut President", Pos = CFrame.new(-20631, 50, -9050), Spawn = CFrame.new(-20700, 50, -9100)},
         {Min = 2450, Name = "TikiQuest1", NPC = "Quest Giver", ID = 1, Enemy = "Sun-kissed Warrior", Pos = CFrame.new(-16234, 12, 467), Spawn = CFrame.new(-16300, 12, 500)},
         {Min = 2500, Name = "TikiQuest1", NPC = "Quest Giver", ID = 2, Enemy = "Isle Outlaw", Pos = CFrame.new(-16234, 12, 467), Spawn = CFrame.new(-16300, 12, 500)},
         {Min = 2550, Name = "TikiQuest2", NPC = "Quest Giver", ID = 1, Enemy = "Isle Champion", Pos = CFrame.new(-16234, 12, 467), Spawn = CFrame.new(-16300, 12, 500)},
         {Min = 2575, Name = "TikiQuest2", NPC = "Quest Giver", ID = 2, Enemy = "Serpent Hunter", Pos = CFrame.new(-16234, 12, 467), Spawn = CFrame.new(-16300, 12, 500)},
-        {Min = 2625, Name = "PeanutQuest", NPC = "Quest Giver", ID = 1, Enemy = "Peanut Scout", Pos = CFrame.new(-20631, 50, -9050), Spawn = CFrame.new(-20700, 50, -9100)},
-        {Min = 2650, Name = "PeanutQuest", NPC = "Quest Giver", ID = 2, Enemy = "Peanut President", Pos = CFrame.new(-20631, 50, -9050), Spawn = CFrame.new(-20700, 50, -9100)},
-        {Min = 2700, Name = "SubmergedQuest1", NPC = "Submerged Quest Giver", ID = 1, Enemy = "Ancient Guardian", Pos = CFrame.new(-18500, -540, -18500), Spawn = CFrame.new(-18600, -540, -18600)},
-        {Min = 2750, Name = "SubmergedQuest1", NPC = "Submerged Quest Giver", ID = 2, Enemy = "Abyssal Warrior", Pos = CFrame.new(-18500, -540, -18500), Spawn = CFrame.new(-18700, -540, -18700)},
-        {Min = 2800, Name = "DragonPalaceQuest", NPC = "Palace Quest Giver", ID = 1, Enemy = "Tiki Overlord", Pos = CFrame.new(-21000, -790, -21000), Spawn = CFrame.new(-21100, -790, -21100)}
+        {Min = 2600, Name = "SubmergedQuest1", NPC = "Submerged Quest Giver", ID = 1, Enemy = "Ancient Guardian", Pos = CFrame.new(-18500, -540, -18500), Spawn = CFrame.new(-18600, -540, -18600)},
+        {Min = 2650, Name = "SubmergedQuest1", NPC = "Submerged Quest Giver", ID = 2, Enemy = "Abyssal Warrior", Pos = CFrame.new(-18500, -540, -18500), Spawn = CFrame.new(-18700, -540, -18700)},
+        {Min = 2725, Name = "DragonPalaceQuest", NPC = "Palace Quest Giver", ID = 1, Enemy = "Tiki Overlord", Pos = CFrame.new(-21000, -790, -21000), Spawn = CFrame.new(-21100, -790, -21100)}
     }
 }
 
