@@ -25,15 +25,25 @@ local function GetFramework()
         for _, framework in ipairs(possiblePaths) do
             if framework then
                 local success, result = pcall(require, framework)
-                if success then
+                if success and type(result) == "table" then
                     CombatFramework = result
                     break
                 end
             end
         end
 
-        if CombatFramework and type(CombatFramework) == "table" then
+        if CombatFramework then
+            -- Busca recursiva pelo controlador ativo nos upvalues
             local controller = CombatFramework.activeController
+            if not controller then
+                for _, v in pairs(CombatFramework) do
+                    if type(v) == "table" and v.activeController then
+                        controller = v.activeController
+                        break
+                    end
+                end
+            end
+
             if controller and (controller.attack or controller.Attack) then
                 local attackFn = controller.attack or controller.Attack
                 local upvalues = debug.getupvalues(attackFn)
@@ -64,20 +74,26 @@ function CombatModule.StartFastAttack()
         pcall(function()
             GetFramework()
             local weapon = LocalPlayer.Character:FindFirstChildOfClass("Tool")
-            if not weapon or weapon.ToolTip ~= "Melee" and weapon.ToolTip ~= "Sword" then return end
+            if not weapon or (weapon.ToolTip ~= "Melee" and weapon.ToolTip ~= "Sword") then return end
             
-            local controller = CombatFramework and CombatFramework.activeController
-            if controller then
-                -- Bypass de animação e delay
-                controller.hitboxMagnitude = 60
-                controller.attackCount = 0
-                controller.timeToNextAttack = 0
-                controller.increment = 0
-                controller.active = true
+            local activeController = CombatFramework and CombatFramework.activeController
+            if not activeController and CombatFrameworkRoot then
+                activeController = CombatFrameworkRoot.activeController
+            end
+
+            if activeController then
+                -- Otimização extrema do estado do controlador
+                activeController.hitboxMagnitude = 60
+                activeController.attackCount = 0
+                activeController.timeToNextAttack = 0
+                activeController.increment = 0
+                activeController.active = true
                 
-                -- Burst de ataques (Ajustado para não dar kick)
-                for i = 1, 3 do
-                    controller.attack()
+                -- Execução de ataque via framework
+                if activeController.attack then
+                    activeController.attack()
+                elseif activeController.Attack then
+                    activeController.Attack()
                 end
             end
         end)
@@ -105,8 +121,22 @@ function CombatModule.StartKillAura()
                 if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
                     local dist = (myPos - v.HumanoidRootPart.Position).Magnitude
                     if dist <= 65 then
-                        -- Simula ataque sem precisar de animação
-                        CommF:InvokeServer("Attack", v.HumanoidRootPart)
+                        GetFramework()
+                        local activeController = CombatFramework and CombatFramework.activeController
+                        if not activeController and CombatFrameworkRoot then
+                            activeController = CombatFrameworkRoot.activeController
+                        end
+
+                        if activeController then
+                            -- Força o ataque no inimigo da aura
+                            if activeController.attack then
+                                activeController.attack()
+                            elseif activeController.Attack then
+                                activeController.Attack()
+                            end
+                            -- Fallback via remoto se o framework falhar em registrar dano
+                            CommF:InvokeServer("Attack", v.HumanoidRootPart)
+                        end
                     end
                 end
             end
