@@ -1,11 +1,13 @@
 local UtilsModule = {}
 
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local TweenService = game:GetService("TweenService")
 local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
-local RunService = game:GetService("RunService")
+local CoreGui = game:GetService("CoreGui")
 
 local currentTween = nil
 local isTweening = false
@@ -20,7 +22,7 @@ function UtilsModule.Notify(text, duration)
     end)
 end
 
--- MOVIMENTAÇÃO ELITE (NON-LINEAR TWEEN)
+-- MOVIMENTAÇÃO GOD-MODE (INFINITE SPEED & NO-CLIP)
 function UtilsModule.TweenTo(cf, speed)
     if not _G.MakitoHubRunning or not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then return end
     local root = LocalPlayer.Character.HumanoidRootPart
@@ -35,32 +37,55 @@ function UtilsModule.TweenTo(cf, speed)
     isTweening = true
     if currentTween then currentTween:Cancel() end
     
-    -- BYPASS DE GRAVIDADE E COLISÃO
+    -- GOD-MODE BYPASS
     UtilsModule.Float(true)
     
-    -- VELOCIDADE ADAPTATIVA (MAIS REALISTA)
-    local tweenSpeed = speed or _G.Settings.TweenSpeed or 350
-    if dist < 300 then tweenSpeed = tweenSpeed * 0.7 end -- Desacelera na chegada para precisão
+    -- NO-CLIP AGRESSIVO
+    task.spawn(function()
+        while isTweening do
+            pcall(function()
+                for _, v in pairs(LocalPlayer.Character:GetDescendants()) do
+                    if v:IsA("BasePart") then v.CanCollide = false end
+                end
+            end)
+            task.wait()
+        end
+    end)
     
-    -- JITTER BYPASS (MICRO-VARIAÇÕES PARA ENGANAR ANTICHEAT)
-    local jitter = Vector3.new(math.random(-10, 10)/100, 0, math.random(-10, 10)/100)
-    local targetCF = cf * CFrame.new(jitter)
+    -- VELOCIDADE SUPREMA ADAPTATIVA
+    local tweenSpeed = speed or _G.Settings.TweenSpeed or 400
+    if dist < 100 then tweenSpeed = tweenSpeed * 0.5 end 
 
-    -- TWEEN COM CURVA DE ACELERAÇÃO (SINE) EM VEZ DE LINEAR
-    currentTween = TweenService:Create(root, TweenInfo.new(dist/tweenSpeed, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {CFrame = targetCF})
+    currentTween = TweenService:Create(root, TweenInfo.new(dist/tweenSpeed, Enum.EasingStyle.Linear), {CFrame = cf})
     currentTween:Play()
     
     currentTween.Completed:Connect(function() 
         isTweening = false 
-    end)
-    
-    -- DESATIVAR COLISÃO DE FORMA AGRESSIVA
-    pcall(function()
-        for _, v in pairs(LocalPlayer.Character:GetDescendants()) do
-            if v:IsA("BasePart") then v.CanCollide = false end
-        end
+        UtilsModule.Float(false)
     end)
 end
+
+-- SUPREME ANTI-STUCK
+local lastPos = Vector3.new()
+local stuckTicks = 0
+task.spawn(function()
+    while task.wait(1) do
+        if isTweening and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            local currentPos = LocalPlayer.Character.HumanoidRootPart.Position
+            if (currentPos - lastPos).Magnitude < 1 then
+                stuckTicks = stuckTicks + 1
+                if stuckTicks >= 5 then
+                    warn("[MAKITO] Personagem travado! Aplicando Reset de CFrame...")
+                    LocalPlayer.Character.HumanoidRootPart.CFrame = LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0, 50, 0)
+                    stuckTicks = 0
+                end
+            else
+                stuckTicks = 0
+            end
+            lastPos = currentPos
+        end
+    end
+end)
 
 function UtilsModule.Float(enabled)
     pcall(function()
@@ -114,7 +139,9 @@ function UtilsModule.SendWebhook(url, title, message, color)
     }
     
     pcall(function()
-        (syn and syn.request or http_request or request)({
+        local requestFunc = syn and syn.request or http_request or request
+        if not requestFunc then return end
+        requestFunc({
             Url = url,
             Method = "POST",
             Headers = {["Content-Type"] = "application/json"},
@@ -217,7 +244,7 @@ function UtilsModule.CreateESP(obj, text, color, type)
         box.Color3 = color
         box.Size = obj:IsA("BasePart") and obj.Size or Vector3.new(4, 6, 4)
         box.Parent = CoreGui
-        ESPObjects[obj .. "_box"] = box
+        ESPObjects[tostring(obj) .. "_box"] = box
     end
 
     if _G.Settings.LineESP or _G.Settings.EspTracer then
@@ -243,7 +270,7 @@ function UtilsModule.CreateESP(obj, text, color, type)
                 task.wait()
             end
         end)
-        ESPObjects[obj .. "_line"] = line
+        ESPObjects[tostring(obj) .. "_line"] = line
     end
     
     ESPObjects[obj] = billboard

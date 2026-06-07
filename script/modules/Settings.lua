@@ -87,10 +87,22 @@ function SettingsModule.Load()
     end)
     -- FORCE DISABLE CRITICALS ON START
     local target = _G.Settings or SettingsModule.Values
-    target.AutoFarm = false
-    target.AutoQuest = false
-    target.FastAttack = false
-    target.BringMobs = false
+    local disabled = {
+        "AutoFarm", "AutoQuest", "FastAttack", "BringMobs", "AutoFarmNearest",
+        "KillAura", "AimBot", "AutoBounty", "AutoCombo", "AutoStats",
+        "AutoChest", "AutoCollectFruit", "AutoBringFruit", "AutoFruitFinder",
+        "AutoSnipe", "AutoBuyFruit", "AutoGacha", "AutoBuyChip",
+        "AutoStartRaid", "AutoDungeon", "AutoNextIsland", "AutoAwaken",
+        "AutoSeaBeast", "AutoRumbling", "AutoShipRaid", "AutoLeviathan",
+        "AutoKitsune", "AutoTerrorShark", "AutoEliteHunter", "AutoFactory",
+        "AutoDoughKing", "AutoCakePrince", "AutoBuyFightingStyle",
+        "AutoBuyLegendarySword", "AutoBuyAccessory", "AutoNextSea",
+        "AutoSoulGuitar", "AutoCDK", "AutoGodhuman", "AutoKickMod",
+        "AntiAFK", "ChatSpam"
+    }
+    for _, name in ipairs(disabled) do
+        target[name] = false
+    end
 end
 
 return SettingsModule

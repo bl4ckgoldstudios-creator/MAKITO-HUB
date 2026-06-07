@@ -73,25 +73,24 @@ function CombatModule.StartFastAttack()
                 if CombatFramework and CombatFramework.activeController then
                     local controller = CombatFrameworkRoot and CombatFrameworkRoot.activeController or CombatFramework.activeController
                     
-                    -- BYPASS DE COOLDOWN SUPREMO (ULTRA PACKET BURST)
-                    controller.hitboxMagnitude = 150 -- Alcance máximo seguro
+                    -- SUPREME PACKET BYPASS (V24 ELITE)
+                    controller.hitboxMagnitude = 150 
                     controller.attackCount = 0
                     controller.timeToNextAttack = 0
                     controller.increment = 0
                     controller.active = true
-                    controller.blocking = false
                     
-                    -- MULTI-HIT V23: EXPLOSÃO DE DANOS
-                    -- Simula um volume massivo de ataques simultâneos
-                    local burstRate = (_G.Settings.Weapon == "Fruit" and 1 or 2) -- Reduzido para evitar detecção e lag
-                    for i = 1, burstRate do
-                        pcall(function()
+                    -- SUPREME BURST: Envia pacotes de dano em massa sem animação
+                    local weapon = LocalPlayer.Character:FindFirstChildOfClass("Tool")
+                    if weapon then
+                        -- Simula 5-10 ataques por frame de forma segura (Packet Burst)
+                        for i = 1, 5 do
                             CombatFramework.activeController.attack()
-                        end)
+                        end
                     end
                     
-                    -- ANTI-LAG: Limpeza de memória ocasional
-                    if tick() % 10 < 0.1 then collectgarbage("step") end
+                    -- ANTI-LAG
+                    if tick() % 30 < 0.1 then collectgarbage("collect") end
                 end
             end)
         end
@@ -155,56 +154,47 @@ function CombatModule.KillAuraLogic()
     end
 end
 
--- AIMBOT SKILLS (AUTO-TARGET NEAREST PLAYER/NPC)
-function CombatModule.AimBotLogic()
-    if not _G.Settings.AimBot then return end
-    
+-- AUTO BOUNTY (HUNT PLAYERS)
+function CombatModule.AutoBountyLogic()
+    if not _G.Settings.AutoBounty then return end
     local target = nil
-    local minDist = math.huge
+    for _, v in ipairs(game:GetService("Players"):GetPlayers()) do
+        if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("Humanoid") and v.Character.Humanoid.Health > 0 then
+            target = v
+            break
+        end
+    end
     
-    -- PRIORIZA JOGADORES SE ESTIVER EM PVP, SENÃO NPCS
-    for _, v in ipairs(Players:GetPlayers()) do
-        if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") and v.Character:FindFirstChild("Humanoid") and v.Character.Humanoid.Health > 0 then
-            local dist = (LocalPlayer.Character.HumanoidRootPart.Position - v.Character.HumanoidRootPart.Position).Magnitude
-            if dist < 250 and dist < minDist then
-                minDist = dist
-                target = v.Character.HumanoidRootPart
+    if target then
+        _G.Utils.TweenTo(target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 10, 0))
+        CombatModule.StartFastAttack()
+        CombatModule.AimBotLogic(target.Character.HumanoidRootPart)
+    end
+end
+
+-- AIMBOT LOGIC REFINED
+function CombatModule.AimBotLogic(customTarget)
+    if not _G.Settings.Aimbot and not customTarget then return end
+    
+    local target = customTarget
+    if not target then
+        local nearest = nil
+        local minDist = math.huge
+        for _, v in ipairs(game:GetService("Players"):GetPlayers()) do
+            if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
+                local dist = (LocalPlayer.Character.HumanoidRootPart.Position - v.Character.HumanoidRootPart.Position).Magnitude
+                if dist < minDist then
+                    minDist = dist
+                    nearest = v.Character.HumanoidRootPart
+                end
             end
         end
+        target = nearest
     end
     
     if target then
         local cam = workspace.CurrentCamera
         cam.CFrame = CFrame.new(cam.CFrame.Position, target.Position)
-    end
-end
-
--- AUTO BOUNTY / PLAYER HUNTER
-function CombatModule.AutoBountyLogic()
-    if not _G.Settings.AutoBounty then return end
-    
-    local targetName = _G.Settings.SelectedPlayer
-    local target = Players:FindFirstChild(targetName)
-    
-    if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") and target.Character.Humanoid.Health > 0 then
-        local targetCF = target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 5)
-        _G.Utils.TweenTo(targetCF)
-        
-        -- AUTO ATTACK
-        _G.Settings.FastAttack = true
-        _G.Settings.KillAura = true
-        
-        -- AUTO COMBO
-        if _G.Settings.AutoCombo then
-            local fruit = _G.Settings.SelectedFruit
-            local combo = _G.Data.Combos[fruit]
-            if combo then
-                for _, step in ipairs(combo) do
-                    CombatModule.UseSkill(step.Key)
-                    task.wait(step.Wait)
-                end
-            end
-        end
     end
 end
 

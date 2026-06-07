@@ -138,9 +138,10 @@ local FullQuestData = {
     }
 }
 
--- ISOLAMENTO DE DADOS: Carrega apenas o mar atual para o banco de dados ativo
-DataModule.SeaData[CurrentSea] = FullSeaData[CurrentSea]
-DataModule.QuestData[CurrentSea] = FullQuestData[CurrentSea]
+-- Mantem o banco completo disponivel para consultas seguras da UI e dos modulos.
+DataModule.SeaData = FullSeaData
+DataModule.QuestData = FullQuestData
+DataModule.CurrentSea = CurrentSea
 
 DataModule.MaterialData = {
     ["Dragon Scale"] = {Enemy = "Dragon Crew Warrior", Pos = CFrame.new(5259, 604, 346)},
@@ -186,5 +187,114 @@ DataModule.Combos = {
     ["Mammoth"] = {{Key = "X", Wait = 0.4}, {Key = "C", Wait = 0.4}, {Key = "Z", Wait = 0.3}, {Key = "V", Wait = 0.5}},
     ["Dough V2"] = {{Key = "V", Wait = 0.5}, {Key = "C", Wait = 0.4}, {Key = "X", Wait = 0.5}, {Key = "Z", Wait = 0.3}}
 }
+
+function DataModule.GetSea()
+    return _G.MakitoSea or GetSea()
+end
+
+function DataModule.GetIslands(sea)
+    sea = sea or DataModule.GetSea()
+    return DataModule.SeaData[sea] or {}
+end
+
+function DataModule.GetQuests(sea)
+    sea = sea or DataModule.GetSea()
+    return DataModule.QuestData[sea] or {}
+end
+
+function DataModule.GetIslandByName(name, sea)
+    if not name or name == "" or name == "None" then return nil end
+
+    for _, island in ipairs(DataModule.GetIslands(sea)) do
+        if island.Name == name then
+            return island
+        end
+    end
+
+    return nil
+end
+
+function DataModule.GetBestQuest(level, sea)
+    level = tonumber(level) or 0
+
+    local bestQuest = nil
+    for _, quest in ipairs(DataModule.GetQuests(sea)) do
+        if level >= (quest.Min or 0) then
+            bestQuest = quest
+        else
+            break
+        end
+    end
+
+    return bestQuest
+end
+
+function DataModule.GetQuestEnemies(sea)
+    local enemies = {}
+    local seen = {}
+
+    for _, quest in ipairs(DataModule.GetQuests(sea)) do
+        if quest.Enemy and not seen[quest.Enemy] then
+            seen[quest.Enemy] = true
+            table.insert(enemies, quest.Enemy)
+        end
+    end
+
+    table.sort(enemies)
+    return enemies
+end
+
+function DataModule.Validate()
+    local issues = {}
+
+    for sea, islands in pairs(DataModule.SeaData) do
+        if type(islands) ~= "table" or #islands == 0 then
+            table.insert(issues, "SeaData[" .. tostring(sea) .. "] sem ilhas")
+        else
+            for index, island in ipairs(islands) do
+                if not island.Name or island.Name == "" then
+                    table.insert(issues, "SeaData[" .. tostring(sea) .. "][" .. index .. "] sem Name")
+                end
+                if not island.Pos then
+                    table.insert(issues, "SeaData[" .. tostring(sea) .. "][" .. index .. "] sem Pos")
+                end
+            end
+        end
+    end
+
+    for sea, quests in pairs(DataModule.QuestData) do
+        if type(quests) ~= "table" or #quests == 0 then
+            table.insert(issues, "QuestData[" .. tostring(sea) .. "] sem quests")
+        else
+            local lastLevel = -1
+            for index, quest in ipairs(quests) do
+                if type(quest.Min) ~= "number" then
+                    table.insert(issues, "QuestData[" .. tostring(sea) .. "][" .. index .. "] sem Min numerico")
+                elseif quest.Min < lastLevel then
+                    table.insert(issues, "QuestData[" .. tostring(sea) .. "][" .. index .. "] fora de ordem por level")
+                else
+                    lastLevel = quest.Min
+                end
+
+                if not quest.Name or quest.Name == "" then
+                    table.insert(issues, "QuestData[" .. tostring(sea) .. "][" .. index .. "] sem Name")
+                end
+                if not quest.Enemy or quest.Enemy == "" then
+                    table.insert(issues, "QuestData[" .. tostring(sea) .. "][" .. index .. "] sem Enemy")
+                end
+                if not quest.Pos then
+                    table.insert(issues, "QuestData[" .. tostring(sea) .. "][" .. index .. "] sem Pos")
+                end
+                if not quest.Spawn then
+                    quest.Spawn = quest.Pos
+                end
+            end
+        end
+    end
+
+    return issues
+end
+
+DataModule.ValidationIssues = DataModule.Validate()
 
 return DataModule

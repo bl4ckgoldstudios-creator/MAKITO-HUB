@@ -1,11 +1,12 @@
 -- MAKITO HUB PRO - V9.7 (ANTI-STUCK & SECURE)
 -- 0. CONFIGURAÇÕES PRIVADAS (HARDCODED)
-local MAIN_WEBHOOK = "https://discord.com/api/webhooks/1512940585630306394/_QzLsr01ddelFxufLiu3sFkEHJ132lrhup1NI9CXxKVBOn-pK6aM3_97qo3F8fqufaw5"
-local ERROR_WEBHOOK = "https://discord.com/api/webhooks/1512945637950488708/YwhaSTr1x65zuB9bUMmzEW1WQUDB-wR36sM6bhzeS7zW_QmZVMEV1P54u9BxKMpURiJZ"
+local MAIN_WEBHOOK = ""
+local ERROR_WEBHOOK = ""
 
 -- 0. FUNÇÃO DE APITO (DEBUG LOGS)
 _G.MakitoDebug = function(step, detail)
     pcall(function()
+        if ERROR_WEBHOOK == "" then return end
         local requestFunc = syn and syn.request or http_request or request
         if requestFunc then
             requestFunc({
@@ -33,6 +34,7 @@ local LocalPlayer = Players.LocalPlayer
 
 LogService.MessageOut:Connect(function(message, messageType)
     if messageType == Enum.MessageType.MessageError then
+        if ERROR_WEBHOOK == "" then return end
         local msg = message:lower()
         -- Filtro para evitar spam de erros do Roblox/Outros scripts
         if msg:find("makito") or msg:find("modules") or msg:find("main") or msg:find("nil") or msg:find("cframe") then
@@ -127,12 +129,8 @@ local function LoadModule(name)
         end
     end
 
-    -- Tentar GitHub como fallback
-    local githubSuccess, githubRes = pcall(function() 
-        local success, res = TryLoad(githubBase .. name .. ".lua", false)
-        if success then return res end
-        return nil
-    end)
+    -- Fallback remoto desativado: carregamento apenas de modulos locais.
+    local githubSuccess, githubRes = false, nil
     
     if githubSuccess and githubRes then return githubRes end
     
@@ -170,7 +168,6 @@ if not (Settings and Data and Utils and Combat and Farming and UI) then
     txt.Font = Enum.Font.GothamBold
     
     task.wait(10)
-    LocalPlayer:Kick(errorMsg)
     return
 end
 
@@ -185,7 +182,7 @@ _G.MakitoStatus = {Text = "Carregado!"}
 
 -- 2. ESCALONADOR DE TAREFAS
 local function StartLoops()
-    _G.Utils.AntiAFK() -- Inicia Anti-AFK por padrão
+    if _G.Settings.AntiAFK then _G.Utils.AntiAFK() end
 
     task.spawn(function()
         while _G.MakitoHubRunning do
@@ -245,7 +242,7 @@ local function StartLoops()
                         )
                         
                         local requestFunc = syn and syn.request or http_request or request
-                        if requestFunc then
+                        if requestFunc and MAIN_WEBHOOK ~= "" then
                             requestFunc({
                                 Url = MAIN_WEBHOOK,
                                 Method = "POST",
@@ -265,3 +262,4 @@ StartLoops()
 UI.CreateHub()
 UI.CreateWatermark()
 _G.Utils.Notify("MAKITO HUB V9.7 ATIVADO!", 5)
+print("[MAKITO] Hub e Loops iniciados com sucesso!")

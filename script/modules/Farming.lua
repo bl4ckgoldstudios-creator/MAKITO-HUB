@@ -27,7 +27,7 @@ function FarmingModule.GetQuestData(QuestData)
     return data[1]
 end
 
--- SUPREME QUEST HANDLER (ZERO DELAY)
+-- SUPREME QUEST HANDLER V2 (ULTRA FAST)
 function FarmingModule.SupremeQuestHandler(QuestData)
     local data = LocalPlayer:FindFirstChild("Data")
     if not data or not data:FindFirstChild("Level") then return nil end
@@ -37,7 +37,6 @@ function FarmingModule.SupremeQuestHandler(QuestData)
     local currentQuests = QuestData[sea]
     if not currentQuests then return nil end
     
-    -- IDENTIFICAÇÃO INSTANTÂNEA DA MELHOR MISSÃO
     local BestQuest = nil
     for i = #currentQuests, 1, -1 do
         local q = currentQuests[i]
@@ -47,45 +46,38 @@ function FarmingModule.SupremeQuestHandler(QuestData)
         end
     end
 
-    if not BestQuest then 
-        warn("[MAKITO ERROR]: Nenhuma missao encontrada para o Level " .. tostring(level))
-        return nil 
-    end
+    if not BestQuest then return nil end
 
-    -- VERIFICAÇÃO DE POSIÇÃO DO NPC
-    if not BestQuest.Pos then
-        warn("[MAKITO ERROR]: CFrame do NPC nulo para a missao: " .. BestQuest.Name)
-        return BestQuest
-    end
-
-    -- VERIFICAÇÃO DE MISSÃO ATIVA (ROBUSTA)
     local hasQuest = false
+    local questName = ""
     pcall(function()
         local mainGui = LocalPlayer.PlayerGui:FindFirstChild("Main")
         local questGui = mainGui and (mainGui:FindFirstChild("Quest") or mainGui:FindFirstChild("QuestGui"))
         
         if questGui and questGui.Visible then
-            -- Verifica se há texto no título da missão (ajustado para ser mais genérico)
             local title = questGui:FindFirstChild("Title", true) or questGui:FindFirstChild("QuestTitle", true)
             if title and title:IsA("TextLabel") and title.Text ~= "" and title.Text ~= "Missão" then
                 hasQuest = true
+                questName = title.Text
             end
         end
     end)
 
+    if hasQuest and not questName:find(BestQuest.Enemy) then
+        _G.Utils.SafeRemote("AbandonQuest")
+        hasQuest = false
+    end
+
     if not hasQuest and _G.Settings.AutoQuest then
-        -- TELEPORTE E ACEITAÇÃO INSTANTÂNEA
         local npcPos = BestQuest.Pos
         local dist = (LocalPlayer.Character.HumanoidRootPart.Position - npcPos.Position).Magnitude
         
-        if dist > 20 then
+        if dist > 15 then
             if _G.MakitoStatus then _G.MakitoStatus.Text = "Status: Indo ate NPC " .. BestQuest.NPC end
-            _G.Utils.TweenTo(npcPos, 500)
+            _G.Utils.TweenTo(npcPos)
         else
             if _G.MakitoStatus then _G.MakitoStatus.Text = "Status: Aceitando Missao " .. BestQuest.Enemy end
-            -- INTERAÇÃO COM NPC E START QUEST
             _G.Utils.SafeRemote("StartQuest", BestQuest.Name, BestQuest.ID)
-            task.wait(0.5) -- Pequeno delay para evitar spam
         end
     end
     
@@ -97,7 +89,6 @@ function FarmingModule.EquipWeapon(weaponName)
     local char = LocalPlayer.Character
     if not char then return end
 
-    -- Verifica se já está com a arma correta equipada
     local current = char:FindFirstChildOfClass("Tool")
     if current and current.ToolTip == target then return end
     if target == "Fruit" and current and (current.ToolTip == "Blox Fruit" or current.ToolTip == "Demon Fruit") then return end
@@ -114,7 +105,27 @@ function FarmingModule.EquipWeapon(weaponName)
     end
 end
 
--- BLACK HOLE BRING MOBS (CLUSTER TOTAL)
+function FarmingModule.MasteryLogic(enemy)
+    if not _G.Settings.AutoMastery or not enemy or not enemy:FindFirstChild("Humanoid") then return end
+    
+    local healthPercent = (enemy.Humanoid.Health / enemy.Humanoid.MaxHealth) * 100
+    local threshold = _G.Settings.MasteryHealth or 20
+    
+    if healthPercent <= threshold then
+        FarmingModule.EquipWeapon(_G.Settings.MasteryWeapon)
+        if _G.Settings.AutoSkill then
+            local keys = {"Z", "X", "C", "V"}
+            for _, key in ipairs(keys) do
+                if _G.Settings["Skill" .. key] then
+                    _G.Combat.UseSkill(key)
+                end
+            end
+        end
+    else
+        FarmingModule.EquipWeapon(_G.Settings.Weapon)
+    end
+end
+
 function FarmingModule.BlackHoleBringMobs(targetEnemy)
     if not _G.Settings.BringMobs or not targetEnemy or not targetEnemy:FindFirstChild("HumanoidRootPart") then return end
     
@@ -122,16 +133,13 @@ function FarmingModule.BlackHoleBringMobs(targetEnemy)
     local enemiesFolder = workspace:FindFirstChild("Enemies") or workspace
     
     for _, v in ipairs(enemiesFolder:GetChildren()) do
-        if v.Name == targetEnemy.Name and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-            -- TRAVA DE CFRAME AGRESSIVA
+        if v.Name:find(targetEnemy.Name:split(" [")[1]) and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
             v.HumanoidRootPart.CanCollide = false
+            v.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
             v.HumanoidRootPart.CFrame = targetPos
             v.HumanoidRootPart.Velocity = Vector3.new(0,0,0)
+            v.Humanoid.PlatformStand = true
             
-            -- DESATIVAÇÃO DE IA E ANIMAÇÕES
-            if v.Humanoid.Sit ~= true then v.Humanoid.Sit = true end
-            
-            -- ANTI-RESET SERVER-SIDE (BYPASS)
             pcall(function()
                 if v:FindFirstChild("Data") and v.Data:FindFirstChild("SpawnPos") then
                     v.Data.SpawnPos.Value = targetPos.Position
@@ -141,106 +149,66 @@ function FarmingModule.BlackHoleBringMobs(targetEnemy)
     end
 end
 
--- SUPREME AUTO FARM LOGIC
-local lastDebugTick = 0
 function FarmingModule.SupremeAutoFarm()
     if not _G.Settings.AutoFarm then return end
     
-    -- ETAPA 1: BOTÃO PRESSIONADO
-    if tick() - lastDebugTick > 30 then -- Debug a cada 30s para não dar spam
-        lastDebugTick = tick()
-        if _G.MakitoDebug then _G.MakitoDebug(1, "Botão pressionado. Flag _G.Settings.AutoFarm está TRUE.") end
+    if _G.Settings.AutoNextSea then
+        local level = LocalPlayer.Data.Level.Value
+        if (FarmingModule.GetSea() == 1 and level >= 700) or (FarmingModule.GetSea() == 2 and level >= 1500) then
+            FarmingModule.AutoNextSeaLogic()
+            return
+        end
     end
 
     pcall(function()
         local Quest = FarmingModule.SupremeQuestHandler(_G.Data.QuestData)
-        
-        -- ETAPA 2: BUSCA DE DADOS
-        if not Quest then
-            if _G.MakitoDebug then _G.MakitoDebug(2, "FALHA: Nenhuma missao encontrada para o Level " .. tostring(LocalPlayer.Data.Level.Value)) end
-            return
-        end
-
-        -- ETAPA 3: VERIFICAÇÃO DE CFRAME
-        if not Quest.Pos then
-            if _G.MakitoDebug then _G.MakitoDebug(3, "FALHA: CFrame do NPC nulo para a missao: " .. Quest.Name) end
-            return
-        end
+        if not Quest then return end
 
         local enemy = _G.Utils.GetNearestEnemy(Quest.Enemy)
         
         if enemy then
-            -- ETAPA 4: MOVIMENTO
-            if _G.MakitoStatus and _G.MakitoStatus.Text ~= "Status: Atacando " .. Quest.Enemy then
-                if _G.MakitoDebug then _G.MakitoDebug(4, "Iniciando movimento Tween ate o monstro: " .. Quest.Enemy) end
+            local boss = workspace.Enemies:FindFirstChild(Quest.Enemy .. " [Boss]") or workspace:FindFirstChild(Quest.Enemy .. " [Boss]")
+            if boss and boss:FindFirstChild("Humanoid") and boss.Humanoid.Health > 0 then
+                enemy = boss
             end
 
-            -- 1. EQUIPAMENTO
-            FarmingModule.EquipWeapon(_G.Settings.Weapon)
+            if _G.Settings.AutoMastery then
+                FarmingModule.MasteryLogic(enemy)
+            else
+                FarmingModule.EquipWeapon(_G.Settings.Weapon)
+            end
             
-            -- 2. AGRUPAMENTO BLACK HOLE
             FarmingModule.BlackHoleBringMobs(enemy)
             
-            -- 3. POSICIONAMENTO ELITE (ABAIXO OU ACIMA DO CLUSTER)
             local offset = _G.Settings.Distance or 10
             local targetCF = enemy.HumanoidRootPart.CFrame * CFrame.new(0, offset, 0)
-            
-            -- Orientar o personagem para olhar para o inimigo
             targetCF = CFrame.new(targetCF.Position, enemy.HumanoidRootPart.Position)
             
-            -- MOVIMENTAÇÃO SEM STUCK
             local dist = (LocalPlayer.Character.HumanoidRootPart.Position - targetCF.Position).Magnitude
             if dist > 5 then
-                if dist > 150 then
+                if dist > 200 or _G.Settings.InfiniteSpeed then
                     _G.Utils.TweenTo(targetCF)
                 else
-                    _G.Utils.Float(true)
                     LocalPlayer.Character.HumanoidRootPart.CFrame = targetCF
                 end
             end
             
-            -- 4. COMBATE ULTRA
             _G.Combat.StartFastAttack()
+            
+            if _G.Settings.AutoSkill and not _G.Settings.AutoMastery then
+                local keys = {"Z", "X", "C", "V"}
+                for _, key in ipairs(keys) do
+                    if _G.Settings["Skill" .. key] then
+                        _G.Combat.UseSkill(key)
+                    end
+                end
+            end
         else
-            -- ESPERA INTELIGENTE NO SPAWN
             local waitPos = Quest.Spawn or Quest.Pos
-            _G.Utils.TweenTo(waitPos * CFrame.new(0, 30, 0))
+            _G.Utils.TweenTo(waitPos * CFrame.new(0, 50, 0))
             if _G.MakitoStatus then _G.MakitoStatus.Text = "Status: Aguardando Spawn de " .. Quest.Enemy end
         end
     end)
-end
-
--- FRUIT FINDER & COLLECTOR (INSPIRED BY ALCHEMY)
-function FarmingModule.FruitLogic()
-    if _G.Settings.AutoFruitESP then
-        _G.Utils.ClearESP()
-        for _, v in ipairs(workspace:GetChildren()) do
-            if v:IsA("Tool") and (v.Name:find("Fruit") or v:FindFirstChild("Handle")) then
-                _G.Utils.CreateESP(v, "🍎 " .. v.Name, Color3.fromRGB(255, 0, 0))
-            end
-        end
-    end
-
-    if _G.Settings.AutoCollectFruit then
-        for _, v in ipairs(workspace:GetChildren()) do
-            if v:IsA("Tool") and (v.Name:find("Fruit") or v:FindFirstChild("Handle")) then
-                local handle = v:FindFirstChild("Handle") or v
-                local targetCF = handle.CFrame
-                _G.Utils.TweenTo(targetCF)
-                firetouchinterest(LocalPlayer.Character.HumanoidRootPart, handle, 0)
-                firetouchinterest(LocalPlayer.Character.HumanoidRootPart, handle, 1)
-                break
-            end
-        end
-    end
-
-    if _G.Settings.AutoStoreFruit then
-        for _, v in ipairs(LocalPlayer.Backpack:GetChildren()) do
-            if v:IsA("Tool") and (v.ToolTip == "Blox Fruit" or v.ToolTip == "Demon Fruit") then
-                _G.Utils.SafeRemote("StoreFruit", v.Name, v)
-            end
-        end
-    end
 end
 
 function FarmingModule.AutoFarmNearestLogic()
@@ -254,14 +222,49 @@ function FarmingModule.AutoFarmNearestLogic()
     end
 end
 
--- SPECIAL BOSSES & EVENTS (ELITE HUNTER, FACTORY, ETC)
+function FarmingModule.FruitLogic()
+    if _G.Settings.AutoFruitESP then
+        for _, v in ipairs(workspace:GetChildren()) do
+            if v:IsA("Tool") and (v.Name:find("Fruit") or v:FindFirstChild("Handle")) then
+                _G.Utils.CreateESP(v:FindFirstChild("Handle") or v, "🍎 " .. v.Name, Color3.fromRGB(255, 0, 0), "Fruit")
+            end
+        end
+    end
+
+    if _G.Settings.AutoCollectFruit or _G.Settings.AutoFruitFinder then
+        for _, v in ipairs(workspace:GetChildren()) do
+            if v:IsA("Tool") and (v.Name:find("Fruit") or v:FindFirstChild("Handle")) then
+                local handle = v:FindFirstChild("Handle") or v
+                _G.Utils.TweenTo(handle.CFrame)
+                firetouchinterest(LocalPlayer.Character.HumanoidRootPart, handle, 0)
+                firetouchinterest(LocalPlayer.Character.HumanoidRootPart, handle, 1)
+                break
+            end
+        end
+    end
+
+    if _G.Settings.AutoBringFruit then
+        for _, v in ipairs(workspace:GetChildren()) do
+            if v:IsA("Tool") and (v.Name:find("Fruit") or v:FindFirstChild("Handle")) then
+                local handle = v:FindFirstChild("Handle") or v
+                handle.CFrame = LocalPlayer.Character.HumanoidRootPart.CFrame
+            end
+        end
+    end
+
+    if _G.Settings.AutoStoreFruit then
+        for _, v in ipairs(LocalPlayer.Backpack:GetChildren()) do
+            if v:IsA("Tool") and (v.ToolTip == "Blox Fruit" or v.ToolTip == "Demon Fruit") then
+                _G.Utils.SafeRemote("StoreFruit", v.Name, v)
+            end
+        end
+    end
+end
+
 function FarmingModule.SpecialBossLogic()
-    -- 1. Elite Hunter
     if _G.Settings.AutoEliteHunter then
         local eliteNPC = workspace.NPCs:FindFirstChild("Elite Hunter")
-        if eliteNPC then
-            _G.Utils.SafeRemote("EliteHunter", "GetQuest")
-        end
+        if eliteNPC then _G.Utils.SafeRemote("EliteHunter", "GetQuest") end
         local enemies = workspace:FindFirstChild("Enemies") or workspace
         for _, elite in ipairs({"Deandre", "Diablo", "Urban"}) do
             local v = enemies:FindFirstChild(elite)
@@ -273,16 +276,14 @@ function FarmingModule.SpecialBossLogic()
         end
     end
 
-    -- 2. Factory (Sea 2)
     if _G.Settings.AutoFactory then
-        local core = workspace:FindFirstChild("Core") -- Ajustar nome se necessário
+        local core = workspace:FindFirstChild("Core")
         if core then
             _G.Utils.TweenTo(core.CFrame * CFrame.new(0, 10, 0))
             _G.Combat.StartFastAttack()
         end
     end
 
-    -- 3. Dough King & Cake Prince
     if _G.Settings.AutoDoughKing or _G.Settings.AutoCakePrince then
         local bossName = _G.Settings.AutoDoughKing and "Dough King" or "Cake Prince"
         local enemies = workspace:FindFirstChild("Enemies") or workspace
@@ -294,81 +295,47 @@ function FarmingModule.SpecialBossLogic()
     end
 end
 
--- DUNGEON & RAID AUTOMATION REFINED
 function FarmingModule.RaidLogic()
     if _G.Settings.AutoBuyChip then
         _G.Utils.SafeRemote("Raids", "BuyChip", _G.Settings.SelectedRaid)
     end
-    
     if _G.Settings.AutoStartRaid then
         _G.Utils.SafeRemote("Raids", "StartRaid")
     end
-    
     if _G.Settings.AutoDungeon then
-        local enemies = workspace:FindFirstChild("Enemies") or workspace
         local enemy = _G.Utils.GetNearestEnemyAny()
         if enemy then
             _G.Utils.TweenTo(enemy.HumanoidRootPart.CFrame * CFrame.new(0, 15, 0))
             _G.Combat.StartFastAttack()
         end
-        
-        -- Auto Next Island for Raids
         if _G.Settings.AutoNextIsland then
-            -- Verifica se todos os inimigos da ilha morreram
+            local enemies = workspace:FindFirstChild("Enemies") or workspace
             local count = 0
             for _, v in ipairs(enemies:GetChildren()) do
                 if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then count = count + 1 end
             end
             if count == 0 then
-                -- Teleporta para o centro da próxima ilha (coordenadas variam, usando busca de objeto)
                 local nextIsland = workspace:FindFirstChild("Island" .. (tonumber(LocalPlayer.PlayerGui.Main.RaidStatus.Island.Text) or 1) + 1)
                 if nextIsland then _G.Utils.TweenTo(nextIsland.CFrame) end
             end
         end
     end
-    
-    if _G.Settings.AutoAwaken then
-        _G.Utils.SafeRemote("AwakenSkill")
-    end
+    if _G.Settings.AutoAwaken then _G.Utils.SafeRemote("AwakenSkill") end
 end
 
--- SEA EVENTS FARMING
 function FarmingModule.SeaEventLogic()
     local SeaEvents = workspace:FindFirstChild("SeaEvents") or workspace:FindFirstChild("Sea")
     if not SeaEvents then return end
 
-    -- 1. Auto Sea Beast
     if _G.Settings.AutoSeaBeast then
         local sb = SeaEvents:FindFirstChild("Sea Beast") or SeaEvents:FindFirstChild("SeaBeast")
-        if sb and sb:FindFirstChild("HumanoidRootPart") and sb:FindFirstChild("Humanoid") and sb.Humanoid.Health > 0 then
+        if sb and sb:FindFirstChild("Humanoid") and sb.Humanoid.Health > 0 then
             _G.Utils.TweenTo(sb.HumanoidRootPart.CFrame * CFrame.new(0, 50, 0))
             _G.Combat.StartFastAttack()
             return
         end
     end
 
-    -- 2. Auto Rumbling Waters
-    if _G.Settings.AutoRumbling then
-        for _, v in ipairs(SeaEvents:GetChildren()) do
-            if v.Name:find("Sea Beast") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-                _G.Utils.TweenTo(v.HumanoidRootPart.CFrame * CFrame.new(0, 50, 0))
-                _G.Combat.StartFastAttack()
-                return
-            end
-        end
-    end
-
-    -- 3. Auto Ship Raid
-    if _G.Settings.AutoShipRaid then
-        local ship = SeaEvents:FindFirstChild("Ship") or SeaEvents:FindFirstChild("Brig")
-        if ship and ship:FindFirstChild("HumanoidRootPart") then
-            _G.Utils.TweenTo(ship.HumanoidRootPart.CFrame * CFrame.new(0, 30, 0))
-            _G.Combat.StartFastAttack()
-            return
-        end
-    end
-
-    -- 4. Auto Terrorshark
     if _G.Settings.AutoTerrorShark then
         local ts = SeaEvents:FindFirstChild("Terrorshark")
         if ts and ts:FindFirstChild("Humanoid") and ts.Humanoid.Health > 0 then
@@ -378,12 +345,10 @@ function FarmingModule.SeaEventLogic()
         end
     end
 
-    -- 5. Auto Kitsune Island
     if _G.Settings.AutoKitsune then
         local kitsune = workspace:FindFirstChild("KitsuneIsland")
         if kitsune then
             _G.Utils.TweenTo(kitsune:GetModelCFrame())
-            -- Auto collect Azure Flames logic
             for _, v in ipairs(workspace:GetChildren()) do
                 if v.Name == "AzureFlame" then
                     _G.Utils.TweenTo(v.CFrame)
@@ -393,82 +358,55 @@ function FarmingModule.SeaEventLogic()
         end
     end
 
-    -- 6. Leviathan (Implemented in LeviathanLogic)
-    if _G.Settings.AutoLeviathan then
-        FarmingModule.LeviathanLogic()
-    end
+    if _G.Settings.AutoLeviathan then FarmingModule.LeviathanLogic() end
 end
 
--- SHOP & INSTÂNCIAS REFINED
 function FarmingModule.ShopLogic()
     if _G.Settings.AutoBuyFightingStyle then
         local styles = {"Black Leg", "Electro", "Fishman Karate", "Dragon Breath", "Superhuman", "Death Step", "Sharkman Karate", "Electric Claw", "Dragon Talon", "Godhuman"}
-        for _, style in ipairs(styles) do
-            _G.Utils.SafeRemote("BuyFightingStyle", style)
-        end
+        for _, style in ipairs(styles) do _G.Utils.SafeRemote("BuyFightingStyle", style) end
     end
-    
     if _G.Settings.AutoBuyLegendarySword then
         local swords = {"Shisui", "Wando", "Sadi", "True Triple Katana"}
-        for _, sword in ipairs(swords) do
-            _G.Utils.SafeRemote("LegendarySwordDealer", sword)
-        end
+        for _, sword in ipairs(swords) do _G.Utils.SafeRemote("LegendarySwordDealer", sword) end
     end
-
     if _G.Settings.AutoBuyAccessory then
-        local accessories = {"Black Cape", "Swordsman Hat", "Pink Coat"}
-        for _, acc in ipairs(accessories) do
-            _G.Utils.SafeRemote("BuyAccessory", acc)
-        end
+        local accessories = {"Black Cape", "Swordsman Hat", "Pink Coat", "Tomoe Rings"}
+        for _, acc in ipairs(accessories) do _G.Utils.SafeRemote("BuyAccessory", acc) end
     end
-    
-    if _G.Settings.AutoGacha then
-        _G.Utils.SafeRemote("FruitGacha")
+    if _G.Settings.AutoGacha then _G.Utils.SafeRemote("FruitGacha") end
+end
+
+function FarmingModule.BuyItem(type, name)
+    if type == "Ability" then _G.Utils.SafeRemote("BuyAbility", name)
+    elseif type == "Weapon" then _G.Utils.SafeRemote("BuyItem", name)
+    elseif type == "FightingStyle" then _G.Utils.SafeRemote("BuyFightingStyle", name)
     end
 end
 
--- CHEST FARM
 function FarmingModule.ChestFarmLogic()
     if not _G.Settings.AutoChest then return end
-    
     for _, v in ipairs(workspace:GetChildren()) do
         if v.Name:find("Chest") and v:IsA("Part") then
-            if _G.MakitoStatus then _G.MakitoStatus.Text = "Status: Coletando Baú..." end
             _G.Utils.TweenTo(v.CFrame)
             task.wait(0.2)
         end
     end
 end
 
--- ADVANCED AUTO SOUL GUITAR
 function FarmingModule.AutoSoulGuitarLogic()
     if not _G.Settings.AutoSoulGuitar then return end
-    
-    local hasSoulGuitar = LocalPlayer.Backpack:FindFirstChild("Soul Guitar") or LocalPlayer.Character:FindFirstChild("Soul Guitar")
-    if hasSoulGuitar then return end
-    
     local sea = FarmingModule.GetSea()
     if sea ~= 3 then return end
-
-    -- 1. Check if Full Moon
-    local isFullMoon = game:GetService("Lighting").Sky.FullMoonMagnitude > 0.9
-    
-    if isFullMoon then
-        -- Go to Gravestone
+    if game:GetService("Lighting").Sky.FullMoonMagnitude > 0.9 then
         local gravePos = CFrame.new(-9515, 164, -5785)
         _G.Utils.TweenTo(gravePos)
-        
         if (LocalPlayer.Character.HumanoidRootPart.Position - gravePos.Position).Magnitude < 10 then
             _G.Utils.SafeRemote("SoulGuitar", "Pray")
         end
     end
-
-    -- 2. Material Farm for Soul Guitar
-    -- Needs: 500 Bones, 250 Ectoplasm, 1 Dark Fragment
     local bones = LocalPlayer.Data:FindFirstChild("Bones") and LocalPlayer.Data.Bones.Value or 0
-    
     if bones < 500 then
-        if _G.MakitoStatus then _G.MakitoStatus.Text = "Status: Farmando Ossos para Soul Guitar (" .. bones .. "/500)" end
         local enemy = _G.Utils.GetNearestEnemy("Reborn Skeleton") or _G.Utils.GetNearestEnemy("Living Zombie")
         if enemy then
             FarmingModule.EquipWeapon(_G.Settings.Weapon)
@@ -478,165 +416,47 @@ function FarmingModule.AutoSoulGuitarLogic()
     end
 end
 
--- AUTO CDK (CURSED DUAL KATANA)
 function FarmingModule.AutoCDKLogic()
     if not _G.Settings.AutoCDK then return end
-    
-    local hasCDK = LocalPlayer.Backpack:FindFirstChild("Cursed Dual Katana") or LocalPlayer.Character:FindFirstChild("Cursed Dual Katana")
-    if hasCDK then return end
-
-    -- Needs Yama and Tushita at 350 Mastery
-    local yama = LocalPlayer.Backpack:FindFirstChild("Yama") or LocalPlayer.Character:FindFirstChild("Yama")
-    local tushita = LocalPlayer.Backpack:FindFirstChild("Tushita") or LocalPlayer.Character:FindFirstChild("Tushita")
-    
-    if yama and tushita then
-        -- Mastery Check Logic here
-        -- If mastery < 350, go farm mastery
-    else
-        -- Logic to get Yama/Tushita
-        if not yama then
-            -- Go to Hydra Island Secret Room
-        end
-    end
+    _G.Utils.TweenTo(CFrame.new(-11475, 831, 330))
+    _G.Utils.SafeRemote("CDKQuest")
 end
 
--- AUTO GODHUMAN
 function FarmingModule.AutoGodhumanLogic()
     if not _G.Settings.AutoGodhuman then return end
-    
-    -- Needs multiple materials and 400 mastery on all V2 fighting styles
-    -- This is a complex chain, starting with material farm
-    local mat = _G.Settings.SelectedMaterial or "Dragon Scale"
-    local data = _G.Data.MaterialData[mat]
-    
-    if data then
-        if _G.MakitoStatus then _G.MakitoStatus.Text = "Status: Farmando " .. mat end
-        local enemy = _G.Utils.GetNearestEnemy(data.Enemy)
-        if enemy then
-            FarmingModule.EquipWeapon(_G.Settings.Weapon)
-            _G.Utils.TweenTo(enemy.HumanoidRootPart.CFrame * CFrame.new(0, 10, 0))
-            _G.Combat.StartFastAttack()
-        else
-            _G.Utils.TweenTo(data.Pos)
-        end
-    end
+    _G.Utils.TweenTo(CFrame.new(-12463, 375, -7523))
+    _G.Utils.SafeRemote("BuyFightingStyle", "Godhuman")
 end
 
--- AUTO RACE V4 (TRIAL SOLVER)
-function FarmingModule.AutoTrialLogic()
-    if not _G.Settings.AutoTrial then return end
-    
-    local trialPart = workspace:FindFirstChild("TrialPart") -- Example name
-    if trialPart then
-        _G.Utils.TweenTo(trialPart.CFrame)
-        -- Solver logic for specific race trials
-        if LocalPlayer.Data.Race.Value == "Mink" then
-            -- Auto pathfind through maze
-        elseif LocalPlayer.Data.Race.Value == "Human" then
-            -- Auto kill trial boss
-        end
-    end
-end
-
--- AUTO STATS
 function FarmingModule.AutoStatsLogic()
-    if not _G.Settings.AutoStats then return end
-    
-    local stat = _G.Settings.SelectedStat
-    local remoteStat = stat == "Melee" and "Melee" or stat == "Defense" and "Defense" or stat == "Sword" and "Sword" or stat == "Gun" and "Gun" or "Demon Fruit"
-    
-    local points = LocalPlayer.Data.StatsPoints.Value
-    if points > 0 then
-        _G.Utils.SafeRemote("AddPoint", remoteStat, points)
-    end
+    if not _G.Settings.AutoStats or not _G.Settings.StatsTarget then return end
+    local stats = _G.Settings.StatsTarget
+    _G.Utils.SafeRemote("AddPoint", stats, 1)
 end
 
--- AUTO NEXT SEA
 function FarmingModule.AutoNextSeaLogic()
     if not _G.Settings.AutoNextSea then return end
     local level = LocalPlayer.Data.Level.Value
-    local sea = FarmingModule.GetSea()
-    
-    if sea == 1 and level >= 700 then
-        _G.Utils.TweenTo(CFrame.new(-4842, 718, -2621))
+    if FarmingModule.GetSea() == 1 and level >= 700 then
+        _G.Utils.TweenTo(CFrame.new(-10332, 730, 7866))
         _G.Utils.SafeRemote("TravelMain")
-    elseif sea == 2 and level >= 1500 then
-        _G.Utils.TweenTo(CFrame.new(-5400, 15, 1000))
+    elseif FarmingModule.GetSea() == 2 and level >= 1500 then
+        _G.Utils.TweenTo(CFrame.new(-541, 314, -2821))
         _G.Utils.SafeRemote("TravelZou")
     end
 end
 
--- FRUIT SYSTEM (SNIPER, STORE, FINDER)
-function FarmingModule.FruitLogic()
-    -- 1. Fruit Finder & Sniper
-    if _G.Settings.AutoFruitFinder or _G.Settings.AutoSnipe then
-        for _, v in ipairs(workspace:GetChildren()) do
-            if v:IsA("Tool") and (v.Name:find("Fruit") or v:FindFirstChild("Handle")) then
-                if _G.Settings.AutoSnipe then
-                    local isRare = false
-                    for _, rare in ipairs(_G.Settings.SnipeFruits or {}) do
-                        if v.Name:find(rare) then isRare = true break end
-                    end
-                    if isRare then
-                        if _G.MakitoStatus then _G.MakitoStatus.Text = "Status: SNIPING " .. v.Name end
-                        _G.Utils.TweenTo(v.Handle.CFrame)
-                    end
-                elseif _G.Settings.AutoFruitFinder then
-                    _G.Utils.TweenTo(v.Handle.CFrame)
-                end
-            end
-        end
-    end
-
-    -- 2. Auto Store Fruit
-    if _G.Settings.AutoStoreFruit then
-        local fruit = LocalPlayer.Backpack:FindFirstChildOfClass("Tool")
-        if fruit and (fruit.ToolTip == "Blox Fruit" or fruit.ToolTip == "Demon Fruit") then
-            _G.Utils.SafeRemote("StoreFruit", fruit.Name, fruit)
-        end
-    end
-
-    -- 3. Auto Bring Fruit (Magnetic)
-    if _G.Settings.AutoBringFruit then
-        for _, v in ipairs(workspace:GetChildren()) do
-            if v:IsA("Tool") and (v.Name:find("Fruit") or v:FindFirstChild("Handle")) then
-                v.Handle.CFrame = LocalPlayer.Character.HumanoidRootPart.CFrame
-            end
-        end
-    end
-
-    -- 4. Shop Sniper (Auto Buy)
-    if _G.Settings.AutoBuyFruit then
-        for _, rare in ipairs(_G.Settings.SnipeFruits or {}) do
-            _G.Utils.SafeRemote("BuyFruit", rare)
-        end
-    end
-end
-
--- LEVIATHAN SOLVER & SEA 3 ADVANCED
 function FarmingModule.LeviathanLogic()
     if not _G.Settings.AutoLeviathan then return end
-    
     local SeaEvents = workspace:FindFirstChild("SeaEvents") or workspace:FindFirstChild("Sea")
     if not SeaEvents then return end
-
     local Leviathan = SeaEvents:FindFirstChild("Leviathan")
     if Leviathan then
-        if _G.MakitoStatus then _G.MakitoStatus.Text = "Status: MATANDO LEVIATHAN" end
-        -- Position above the head to avoid most attacks
         local head = Leviathan:FindFirstChild("Head") or Leviathan.PrimaryPart
         if head then
             _G.Utils.TweenTo(head.CFrame * CFrame.new(0, 50, 0))
             _G.Combat.StartFastAttack()
-            
-            -- Auto Use Skills for max damage
-            _G.Combat.UseSkill("Z")
-            _G.Combat.UseSkill("X")
-            _G.Combat.UseSkill("C")
         end
-    else
-        -- Search for Leviathan Gates or Cold Zone
-        if _G.MakitoStatus then _G.MakitoStatus.Text = "Status: Procurando Leviathan..." end
     end
 end
 

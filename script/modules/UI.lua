@@ -408,6 +408,18 @@ function UIModule.CreateHub()
     local Gui, Main = UIModule.CreateWindow("MAKITO HUB", theme)
 
     -- TODAS AS ABAS RESTAURADAS
+    local SupremeTab = UIModule.NewTab("Supreme (Elite)")
+    UIModule.NewSection(SupremeTab, "God-Mode Combat")
+    UIModule.NewToggle(SupremeTab, "Instant Kill (Packet Burst)", "FastAttack")
+    UIModule.NewToggle(SupremeTab, "Anti-Ban Protection", "SafeMode")
+    UIModule.NewSection(SupremeTab, "World Control")
+    UIModule.NewToggle(SupremeTab, "Infinite Speed + NoClip", "InfiniteSpeed")
+    UIModule.NewToggle(SupremeTab, "Black Hole (Bring All)", "BringMobs")
+    UIModule.NewSection(SupremeTab, "Sea 3 Elite")
+    UIModule.NewButton(SupremeTab, "Solve Mirage Puzzle", function() _G.Farming.MirageSolver() end)
+    UIModule.NewButton(SupremeTab, "Kill Leviathan (Auto Position)", function() _G.Settings.AutoLeviathan = true end)
+    UIModule.NewButton(SupremeTab, "Auto Kitsune (Azure Farm)", function() _G.Settings.AutoKitsune = true end)
+
     local MainTab = UIModule.NewTab("Main")
     UIModule.NewSection(MainTab, "Auto Farm")
     UIModule.NewToggle(MainTab, "Auto Farm Level", "AutoFarm")
@@ -453,7 +465,7 @@ function UIModule.CreateHub()
     
     local currentSea = _G.Farming.GetSea()
     local islandOptions = {}
-    for _, island in ipairs(_G.Data.SeaData[currentSea]) do table.insert(islandOptions, island.Name) end
+    for _, island in ipairs(_G.Data.SeaData[currentSea] or {}) do table.insert(islandOptions, island.Name) end
     
     UIModule.IslandDropdown = UIModule.NewDropdown(TeleportTab, "Select Island", islandOptions, "SelectedIsland")
     
@@ -464,7 +476,7 @@ function UIModule.CreateHub()
             if sea ~= lastSea then
                 lastSea = sea
                 local newList = {}
-                for _, island in ipairs(_G.Data.SeaData[sea]) do table.insert(newList, island.Name) end
+                for _, island in ipairs(_G.Data.SeaData[sea] or {}) do table.insert(newList, island.Name) end
                 if UIModule.IslandDropdown then UIModule.IslandDropdown.Refresh(newList) end
             end
         end
@@ -473,7 +485,7 @@ function UIModule.CreateHub()
     UIModule.NewButton(TeleportTab, "Teleport to Island", function()
         local sea = _G.Farming.GetSea()
         local selected = _G.Settings.SelectedIsland
-        for _, island in ipairs(_G.Data.SeaData[sea]) do
+        for _, island in ipairs(_G.Data.SeaData[sea] or {}) do
             if island.Name == selected then
                 _G.Utils.TweenTo(island.Pos)
                 break
@@ -560,15 +572,26 @@ function UIModule.CreateHub()
     UIModule.NewToggle(SeaTab, "Auto Kitsune", "AutoKitsune")
     UIModule.NewToggle(SeaTab, "Auto Terrorshark", "AutoTerrorShark")
 
-    local ShopTab = UIModule.NewTab("Shop & Instâncias")
-    UIModule.NewSection(ShopTab, "Automation")
+    local ShopTab = UIModule.NewTab("Shop & Itens")
+    UIModule.NewSection(ShopTab, "Abilities (One Click)")
+    UIModule.NewButton(ShopTab, "Buy Geppo (Skyjump)", function() _G.Farming.BuyItem("Ability", "Skyjump") end)
+    UIModule.NewButton(ShopTab, "Buy Buso Haki (Enhancement)", function() _G.Farming.BuyItem("Ability", "Enhancement") end)
+    UIModule.NewButton(ShopTab, "Buy Soru (Flash Step)", function() _G.Farming.BuyItem("Ability", "FlashStep") end)
+    UIModule.NewButton(ShopTab, "Buy Ken Haki (Observation)", function() _G.Farming.BuyItem("Ability", "Observation") end)
+    
+    UIModule.NewSection(ShopTab, "Auto Buy (Toggles)")
     UIModule.NewToggle(ShopTab, "Auto Buy Fighting Styles", "AutoBuyFightingStyle")
     UIModule.NewToggle(ShopTab, "Auto Buy Legendary Swords", "AutoBuyLegendarySword")
     UIModule.NewToggle(ShopTab, "Auto Buy Accessories", "AutoBuyAccessory")
-    UIModule.NewSection(ShopTab, "Items")
+    
+    UIModule.NewSection(ShopTab, "Legendary Items")
     UIModule.NewToggle(ShopTab, "Auto Soul Guitar", "AutoSoulGuitar")
     UIModule.NewToggle(ShopTab, "Auto CDK", "AutoCDK")
     UIModule.NewToggle(ShopTab, "Auto Godhuman", "AutoGodhuman")
+    
+    UIModule.NewSection(ShopTab, "Misc Shop")
+    UIModule.NewButton(ShopTab, "Refund Stats", function() _G.Utils.SafeRemote("RefundPoints") end)
+    UIModule.NewButton(ShopTab, "Reroll Race", function() _G.Utils.SafeRemote("RerollRace") end)
 
     local StatsTab = UIModule.NewTab("Stats")
     UIModule.NewSection(StatsTab, "Distribution")
@@ -650,10 +673,18 @@ function UIModule.CreateWatermark()
 
     task.spawn(function()
         while task.wait(1) do
-            local fps = math.floor(1 / task.wait())
-            local ping = game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValueString():split(" ")[1]
-            local time = os.date("%X")
-            TextLabel.Text = string.format("MAKITO <font color='#00FF96'>HUB</font> | FPS: %d | PING: %s | %s", fps, ping, time)
+            pcall(function()
+                local elapsed = task.wait()
+                local fps = elapsed > 0 and math.floor(1 / elapsed) or 0
+                local ping = "N/A"
+                local stats = game:GetService("Stats")
+                local pingItem = stats:FindFirstChild("Network") and stats.Network:FindFirstChild("ServerStatsItem") and stats.Network.ServerStatsItem:FindFirstChild("Data Ping")
+                if pingItem then
+                    ping = pingItem:GetValueString():split(" ")[1]
+                end
+                local time = os.date("%X")
+                TextLabel.Text = string.format("MAKITO <font color='#00FF96'>HUB</font> | FPS: %d | PING: %s | %s", fps, ping, time)
+            end)
         end
     end)
     
