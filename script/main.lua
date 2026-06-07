@@ -289,7 +289,6 @@ local function StartLoops()
             pcall(function()
                 if _G.Settings.AutoKickMod then _G.Utils.CheckModerator() end
                 if _G.Settings.FastAttack then _G.Combat.StartFastAttack() else _G.Combat.StopFastAttack() end
-                _G.Combat.KillAuraLogic()
                 _G.Combat.AimBotLogic()
                 _G.Combat.AutoComboLogic()
                 _G.Utils.AutomationLogic()

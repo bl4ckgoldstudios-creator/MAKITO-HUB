@@ -14,15 +14,48 @@ local CombatFrameworkRoot = nil
 local CommF = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_")
 
 local function GetFramework()
-    pcall(function()
-        if CombatFramework and CombatFramework.activeController then return end
+    local success, result = pcall(function()
+        if CombatFramework and CombatFramework.activeController then 
+            return CombatFramework 
+        end
         
         for _, v in pairs(getgc(true)) do
-            if type(v) == "table" and v.activeController and v.activeController.attack then
-                CombatFramework = v
-                break
+            if type(v) == "table" then
+                -- Busca por padrões conhecidos do framework do Blox Fruits
+                if v.activeController and (v.activeController.attack or v.activeController.Attack) then
+                    CombatFramework = v
+                    return v
+                elseif v.Attack and v.AttackCD then -- Outra variação comum
+                    CombatFramework = {activeController = v}
+                    return CombatFramework
+                end
             end
         end
+    end)
+    return success and result or nil
+end
+
+-- DETECÇÃO DE ARMA ROBUSTA
+local function IsCombatWeapon(tool)
+    if not tool or not tool:IsA("Tool") then return false end
+    local tt = tool.ToolTip
+    local name = tool.Name:lower()
+    
+    -- Verifica por ToolTip ou por nomes comuns se o ToolTip falhar
+    if tt == "Melee" or tt == "Sword" then return true end
+    if name:find("sword") or name:find("blade") or name:find("katana") or name:find("saber") then return true end
+    if name:find("combat") or name:find("dark step") or name:find("electro") or name:find("fishman") then return true end
+    
+    return false
+end
+
+-- FALLBACK: ATAQUE VIA INPUT SE O FRAMEWORK FALHAR
+local function FallbackAttack()
+    pcall(function()
+        local vim = game:GetService("VirtualInputManager")
+        vim:SendMouseButtonEvent(0, 0, 0, true, game, 0)
+        task.wait()
+        vim:SendMouseButtonEvent(0, 0, 0, false, game, 0)
     end)
 end
 
@@ -33,35 +66,89 @@ function CombatModule.StopFastAttack()
     end
 end
 
+-- SISTEMA UNIFICADO: FAST ATTACK + KILL AURA (VERSÃO UNIVERSAL)
 function CombatModule.StartFastAttack()
     if FastAttackConn then return end
     
-    FastAttackConn = RunService.RenderStepped:Connect(function()
-        if not _G.Settings or not _G.Settings.FastAttack then return end
+    local lastAttack = 0
+    FastAttackConn = RunService.Stepped:Connect(function()
+        if not _G.Settings or not _G.Settings.FastAttack then 
+            CombatModule.StopFastAttack()
+            return 
+        end
+        
+        local now = tick()
+        local attackDelay = _G.Settings.FastAttackSpeed or 0.05
+        local attackDist = _G.Settings.KillAuraDistance or 60
+        
+        if now - lastAttack < attackDelay then return end
         
         pcall(function()
-            local weapon = LocalPlayer.Character:FindFirstChildOfClass("Tool")
-            if not weapon or (weapon.ToolTip ~= "Melee" and weapon.ToolTip ~= "Sword") then return end
+            local char = LocalPlayer.Character
+            if not char or not char:FindFirstChild("HumanoidRootPart") then return end
             
-            GetFramework()
-            if CombatFramework and CombatFramework.activeController then
-                local controller = CombatFramework.activeController
+            local weapon = char:FindFirstChildOfClass("Tool")
+            if not weapon or not IsCombatWeapon(weapon) then return end
+            
+            local framework = GetFramework()
+            local enemies = workspace:FindFirstChild("Enemies") or workspace
+            local myPos = char.HumanoidRootPart.Position
+            local foundTarget = false
+            
+            if framework and framework.activeController then
+                local controller = framework.activeController
+                local attackMethod = controller.attack or controller.Attack
                 
-                -- ULTRA FAST BYPASS
-                controller.hitboxMagnitude = 100
+                -- BYPASS DE DELAY E ANIMAÇÃO
+                controller.hitboxMagnitude = attackDist
                 controller.attackCount = 0
                 controller.timeToNextAttack = 0
                 controller.increment = 0
                 
-                -- Execução de ataque direto no framework (No Animation)
-                controller.attack()
-                
-                -- Dano extra via Remote (Opcional, mas garante hit em lag)
-                if tick() % 0.2 < 0.05 then
-                    local target = _G.Utils.GetNearestEnemyAny()
-                    if target and target:FindFirstChild("HumanoidRootPart") then
-                        CommF:InvokeServer("Attack", target.HumanoidRootPart)
+                local count = 0
+                for _, v in ipairs(enemies:GetChildren()) do
+                    if count >= 8 then break end -- Aumentado limite levemente
+                    if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
+                        local dist = (myPos - v.HumanoidRootPart.Position).Magnitude
+                        if dist <= attackDist then 
+                            foundTarget = true
+                            count = count + 1
+                            
+                            -- Executa o ataque do framework
+                            if attackMethod then attackMethod() end
+                            
+                            -- Remote call com throttling interno
+                            if now - lastAttack >= attackDelay then
+                                CommF:InvokeServer("Attack", v.HumanoidRootPart)
+                                lastAttack = now
+                            end
+                        end
                     end
+                end
+            end
+
+            -- SE O FRAMEWORK FALHAR OU NÃO HOUVER ALVO NO FRAMEWORK
+            if not foundTarget or not framework then
+                -- Verifica alvos manualmente para o Remote Fallback
+                for _, v in ipairs(enemies:GetChildren()) do
+                    if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
+                        local dist = (myPos - v.HumanoidRootPart.Position).Magnitude
+                        if dist <= attackDist then
+                            foundTarget = true
+                            FallbackAttack()
+                            if now - lastAttack >= attackDelay then
+                                CommF:InvokeServer("Attack", v.HumanoidRootPart)
+                                lastAttack = now
+                            end
+                            break -- Ataca um por vez no fallback para evitar lag de input
+                        end
+                    end
+                end
+                
+                -- Auto-click puro se ainda não achou nada (para farm de clique)
+                if not foundTarget and now - lastAttack >= attackDelay then
+                    FallbackAttack()
+                    lastAttack = now
                 end
             end
         end)
@@ -69,54 +156,11 @@ function CombatModule.StartFastAttack()
 end
 
 function CombatModule.StopKillAura()
-    if KillAuraConn then
-        KillAuraConn:Disconnect()
-        KillAuraConn = nil
-    end
+    -- Função mantida para compatibilidade, mas a lógica agora é interna ao Fast Attack
 end
 
 function CombatModule.StartKillAura()
-    if KillAuraConn then return end
-    
-    KillAuraConn = RunService.Stepped:Connect(function()
-        if not _G.Settings or not _G.Settings.KillAura then return end
-        
-        pcall(function()
-            local enemies = workspace:FindFirstChild("Enemies") or workspace
-            local myPos = LocalPlayer.Character.HumanoidRootPart.Position
-            local targets = {}
-            
-            for _, v in ipairs(enemies:GetChildren()) do
-                if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
-                    local dist = (myPos - v.HumanoidRootPart.Position).Magnitude
-                    if dist <= 100 then -- Alcance da Aura
-                        table.insert(targets, v.HumanoidRootPart)
-                    end
-                end
-            end
-
-            if #targets > 0 then
-                GetFramework()
-                local activeController = CombatFramework and CombatFramework.activeController
-                if not activeController and CombatFrameworkRoot then
-                    activeController = CombatFrameworkRoot.activeController
-                end
-
-                if activeController then
-                    -- Redz Hub Style: Ataca todos os alvos simultaneamente via Framework
-                    for _, target in ipairs(targets) do
-                        if activeController.attack then
-                            activeController.attack()
-                        elseif activeController.Attack then
-                            activeController.Attack()
-                        end
-                        -- Dano direto via Remoto (Garantia de Hitbox)
-                        CommF:InvokeServer("Attack", target)
-                    end
-                end
-            end
-        end)
-    end)
+    -- Função mantida para compatibilidade, mas a lógica agora é interna ao Fast Attack
 end
 
 function CombatModule.KillAuraLogic()

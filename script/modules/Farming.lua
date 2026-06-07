@@ -307,6 +307,30 @@ function FarmingModule.SpecialBossLogic()
         end
     end
 
+    if _G.Settings.AutoRipIndra then
+        local boss = workspace.Enemies:FindFirstChild("rip_indra True Form") or workspace.Enemies:FindFirstChild("rip_indra")
+        if boss and boss:FindFirstChild("Humanoid") and boss.Humanoid.Health > 0 then
+            _G.Utils.TweenTo(boss.HumanoidRootPart.CFrame * CFrame.new(0, 15, 0))
+            _G.Combat.StartFastAttack()
+        end
+    end
+
+    if _G.Settings.AutoLaw then
+        local boss = workspace.Enemies:FindFirstChild("Order")
+        if boss and boss:FindFirstChild("Humanoid") and boss.Humanoid.Health > 0 then
+            _G.Utils.TweenTo(boss.HumanoidRootPart.CFrame * CFrame.new(0, 15, 0))
+            _G.Combat.StartFastAttack()
+        end
+    end
+
+    if _G.Settings.AutoBeautifulPirate then
+        local boss = workspace.Enemies:FindFirstChild("Beautiful Pirate")
+        if boss and boss:FindFirstChild("Humanoid") and boss.Humanoid.Health > 0 then
+            _G.Utils.TweenTo(boss.HumanoidRootPart.CFrame * CFrame.new(0, 15, 0))
+            _G.Combat.StartFastAttack()
+        end
+    end
+
     if _G.Settings.AutoDoughKing or _G.Settings.AutoCakePrince then
         local bossName = _G.Settings.AutoDoughKing and "Dough King" or "Cake Prince"
         local enemies = workspace:FindFirstChild("Enemies") or workspace
@@ -315,6 +339,37 @@ function FarmingModule.SpecialBossLogic()
             _G.Utils.TweenTo(boss.HumanoidRootPart.CFrame * CFrame.new(0, 15, 0))
             _G.Combat.StartFastAttack()
         end
+    end
+end
+
+function FarmingModule.AutoFarmMaterialLogic()
+    if not _G.Settings or not _G.Settings.AutoFarmMaterial or not _G.Settings.SelectedMaterial then return end
+    
+    local matData = _G.Data.MaterialData[_G.Settings.SelectedMaterial]
+    if matData then
+        local enemy = _G.Utils.GetNearestEnemy(matData.Enemy)
+        if enemy then
+            FarmingModule.EquipWeapon(_G.Settings.Weapon)
+            _G.Utils.TweenTo(enemy.HumanoidRootPart.CFrame * CFrame.new(0, 10, 0))
+            _G.Combat.StartFastAttack()
+        else
+            _G.Utils.TweenTo(matData.Pos)
+        end
+    end
+end
+
+function FarmingModule.AutoBoneLogic()
+    if not _G.Settings or not _G.Settings.AutoBone then return end
+    local sea = FarmingModule.GetSea()
+    if sea ~= 3 then return end
+    
+    local enemy = _G.Utils.GetNearestEnemy("Reborn Skeleton") or _G.Utils.GetNearestEnemy("Living Zombie") or _G.Utils.GetNearestEnemy("Demonic Soul") or _G.Utils.GetNearestEnemy("Posessed Mummy")
+    if enemy then
+        FarmingModule.EquipWeapon(_G.Settings.Weapon)
+        _G.Utils.TweenTo(enemy.HumanoidRootPart.CFrame * CFrame.new(0, 10, 0))
+        _G.Combat.StartFastAttack()
+    else
+        _G.Utils.TweenTo(CFrame.new(-9515, 164, -5785))
     end
 end
 
