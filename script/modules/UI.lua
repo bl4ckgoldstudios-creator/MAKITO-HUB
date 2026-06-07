@@ -575,25 +575,22 @@ function UIModule.CreateHub()
     UIModule.NewToggle(StatsTab, "Auto Point Stats", "AutoStats")
     UIModule.NewDropdown(StatsTab, "Select Stat", {"Melee", "Defense", "Sword", "Gun", "Demon Fruit"}, "SelectedStat")
 
-    local VisualsTab = UIModule.NewTab("Visuals / Misc")
-    UIModule.NewSection(VisualsTab, "ESP")
+    local VisualsTab = UIModule.NewTab("Visuals / ESP")
+    UIModule.NewSection(VisualsTab, "ESP Master")
+    UIModule.NewToggle(VisualsTab, "Player ESP", "EspPlayers")
+    UIModule.NewToggle(VisualsTab, "NPC / Enemy ESP", "NpcESP")
     UIModule.NewToggle(VisualsTab, "Chest ESP", "EspChests")
     UIModule.NewToggle(VisualsTab, "Fruit ESP", "EspFruits")
-    UIModule.NewButton(VisualsTab, "Auto Collect Chests", function() _G.Settings.AutoChest = not _G.Settings.AutoChest end)
-    UIModule.NewSection(VisualsTab, "World")
-    UIModule.NewToggle(VisualsTab, "Remove Fog", "RemoveFog")
-    UIModule.NewToggle(VisualsTab, "Full Bright", "FullBright")
+    UIModule.NewToggle(VisualsTab, "Flower ESP (Race V2)", "EspFlower")
+    UIModule.NewSection(VisualsTab, "ESP Style")
+    UIModule.NewToggle(VisualsTab, "Show Box", "BoxESP")
+    UIModule.NewToggle(VisualsTab, "Show Tracers (Lines)", "LineESP")
+    UIModule.NewSection(VisualsTab, "World Visuals")
+    UIModule.NewToggle(VisualsTab, "Full Bright", "FullBright", function(v) _G.Utils.SetFullBright(v) end)
+    UIModule.NewToggle(VisualsTab, "Remove Fog", "RemoveFog", function(v) _G.Utils.RemoveFog(v) end)
     UIModule.NewToggle(VisualsTab, "FPS Booster", "FPSBooster")
-    UIModule.NewSection(VisualsTab, "Server")
-    UIModule.NewButton(VisualsTab, "Server Hop", function()
-        local Servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Asc&limit=100"))
-        for _, s in pairs(Servers.data) do
-            if s.playing < s.maxPlayers and s.id ~= game.JobId then
-                game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, s.id, LocalPlayer)
-                break
-            end
-        end
-    end)
+    UIModule.NewSection(VisualsTab, "Automation")
+    UIModule.NewButton(VisualsTab, "Auto Collect Chests", function() _G.Settings.AutoChest = not _G.Settings.AutoChest end)
 
     local ConfigTab = UIModule.NewTab("Config")
     UIModule.NewSection(ConfigTab, "Script Control")

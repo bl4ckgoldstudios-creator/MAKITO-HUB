@@ -78,13 +78,14 @@ function FarmingModule.SupremeQuestHandler(QuestData)
         local npcPos = BestQuest.Pos
         local dist = (LocalPlayer.Character.HumanoidRootPart.Position - npcPos.Position).Magnitude
         
-        if dist > 15 then
+        if dist > 20 then
             if _G.MakitoStatus then _G.MakitoStatus.Text = "Status: Indo ate NPC " .. BestQuest.NPC end
-            _G.Utils.TweenTo(npcPos * CFrame.new(0, 15, 0), 500)
+            _G.Utils.TweenTo(npcPos, 500)
         else
             if _G.MakitoStatus then _G.MakitoStatus.Text = "Status: Aceitando Missao " .. BestQuest.Enemy end
             -- INTERAÇÃO COM NPC E START QUEST
             _G.Utils.SafeRemote("StartQuest", BestQuest.Name, BestQuest.ID)
+            task.wait(0.5) -- Pequeno delay para evitar spam
         end
     end
     
@@ -93,17 +94,20 @@ end
 
 function FarmingModule.EquipWeapon(weaponName)
     local target = weaponName == "Melee" and "Melee" or weaponName == "Sword" and "Sword" or "Fruit"
-    
+    local char = LocalPlayer.Character
+    if not char then return end
+
+    -- Verifica se já está com a arma correta equipada
+    local current = char:FindFirstChildOfClass("Tool")
+    if current and current.ToolTip == target then return end
+    if target == "Fruit" and current and (current.ToolTip == "Blox Fruit" or current.ToolTip == "Demon Fruit") then return end
+
     for _, v in ipairs(LocalPlayer.Backpack:GetChildren()) do
         if v:IsA("Tool") then
-            if target == "Melee" and v.ToolTip == "Melee" then
-                LocalPlayer.Character.Humanoid:EquipTool(v)
-                break
-            elseif target == "Sword" and v.ToolTip == "Sword" then
-                LocalPlayer.Character.Humanoid:EquipTool(v)
-                break
-            elseif target == "Fruit" and (v.ToolTip == "Blox Fruit" or v.ToolTip == "Demon Fruit") then
-                LocalPlayer.Character.Humanoid:EquipTool(v)
+            if (target == "Melee" and v.ToolTip == "Melee") or 
+               (target == "Sword" and v.ToolTip == "Sword") or 
+               (target == "Fruit" and (v.ToolTip == "Blox Fruit" or v.ToolTip == "Demon Fruit")) then
+                char.Humanoid:EquipTool(v)
                 break
             end
         end
@@ -179,15 +183,20 @@ function FarmingModule.SupremeAutoFarm()
             
             -- 3. POSICIONAMENTO ELITE (ABAIXO OU ACIMA DO CLUSTER)
             local offset = _G.Settings.Distance or 10
-            local targetCF = enemy.HumanoidRootPart.CFrame * CFrame.new(0, offset, 0) * CFrame.Angles(math.rad(-90), 0, 0)
+            local targetCF = enemy.HumanoidRootPart.CFrame * CFrame.new(0, offset, 0)
+            
+            -- Orientar o personagem para olhar para o inimigo
+            targetCF = CFrame.new(targetCF.Position, enemy.HumanoidRootPart.Position)
             
             -- MOVIMENTAÇÃO SEM STUCK
             local dist = (LocalPlayer.Character.HumanoidRootPart.Position - targetCF.Position).Magnitude
-            if dist > 50 then
-                _G.Utils.TweenTo(targetCF)
-            else
-                _G.Utils.Float(true)
-                LocalPlayer.Character.HumanoidRootPart.CFrame = targetCF
+            if dist > 5 then
+                if dist > 150 then
+                    _G.Utils.TweenTo(targetCF)
+                else
+                    _G.Utils.Float(true)
+                    LocalPlayer.Character.HumanoidRootPart.CFrame = targetCF
+                end
             end
             
             -- 4. COMBATE ULTRA
@@ -245,7 +254,47 @@ function FarmingModule.AutoFarmNearestLogic()
     end
 end
 
--- DUNGEON & RAID AUTOMATION
+-- SPECIAL BOSSES & EVENTS (ELITE HUNTER, FACTORY, ETC)
+function FarmingModule.SpecialBossLogic()
+    -- 1. Elite Hunter
+    if _G.Settings.AutoEliteHunter then
+        local eliteNPC = workspace.NPCs:FindFirstChild("Elite Hunter")
+        if eliteNPC then
+            _G.Utils.SafeRemote("EliteHunter", "GetQuest")
+        end
+        local enemies = workspace:FindFirstChild("Enemies") or workspace
+        for _, elite in ipairs({"Deandre", "Diablo", "Urban"}) do
+            local v = enemies:FindFirstChild(elite)
+            if v and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                _G.Utils.TweenTo(v.HumanoidRootPart.CFrame * CFrame.new(0, 10, 0))
+                _G.Combat.StartFastAttack()
+                return
+            end
+        end
+    end
+
+    -- 2. Factory (Sea 2)
+    if _G.Settings.AutoFactory then
+        local core = workspace:FindFirstChild("Core") -- Ajustar nome se necessário
+        if core then
+            _G.Utils.TweenTo(core.CFrame * CFrame.new(0, 10, 0))
+            _G.Combat.StartFastAttack()
+        end
+    end
+
+    -- 3. Dough King & Cake Prince
+    if _G.Settings.AutoDoughKing or _G.Settings.AutoCakePrince then
+        local bossName = _G.Settings.AutoDoughKing and "Dough King" or "Cake Prince"
+        local enemies = workspace:FindFirstChild("Enemies") or workspace
+        local boss = enemies:FindFirstChild(bossName)
+        if boss and boss:FindFirstChild("Humanoid") and boss.Humanoid.Health > 0 then
+            _G.Utils.TweenTo(boss.HumanoidRootPart.CFrame * CFrame.new(0, 15, 0))
+            _G.Combat.StartFastAttack()
+        end
+    end
+end
+
+-- DUNGEON & RAID AUTOMATION REFINED
 function FarmingModule.RaidLogic()
     if _G.Settings.AutoBuyChip then
         _G.Utils.SafeRemote("Raids", "BuyChip", _G.Settings.SelectedRaid)
@@ -256,18 +305,26 @@ function FarmingModule.RaidLogic()
     end
     
     if _G.Settings.AutoDungeon then
-        local island = workspace:FindFirstChild("Island") -- Nome genérico, ajustar conforme o jogo
-        if island then
-            local enemy = _G.Utils.GetNearestEnemyAny()
-            if enemy then
-                _G.Utils.TweenTo(enemy.HumanoidRootPart.CFrame * CFrame.new(0, 15, 0))
-                _G.Combat.StartFastAttack()
+        local enemies = workspace:FindFirstChild("Enemies") or workspace
+        local enemy = _G.Utils.GetNearestEnemyAny()
+        if enemy then
+            _G.Utils.TweenTo(enemy.HumanoidRootPart.CFrame * CFrame.new(0, 15, 0))
+            _G.Combat.StartFastAttack()
+        end
+        
+        -- Auto Next Island for Raids
+        if _G.Settings.AutoNextIsland then
+            -- Verifica se todos os inimigos da ilha morreram
+            local count = 0
+            for _, v in ipairs(enemies:GetChildren()) do
+                if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then count = count + 1 end
+            end
+            if count == 0 then
+                -- Teleporta para o centro da próxima ilha (coordenadas variam, usando busca de objeto)
+                local nextIsland = workspace:FindFirstChild("Island" .. (tonumber(LocalPlayer.PlayerGui.Main.RaidStatus.Island.Text) or 1) + 1)
+                if nextIsland then _G.Utils.TweenTo(nextIsland.CFrame) end
             end
         end
-    end
-    
-    if _G.Settings.AutoNextIsland then
-        -- Lógica de avançar para a próxima ilha da raid (teleporte para o centro da próxima)
     end
     
     if _G.Settings.AutoAwaken then
@@ -275,19 +332,93 @@ function FarmingModule.RaidLogic()
     end
 end
 
--- SHOP & INSTÂNCIAS
+-- SEA EVENTS FARMING
+function FarmingModule.SeaEventLogic()
+    local SeaEvents = workspace:FindFirstChild("SeaEvents") or workspace:FindFirstChild("Sea")
+    if not SeaEvents then return end
+
+    -- 1. Auto Sea Beast
+    if _G.Settings.AutoSeaBeast then
+        local sb = SeaEvents:FindFirstChild("Sea Beast") or SeaEvents:FindFirstChild("SeaBeast")
+        if sb and sb:FindFirstChild("HumanoidRootPart") and sb:FindFirstChild("Humanoid") and sb.Humanoid.Health > 0 then
+            _G.Utils.TweenTo(sb.HumanoidRootPart.CFrame * CFrame.new(0, 50, 0))
+            _G.Combat.StartFastAttack()
+            return
+        end
+    end
+
+    -- 2. Auto Rumbling Waters
+    if _G.Settings.AutoRumbling then
+        for _, v in ipairs(SeaEvents:GetChildren()) do
+            if v.Name:find("Sea Beast") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                _G.Utils.TweenTo(v.HumanoidRootPart.CFrame * CFrame.new(0, 50, 0))
+                _G.Combat.StartFastAttack()
+                return
+            end
+        end
+    end
+
+    -- 3. Auto Ship Raid
+    if _G.Settings.AutoShipRaid then
+        local ship = SeaEvents:FindFirstChild("Ship") or SeaEvents:FindFirstChild("Brig")
+        if ship and ship:FindFirstChild("HumanoidRootPart") then
+            _G.Utils.TweenTo(ship.HumanoidRootPart.CFrame * CFrame.new(0, 30, 0))
+            _G.Combat.StartFastAttack()
+            return
+        end
+    end
+
+    -- 4. Auto Terrorshark
+    if _G.Settings.AutoTerrorShark then
+        local ts = SeaEvents:FindFirstChild("Terrorshark")
+        if ts and ts:FindFirstChild("Humanoid") and ts.Humanoid.Health > 0 then
+            _G.Utils.TweenTo(ts.HumanoidRootPart.CFrame * CFrame.new(0, 40, 0))
+            _G.Combat.StartFastAttack()
+            return
+        end
+    end
+
+    -- 5. Auto Kitsune Island
+    if _G.Settings.AutoKitsune then
+        local kitsune = workspace:FindFirstChild("KitsuneIsland")
+        if kitsune then
+            _G.Utils.TweenTo(kitsune:GetModelCFrame())
+            -- Auto collect Azure Flames logic
+            for _, v in ipairs(workspace:GetChildren()) do
+                if v.Name == "AzureFlame" then
+                    _G.Utils.TweenTo(v.CFrame)
+                    break
+                end
+            end
+        end
+    end
+
+    -- 6. Leviathan (Implemented in LeviathanLogic)
+    if _G.Settings.AutoLeviathan then
+        FarmingModule.LeviathanLogic()
+    end
+end
+
+-- SHOP & INSTÂNCIAS REFINED
 function FarmingModule.ShopLogic()
     if _G.Settings.AutoBuyFightingStyle then
-        local styles = {"Godhuman", "Superhuman", "Electric Claw", "Dragon Talon", "Death Step", "Sharkman Karate"}
+        local styles = {"Black Leg", "Electro", "Fishman Karate", "Dragon Breath", "Superhuman", "Death Step", "Sharkman Karate", "Electric Claw", "Dragon Talon", "Godhuman"}
         for _, style in ipairs(styles) do
             _G.Utils.SafeRemote("BuyFightingStyle", style)
         end
     end
     
     if _G.Settings.AutoBuyLegendarySword then
-        local swords = {"Shisui", "Wando", "Sadi"}
+        local swords = {"Shisui", "Wando", "Sadi", "True Triple Katana"}
         for _, sword in ipairs(swords) do
             _G.Utils.SafeRemote("LegendarySwordDealer", sword)
+        end
+    end
+
+    if _G.Settings.AutoBuyAccessory then
+        local accessories = {"Black Cape", "Swordsman Hat", "Pink Coat"}
+        for _, acc in ipairs(accessories) do
+            _G.Utils.SafeRemote("BuyAccessory", acc)
         end
     end
     

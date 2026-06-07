@@ -83,12 +83,10 @@ function CombatModule.StartFastAttack()
                     
                     -- MULTI-HIT V23: EXPLOSÃO DE DANOS
                     -- Simula um volume massivo de ataques simultâneos
-                    local burstRate = (_G.Settings.Weapon == "Fruit" and 15 or 40)
+                    local burstRate = (_G.Settings.Weapon == "Fruit" and 1 or 2) -- Reduzido para evitar detecção e lag
                     for i = 1, burstRate do
-                        task.spawn(function()
-                            pcall(function()
-                                CombatFramework.activeController.attack()
-                            end)
+                        pcall(function()
+                            CombatFramework.activeController.attack()
                         end)
                     end
                     
@@ -133,12 +131,10 @@ function CombatModule.StartKillAura()
                                 controller.active = true
                                 controller.timeToNextAttack = 0
                                 
-                                -- BURST DAMAGE: 10 hits por inimigo por frame de aura
-                                for i = 1, 10 do
-                                    task.spawn(function()
-                                        pcall(function()
-                                            CombatFramework.activeController.attack()
-                                        end)
+                                -- BURST DAMAGE: Hits por inimigo
+                                for i = 1, 2 do
+                                    pcall(function()
+                                        CombatFramework.activeController.attack()
                                     end)
                                 end
                             end
@@ -218,6 +214,60 @@ function CombatModule.UseSkill(key, holdTime)
         if holdTime then task.wait(holdTime) end
         VirtualInputManager:SendKeyEvent(false, Enum.KeyCode[key], false, game)
     end)
+end
+
+-- ESP & VISUAL LOGIC
+function CombatModule.ESPLogic()
+    _G.Utils.ClearESP()
+    
+    -- 1. Player ESP
+    if _G.Settings.PlayerESP or _G.Settings.EspPlayers then
+        for _, v in ipairs(Players:GetPlayers()) do
+            if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
+                local color = v.TeamColor.Color
+                local text = string.format("👤 %s (%d%%)", v.Name, math.floor((v.Character.Humanoid.Health/v.Character.Humanoid.MaxHealth)*100))
+                _G.Utils.CreateESP(v.Character.HumanoidRootPart, text, color, "Player")
+            end
+        end
+    end
+
+    -- 2. NPC / Enemy ESP
+    if _G.Settings.NpcESP then
+        local enemiesFolder = workspace:FindFirstChild("Enemies") or workspace
+        for _, v in ipairs(enemiesFolder:GetChildren()) do
+            if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
+                _G.Utils.CreateESP(v.HumanoidRootPart, "👾 " .. v.Name, Color3.fromRGB(255, 50, 50), "NPC")
+            end
+        end
+    end
+
+    -- 3. Chest ESP
+    if _G.Settings.EspChests or _G.Settings.AutoChest then
+        for _, v in ipairs(workspace:GetChildren()) do
+            if v.Name:find("Chest") and v:IsA("Part") then
+                _G.Utils.CreateESP(v, "💰 Baú", Color3.fromRGB(255, 200, 0), "Chest")
+            end
+        end
+    end
+
+    -- 4. Fruit ESP
+    if _G.Settings.EspFruits or _G.Settings.AutoFruitESP then
+        for _, v in ipairs(workspace:GetChildren()) do
+            if v:IsA("Tool") and (v.Name:find("Fruit") or v:FindFirstChild("Handle")) then
+                _G.Utils.CreateESP(v:FindFirstChild("Handle") or v, "🍎 " .. v.Name, Color3.fromRGB(255, 0, 0), "Fruit")
+            end
+        end
+    end
+
+    -- 5. Flower ESP (Sea 2 Race V2)
+    if _G.Settings.EspFlower then
+        for _, v in ipairs(workspace:GetChildren()) do
+            if v.Name:find("Flower") and v:IsA("BasePart") then
+                local color = v.Name:find("Red") and Color3.new(1,0,0) or v.Name:find("Blue") and Color3.new(0,0,1) or Color3.new(1,1,0)
+                _G.Utils.CreateESP(v, "🌸 " .. v.Name, color, "Flower")
+            end
+        end
+    end
 end
 
 return CombatModule

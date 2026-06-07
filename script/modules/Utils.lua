@@ -130,7 +130,8 @@ function UtilsModule.GetNearestEnemy(name)
     local enemies = workspace:FindFirstChild("Enemies") or workspace
     
     for _, v in ipairs(enemies:GetChildren()) do
-        if v.Name == name and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+        -- Busca por nome parcial para evitar problemas com [Lv. XXX]
+        if v.Name:find(name) and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
             local dist = (LocalPlayer.Character.HumanoidRootPart.Position - v.HumanoidRootPart.Position).Magnitude
             if dist < minDist then
                 minDist = dist
@@ -138,6 +139,20 @@ function UtilsModule.GetNearestEnemy(name)
             end
         end
     end
+    
+    -- Fallback: Busca em todo o workspace se não achar na pasta Enemies
+    if not nearest then
+        for _, v in ipairs(workspace:GetChildren()) do
+            if v.Name:find(name) and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                local dist = (LocalPlayer.Character.HumanoidRootPart.Position - v.HumanoidRootPart.Position).Magnitude
+                if dist < minDist then
+                    minDist = dist
+                    nearest = v
+                end
+            end
+        end
+    end
+    
     return nearest
 end
 
@@ -158,16 +173,17 @@ function UtilsModule.GetNearestEnemyAny()
     return nearest
 end
 
--- ESP SYSTEM (PLAYER, CHEST, FRUIT)
+-- ESP SYSTEM ELITE (PLAYER, NPC, CHEST, FRUIT, FLOWER)
 local ESPObjects = {}
+local ESPConnections = {}
 
-function UtilsModule.CreateESP(obj, text, color)
+function UtilsModule.CreateESP(obj, text, color, type)
     if not obj or ESPObjects[obj] then return end
     
     local billboard = Instance.new("BillboardGui")
-    billboard.Name = "MakitoESP"
+    billboard.Name = "MakitoESP_" .. (type or "Generic")
     billboard.Adornee = obj
-    billboard.Size = UDim2.new(0, 100, 0, 50)
+    billboard.Size = UDim2.new(0, 150, 0, 50)
     billboard.StudsOffset = Vector3.new(0, 3, 0)
     billboard.AlwaysOnTop = true
     billboard.Parent = CoreGui
@@ -178,24 +194,65 @@ function UtilsModule.CreateESP(obj, text, color)
     label.Text = text
     label.TextColor3 = color
     label.Font = Enum.Font.GothamBold
-    label.TextSize = 12
+    label.TextSize = 13
+    label.TextStrokeTransparency = 0.5
+    
+    -- DISTANCE LABEL
+    task.spawn(function()
+        while billboard and billboard.Parent do
+            local dist = (LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")) and 
+                         math.floor((LocalPlayer.Character.HumanoidRootPart.Position - obj.Position).Magnitude) or 0
+            label.Text = text .. " [" .. dist .. "m]"
+            task.wait(0.5)
+        end
+    end)
     
     if _G.Settings.BoxESP then
-        local box = Instance.new("BoxHandleAdornment", CoreGui)
+        local box = Instance.new("BoxHandleAdornment")
         box.Name = "MakitoBox"
         box.Adornee = obj
         box.AlwaysOnTop = true
         box.ZIndex = 5
-        box.Transparency = 0.5
+        box.Transparency = 0.6
         box.Color3 = color
-        box.Size = obj.Size
+        box.Size = obj:IsA("BasePart") and obj.Size or Vector3.new(4, 6, 4)
+        box.Parent = CoreGui
+        ESPObjects[obj .. "_box"] = box
+    end
+
+    if _G.Settings.LineESP or _G.Settings.EspTracer then
+        local line = Instance.new("LineHandleAdornment")
+        line.Name = "MakitoLine"
+        line.Adornee = workspace.CurrentCamera
+        line.AlwaysOnTop = true
+        line.ZIndex = 5
+        line.Color3 = color
+        line.Thickness = 2
+        line.Length = 0
+        line.Parent = CoreGui
+        
+        task.spawn(function()
+            while line and line.Parent do
+                pcall(function()
+                    local cam = workspace.CurrentCamera
+                    local startPos = cam.CFrame.Position + cam.CFrame.LookVector * 1
+                    local endPos = obj.Position
+                    line.CFrame = CFrame.new(startPos, endPos)
+                    line.Length = (startPos - endPos).Magnitude
+                end)
+                task.wait()
+            end
+        end)
+        ESPObjects[obj .. "_line"] = line
     end
     
     ESPObjects[obj] = billboard
 end
 
 function UtilsModule.ClearESP()
-    for _, v in pairs(ESPObjects) do v:Destroy() end
+    for _, v in pairs(ESPObjects) do 
+        pcall(function() v:Destroy() end)
+    end
     ESPObjects = {}
 end
 
