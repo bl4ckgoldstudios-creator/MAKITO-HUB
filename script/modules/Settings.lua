@@ -13,7 +13,7 @@ SettingsModule.Values = {
     AutoFarm = false, FastAttack = false, AutoQuest = false, AutoNextSea = false, Weapon = "Melee", Distance = 10, TweenSpeed = 350, BringMobs = false, AutoFarmNearest = false,
     AutoSkill = false, SkillZ = true, SkillX = true, SkillC = true, SkillV = true,
     AutoMastery = false, MasteryHealth = 20, MasteryWeapon = "Sword",
-    FastAttackSpeed = 0.05, AutoHaki = false, AutoKen = false, AutoStats = false, SelectedStat = "Melee",
+    FastAttackSpeed = 0.01, AutoHaki = false, AutoKen = false, AutoStats = false, SelectedStat = "Melee",
     -- Update 29 Features
     AutoDungeonV2 = false, AutoCollectTrinkets = false, AutoEquipBestTrinket = true,
     AutoLucienQuest = false, AutoPvPArena = false,

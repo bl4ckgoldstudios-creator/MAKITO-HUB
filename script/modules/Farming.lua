@@ -65,10 +65,13 @@ function FarmingModule.SupremeQuestHandler(QuestData)
                 -- Verifica se a missão atual é a que queremos (ou se é uma variação do inimigo)
                 if titleText:lower():find(BestQuest.Enemy:lower()) or titleText:lower():find(BestQuest.Name:lower()) then
                     hasQuest = true
+                    _G.IsTalkingToNPC = false
                 else
                     -- Missão errada, abandona
+                    _G.IsTalkingToNPC = true
                     _G.Utils.SafeRemote("AbandonQuest")
                     task.wait(0.5)
+                    _G.IsTalkingToNPC = false
                 end
             end
         end
@@ -85,13 +88,16 @@ function FarmingModule.SupremeQuestHandler(QuestData)
         local dist = (LocalPlayer.Character.HumanoidRootPart.Position - npcPos.Position).Magnitude
         
         if dist > 15 then
+            _G.IsTalkingToNPC = false
             if _G.MakitoStatus then _G.MakitoStatus.Text = "Status: Indo ate NPC " .. BestQuest.NPC end
             _G.Utils.TweenTo(npcPos)
         else
+            _G.IsTalkingToNPC = true
             if _G.MakitoStatus then _G.MakitoStatus.Text = "Status: Aceitando Missao " .. BestQuest.Enemy end
             _G.Utils.SafeRemote("StartQuest", BestQuest.Name, BestQuest.ID)
             _G.LastQuestTime = tick() -- Marca o tempo que pegou a missão
             task.wait(0.5)
+            _G.IsTalkingToNPC = false
         end
     end
     

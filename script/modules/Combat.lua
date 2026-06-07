@@ -55,13 +55,17 @@ local function IsCombatWeapon(tool)
     return false
 end
 
--- FALLBACK: ATAQUE VIA INPUT SE O FRAMEWORK FALHAR
+-- FALLBACK: ATAQUE VIA INPUT SE O FRAMEWORK FALHAR (EVITA CLICAR NA UI)
 local function FallbackAttack()
     pcall(function()
         local vim = game:GetService("VirtualInputManager")
-        vim:SendMouseButtonEvent(0, 0, 0, true, game, 0)
+        local vpSize = workspace.CurrentCamera.ViewportSize
+        -- Clica no centro da tela para evitar arrastar botões ou clicar em UIs nas bordas
+        local centerX, centerY = vpSize.X / 2, vpSize.Y / 2
+        
+        vim:SendMouseButtonEvent(centerX, centerY, 0, true, game, 0)
         task.wait()
-        vim:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+        vim:SendMouseButtonEvent(centerX, centerY, 0, false, game, 0)
     end)
 end
 
@@ -72,22 +76,19 @@ function CombatModule.StopFastAttack()
     end
 end
 
--- SISTEMA UNIFICADO: FAST ATTACK + KILL AURA (VERSÃO UNIVERSAL)
+-- SISTEMA UNIFICADO: FAST ATTACK + KILL AURA (NO ANIMATION - DAMAGE ONLY)
 function CombatModule.StartFastAttack()
     if FastAttackConn then return end
     
-    local lastAttack = 0
+    local lastRemoteAttack = 0
     FastAttackConn = RunService.Stepped:Connect(function()
         if not _G.Settings or not _G.Settings.FastAttack then 
             CombatModule.StopFastAttack()
             return 
         end
         
-        local now = tick()
-        local attackDelay = _G.Settings.FastAttackSpeed or 0.05
-        local attackDist = _G.Settings.KillAuraDistance or 60
-        
-        if now - lastAttack < attackDelay then return end
+        -- SEGURANÇA: Não ataca se estiver falando com NPC
+        if _G.IsTalkingToNPC then return end
         
         pcall(function()
             local char = LocalPlayer.Character
@@ -96,65 +97,58 @@ function CombatModule.StartFastAttack()
             local weapon = char:FindFirstChildOfClass("Tool")
             if not weapon or not IsCombatWeapon(weapon) then return end
             
+            local now = tick()
+            local attackDelay = _G.Settings.FastAttackSpeed or 0.01
+            local attackDist = _G.Settings.KillAuraDistance or 150
+            
             local framework = GetFramework()
             local enemies = workspace:FindFirstChild("Enemies") or workspace
             local myPos = char.HumanoidRootPart.Position
             local foundTarget = false
             
+            -- 1. BYPASS SILENCIOSO (SEM ANIMAÇÃO)
             if framework and framework.activeController then
                 local controller = framework.activeController
-                local attackMethod = controller.attack or controller.Attack
                 
-                -- BYPASS DE DELAY E ANIMAÇÃO
+                -- Resetamos os valores para o servidor aceitar o dano, mas NÃO chamamos controller.attack()
                 controller.hitboxMagnitude = attackDist
                 controller.attackCount = 0
                 controller.timeToNextAttack = 0
                 controller.increment = 0
                 
+                -- 2. REGISTRO DE DANO DIRETO (KILL AURA)
                 local count = 0
                 for _, v in ipairs(enemies:GetChildren()) do
-                    if count >= 8 then break end -- Aumentado limite levemente
+                    if count >= 15 then break end 
                     if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
                         local dist = (myPos - v.HumanoidRootPart.Position).Magnitude
                         if dist <= attackDist then 
                             foundTarget = true
                             count = count + 1
                             
-                            -- Executa o ataque do framework
-                            if attackMethod then attackMethod() end
-                            
-                            -- Remote call com throttling interno
-                            if now - lastAttack >= attackDelay then
+                            -- Envia o dano direto para o servidor (Sem soco visual)
+                            if now - lastRemoteAttack >= attackDelay then
                                 CommF:InvokeServer("Attack", v.HumanoidRootPart)
-                                lastAttack = now
+                                lastRemoteAttack = now
                             end
                         end
                     end
                 end
             end
 
-            -- SE O FRAMEWORK FALHAR OU NÃO HOUVER ALVO NO FRAMEWORK
+            -- 3. FALLBACK DE DANO (CASO O FRAMEWORK NÃO ESTEJA PRONTO)
             if not foundTarget or not framework then
-                -- Verifica alvos manualmente para o Remote Fallback
                 for _, v in ipairs(enemies:GetChildren()) do
                     if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
                         local dist = (myPos - v.HumanoidRootPart.Position).Magnitude
                         if dist <= attackDist then
-                            foundTarget = true
-                            FallbackAttack()
-                            if now - lastAttack >= attackDelay then
+                            if now - lastRemoteAttack >= attackDelay then
                                 CommF:InvokeServer("Attack", v.HumanoidRootPart)
-                                lastAttack = now
+                                lastRemoteAttack = now
                             end
-                            break -- Ataca um por vez no fallback para evitar lag de input
+                            break 
                         end
                     end
-                end
-                
-                -- Auto-click puro se ainda não achou nada (para farm de clique)
-                if not foundTarget and now - lastAttack >= attackDelay then
-                    FallbackAttack()
-                    lastAttack = now
                 end
             end
         end)
