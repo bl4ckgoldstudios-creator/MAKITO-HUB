@@ -61,9 +61,15 @@ function FarmingModule.SupremeQuestHandler(QuestData)
     -- VERIFICAÇÃO DE MISSÃO ATIVA (ROBUSTA)
     local hasQuest = false
     pcall(function()
-        local questGui = LocalPlayer.PlayerGui:FindFirstChild("Main") and LocalPlayer.PlayerGui.Main:FindFirstChild("Quest")
-        if questGui and questGui.Visible and questGui.Container.QuestTitle.Title.Text ~= "" then
-            hasQuest = true
+        local mainGui = LocalPlayer.PlayerGui:FindFirstChild("Main")
+        local questGui = mainGui and (mainGui:FindFirstChild("Quest") or mainGui:FindFirstChild("QuestGui"))
+        
+        if questGui and questGui.Visible then
+            -- Verifica se há texto no título da missão (ajustado para ser mais genérico)
+            local title = questGui:FindFirstChild("Title", true) or questGui:FindFirstChild("QuestTitle", true)
+            if title and title:IsA("TextLabel") and title.Text ~= "" and title.Text ~= "Missão" then
+                hasQuest = true
+            end
         end
     end)
 

@@ -90,12 +90,14 @@ function UtilsModule.SafeRemote(remoteName, ...)
     end
     lastRemoteCall = tick()
     
-    pcall(function(...)
+    local args = {...}
+    local success, err = pcall(function()
         local remote = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("CommF_")
         if remote then
-            remote:InvokeServer(remoteName, ...)
+            return remote:InvokeServer(remoteName, unpack(args))
         end
-    end, ...)
+    end)
+    return success, err
 end
 
 -- WEBHOOK SYSTEM

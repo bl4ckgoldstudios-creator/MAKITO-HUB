@@ -1,7 +1,16 @@
 local DataModule = {}
 
 -- FILTRO DE MAR PARA EVITAR CRASHES POR DADOS INEXISTENTES
-local CurrentSea = _G.MakitoSea or 1
+local function GetSea()
+    local placeId = game.PlaceId
+    if placeId == 2753915549 then return 1
+    elseif placeId == 4442272183 then return 2
+    elseif placeId == 7449423635 then return 3
+    end
+    return 1
+end
+
+local CurrentSea = _G.MakitoSea or GetSea()
 
 DataModule.SeaData = {}
 DataModule.QuestData = {}

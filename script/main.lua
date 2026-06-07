@@ -92,14 +92,46 @@ task.spawn(function()
     end
 end)
 
+-- 1. CONFIGURAÇÕES INICIAIS E SEA DETECTION
+_G.MakitoHubRunning = true
+_G.MakitoSea = 1
+local placeId = game.PlaceId
+if placeId == 2753915549 then _G.MakitoSea = 1
+elseif placeId == 4442272183 then _G.MakitoSea = 2
+elseif placeId == 7449423635 then _G.MakitoSea = 3
+end
+
 local function LoadModule(name)
     local localPath = "modules/" .. name .. ".lua"
     local githubBase = "https://raw.githubusercontent.com/bl4ckgoldstudios-creator/MAKITO-HUB/refs/heads/main/script/modules/"
-    local success, result = pcall(function()
-        if isfile and isfile(localPath) then return loadstring(readfile(localPath))()
-        else return loadstring(game:HttpGet(githubBase .. name .. ".lua"))() end
-    end)
-    if success and result then return result end
+    
+    local function TryLoad(source, isRaw)
+        local code = isRaw and source or game:HttpGet(source)
+        local fn, err = loadstring(code)
+        if not fn then return false, "Syntax Error in " .. name .. ": " .. tostring(err) end
+        
+        local success, result = pcall(fn)
+        if not success then return false, "Runtime Error in " .. name .. ": " .. tostring(result) end
+        return true, result
+    end
+
+    -- Tentar Local primeiro (várias formas de path)
+    if isfile then
+        local paths = {localPath, "./" .. localPath, "script/" .. localPath}
+        for _, path in ipairs(paths) do
+            if isfile(path) then
+                local success, res = TryLoad(readfile(path), true)
+                if success then return res end
+                warn("[MAKITO] Falha ao carregar local " .. path .. ": " .. tostring(res))
+            end
+        end
+    end
+
+    -- Tentar GitHub como fallback
+    local success, res = pcall(function() return TryLoad(githubBase .. name .. ".lua", false) end)
+    if success and res then return res end
+    
+    warn("[MAKITO] Não foi possível carregar o módulo: " .. name)
     return nil
 end
 
@@ -111,7 +143,29 @@ local Farming = LoadModule("Farming")
 local UI = LoadModule("UI")
 
 if not (Settings and Data and Utils and Combat and Farming and UI) then
-    LocalPlayer:Kick("FALHA AO CARREGAR MAKITO HUB")
+    local missing = {}
+    if not Settings then table.insert(missing, "Settings") end
+    if not Data then table.insert(missing, "Data") end
+    if not Utils then table.insert(missing, "Utils") end
+    if not Combat then table.insert(missing, "Combat") end
+    if not Farming then table.insert(missing, "Farming") end
+    if not UI then table.insert(missing, "UI") end
+    
+    local errorMsg = "FALHA AO CARREGAR MAKITO HUB\nModulos ausentes: " .. table.concat(missing, ", ")
+    warn(errorMsg)
+    
+    -- Criar aviso na tela antes de fechar
+    local sg = Instance.new("ScreenGui", game:GetService("CoreGui"))
+    local txt = Instance.new("TextLabel", sg)
+    txt.Size = UDim2.new(1, 0, 1, 0)
+    txt.BackgroundColor3 = Color3.new(0,0,0)
+    txt.TextColor3 = Color3.new(1,0,0)
+    txt.Text = errorMsg .. "\n\nVerifique o Console (F9) para mais detalhes."
+    txt.TextSize = 20
+    txt.Font = Enum.Font.GothamBold
+    
+    task.wait(10)
+    LocalPlayer:Kick(errorMsg)
     return
 end
 

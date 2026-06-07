@@ -621,7 +621,10 @@ end
 function UIModule.CreateWatermark()
     local watermark = Instance.new("ScreenGui")
     watermark.Name = "MakitoWatermark"
-    watermark.Parent = CoreGui
+    pcall(function() watermark.Parent = CoreGui end)
+    if not watermark.Parent then 
+        pcall(function() watermark.Parent = LocalPlayer:WaitForChild("PlayerGui") end)
+    end
     watermark.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     watermark.ResetOnSpawn = false
 

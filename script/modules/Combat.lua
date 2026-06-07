@@ -13,25 +13,46 @@ local FastAttackConn = nil
 local function GetFramework()
     if CombatFramework and CombatFrameworkRoot then return end
     pcall(function()
-        local paths = {
+        -- Tenta vários caminhos possíveis para o framework
+        local possiblePaths = {
             LocalPlayer.PlayerScripts:FindFirstChild("CombatFramework"),
             LocalPlayer.PlayerScripts:FindFirstChild("CombatFrameworkR"),
-            ReplicatedStorage:FindFirstChild("CombatFramework")
+            ReplicatedStorage:FindFirstChild("CombatFramework"),
+            LocalPlayer.PlayerScripts:FindFirstChild("CombatHandler")
         }
-        for _, framework in ipairs(paths) do
+        
+        for _, framework in ipairs(possiblePaths) do
             if framework then
-                CombatFramework = require(framework)
-                break
+                local success, result = pcall(require, framework)
+                if success then
+                    CombatFramework = result
+                    break
+                end
             end
         end
+
         if CombatFramework then
+            -- Tenta localizar o controller ativo
             local controller = CombatFramework.activeController or CombatFramework.controller
-            if controller and (controller.attack or controller.Attack) then
-                local upvalues = debug.getupvalues(controller.attack or controller.Attack)
-                for _, v in pairs(upvalues) do
+            if not controller then
+                -- Fallback para busca em tabelas internas se o path padrão falhar
+                for _, v in pairs(CombatFramework) do
                     if type(v) == "table" and (v.activeController or v.controller) then
-                        CombatFrameworkRoot = v
+                        controller = v.activeController or v.controller
                         break
+                    end
+                end
+            end
+
+            if controller and (controller.attack or controller.Attack) then
+                local attackFn = controller.attack or controller.Attack
+                local success, upvalues = pcall(debug.getupvalues, attackFn)
+                if success and upvalues then
+                    for _, v in pairs(upvalues) do
+                        if type(v) == "table" and (v.activeController or v.controller) then
+                            CombatFrameworkRoot = v
+                            break
+                        end
                     end
                 end
             end
