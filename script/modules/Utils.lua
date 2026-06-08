@@ -605,13 +605,218 @@ function UtilsModule.OptimizeGraphics()
     end
 end
 
-function UtilsModule.DevilFruitNotifier()
-    if not _G.Settings or not _G.Settings.DevilFruitNotifier then return end
+-- SECURITY & ANTI-BAN PRO
+function UtilsModule.SecurityBypass()
+    if not _G.Settings or not _G.Settings.SecurityMode then return end
     
-    for _, v in ipairs(workspace:GetChildren()) do
-        if v:IsA("Tool") and (v.Name:find("Fruit") or v:FindFirstChild("Handle")) then
-            UtilsModule.Notify("🍎 FRUTA DETECTADA: " .. v.Name, 10)
+    -- Randomização de Wait para evitar detecção de padrão
+    _G.SafeWait = function(min, max)
+        task.wait(math.random(min * 100, max * 100) / 100)
+    end
+
+    -- Anti-Admin Avançado
+    task.spawn(function()
+        while task.wait(5) do
+            for _, v in ipairs(game:GetService("Players"):GetPlayers()) do
+                if v:GetRankInGroup(4442272) >= 100 or v:IsA("Player") and (v.Name:lower():find("admin") or v.Name:lower():find("staff") or v.Name:lower():find("mod")) then
+                    if _G.Settings.AutoKickMod then
+                        LocalPlayer:Kick("�️ [MAKITO] PROTEÇÃO ATIVA: Administrador detectado no servidor.")
+                    end
+                end
+            end
         end
+    end)
+
+    -- Bypass de Teleporte (Velocidade Variável)
+    _G.Settings.TweenSpeed = math.random(320, 380)
+end
+
+-- INVENTORY LOGS (PARA PRODUÇÃO)
+function UtilsModule.LogInventory()
+    if not _G.Settings or not _G.Settings.WebhookEnabled then return end
+    
+    local inventory = {}
+    for _, v in ipairs(LocalPlayer.Backpack:GetChildren()) do
+        table.insert(inventory, v.Name)
+    end
+    for _, v in ipairs(LocalPlayer.Character:GetChildren()) do
+        if v:IsA("Tool") then table.insert(inventory, v.Name) end
+    end
+    
+    UtilsModule.SendWebhook({
+        msg = "🎒 **Inventário Atualizado**\n" .. table.concat(inventory, ", ")
+    })
+end
+
+-- PERFORMANCE MODE (PRO)
+function UtilsModule.ExtremePerformance()
+    if not _G.Settings or not _G.Settings.PerformanceMode then return end
+    
+    settings().Rendering.QualityLevel = 1
+    game:GetService("Lighting").GlobalShadows = false
+    game:GetService("Lighting").FogEnd = 9e9
+    
+    for _, v in ipairs(game:GetDescendants()) do
+        if v:IsA("Part") or v:IsA("MeshPart") or v:IsA("UnionOperation") then
+            v.Material = Enum.Material.SmoothPlastic
+            v.Reflectance = 0
+        elseif v:IsA("Decal") or v:IsA("Texture") then
+            v.Transparency = 1
+        elseif v:IsA("ParticleEmitter") or v:IsA("Trail") then
+            v.Enabled = false
+        end
+    end
+end
+
+-- SERVER HOP AVANÇADO (PROCURA BOSS/EVENTO)
+function UtilsModule.AdvancedHop(targetBoss)
+    local HttpService = game:GetService("HttpService")
+    local Api = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
+    
+    local function GetServers()
+        local success, result = pcall(function()
+            return HttpService:JSONDecode(game:HttpGet(Api))
+        end)
+        return success and result or nil
+    end
+
+    local servers = GetServers()
+    if servers then
+        for _, server in ipairs(servers.data) do
+            if server.playing < server.maxPlayers and server.id ~= game.JobId then
+                UtilsModule.Notify("Trocando para servidor mais vazio...", 5)
+                game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, server.id)
+                break
+            end
+        end
+    end
+end
+
+-- MONITOR DE STATUS GLOBAL (ESTILO REDZ PRO)
+function UtilsModule.UpdateGlobalStatus()
+    local status = {
+        Mirage = "Não Detectada",
+        Moon = "Normal",
+        Bosses = {},
+        CakePrince = "N/A",
+        SeaEvents = "Nenhum",
+        FullMoon = false,
+        MirageSpawned = false
+    }
+    
+    pcall(function()
+        -- Mirage Island Check
+        if workspace:FindFirstChild("Mirage Island") or workspace:FindFirstChild("MirageIsland") then
+            status.Mirage = "🏝️ SPAWNADA!"
+            status.MirageSpawned = true
+        end
+        
+        -- Full Moon Check
+        local moonMagnitude = game:GetService("Lighting").Sky.FullMoonMagnitude
+        if moonMagnitude > 0.9 then
+            status.Moon = "🌕 LUA CHEIA!"
+            status.FullMoon = true
+        elseif moonMagnitude > 0.5 then
+            status.Moon = "🌗 Crescente"
+        end
+        
+        -- Cake Prince Tracker (Dough King Mobs)
+        -- Tenta pegar via Remote primeiro
+        local cakeMsg = UtilsModule.SafeRemote("CakePrince", "Check")
+        
+        if cakeMsg and type(cakeMsg) == "string" then
+            status.CakePrince = cakeMsg
+        else
+            -- Fallback: Se o remote não retornar nada ou falhar, tentamos inferir se possível
+            -- (Geralmente o remote CommF_ com "CakePrince" e "Check" funciona no Blox Fruits)
+            status.CakePrince = "Aguardando Dados..."
+        end
+
+        -- Boss Monitor (Melhorado)
+        local enemies = workspace:FindFirstChild("Enemies") or workspace
+        local bossNames = {
+            "rip_indra", "Darkbeard", "Order", "Beautiful Pirate", "Cake Prince", "Dough King",
+            "Soul Reaper", "Rengoku", "Deandre", "Diablo", "Urban", "Captain Elephant", "Island Empress"
+        }
+        
+        for _, bossName in ipairs(bossNames) do
+            local v = enemies:FindFirstChild(bossName) or enemies:FindFirstChild(bossName .. " [Boss]")
+            if v and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                table.insert(status.Bosses, bossName)
+            end
+        end
+
+        -- Sea Events Monitor
+        local seaEventsFolder = workspace:FindFirstChild("SeaEvents")
+        if seaEventsFolder then
+            for _, v in ipairs(seaEventsFolder:GetChildren()) do
+                if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                    status.SeaEvents = v.Name
+                    break
+                end
+            end
+        end
+    end)
+    
+    _G.MakitoGlobalStatus = status
+    return status
+end
+
+-- AUTO CHEST (BERRY FARM)
+function UtilsModule.AutoChestLogic()
+    if not _G.Settings or not _G.Settings.AutoChest then return end
+    
+    pcall(function()
+        for _, v in ipairs(workspace:GetChildren()) do
+            if v.Name:find("Chest") and v:IsA("BasePart") then
+                local dist = (LocalPlayer.Character.HumanoidRootPart.Position - v.Position).Magnitude
+                if dist < 5000 then -- Limite de segurança para evitar ban
+                    UtilsModule.SetNoClip(true)
+                    LocalPlayer.Character.HumanoidRootPart.CFrame = v.CFrame
+                    task.wait(0.1)
+                    firetouchinterest(LocalPlayer.Character.HumanoidRootPart, v, 0)
+                    firetouchinterest(LocalPlayer.Character.HumanoidRootPart, v, 1)
+                end
+            end
+        end
+    end)
+end
+
+function UtilsModule.HasItem(name)
+    for _, v in ipairs(LocalPlayer.Backpack:GetChildren()) do
+        if v.Name == name then return true end
+    end
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild(name) then
+        return true
+    end
+    return false
+end
+
+function UtilsModule.GetMaterialCount(name)
+    local count = 0
+    pcall(function()
+        -- Verifica no inventário do jogador (Data.Inventory ou similar dependendo da versão)
+        local inventory = LocalPlayer:FindFirstChild("Data") and LocalPlayer.Data:FindFirstChild("Inventory")
+        if inventory and inventory:FindFirstChild(name) then
+            count = inventory[name].Value
+        else
+            -- Fallback: conta itens no backpack se forem empilháveis
+            for _, v in ipairs(LocalPlayer.Backpack:GetChildren()) do
+                if v.Name == name then count = count + 1 end
+            end
+        end
+    end)
+    return count
+end
+
+-- AUTO HAKI COLOR / SHOP
+function UtilsModule.AutoHakiShop()
+    if not _G.Settings or not _G.Settings.AutoBuyHakiColor then return end
+    
+    local npc = workspace.NPCs:FindFirstChild("Master of Aura")
+    if npc then
+        UtilsModule.TweenTo(npc.HumanoidRootPart.CFrame)
+        UtilsModule.SafeRemote("HakiColorShop", "Buy")
     end
 end
 

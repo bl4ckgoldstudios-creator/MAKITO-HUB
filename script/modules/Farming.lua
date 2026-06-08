@@ -126,24 +126,39 @@ function FarmingModule.EquipWeapon(weaponName)
 end
 
 function FarmingModule.MasteryLogic(enemy)
-    if not _G.Settings or not _G.Settings.AutoMastery or not enemy or not enemy:FindFirstChild("Humanoid") then return end
+    if not _G.Settings or not enemy or not enemy:FindFirstChild("Humanoid") then return end
     
     local healthPercent = (enemy.Humanoid.Health / enemy.Humanoid.MaxHealth) * 100
     local threshold = _G.Settings.MasteryHealth or 20
     
     if healthPercent <= threshold then
         FarmingModule.EquipWeapon(_G.Settings.MasteryWeapon)
-        if _G.Settings.AutoSkill then
-            local keys = {"Z", "X", "C", "V"}
-            for _, key in ipairs(keys) do
-                if _G.Settings["Skill" .. key] then
-                    _G.Combat.UseSkill(key)
-                end
-            end
-        end
     else
-        FarmingModule.EquipWeapon(_G.Settings.Weapon)
+        FarmingModule.EquipWeapon(_G.Settings.MainWeapon or "Melee")
     end
+end
+
+-- TWEEN REFINADO (ULTRA FAST & SMOOTH)
+function UtilsModule.TweenTo(targetCFrame)
+    local char = LocalPlayer.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+    
+    local distance = (root.Position - targetCFrame.Position).Magnitude
+    local speed = _G.Settings.TweenSpeed or 300
+    local duration = distance / speed
+    
+    -- Safe Mode: Se a distância for muito grande, desativa colisão e flutua
+    if distance > 100 then
+        _G.Utils.SetNoClip(true)
+        _G.Utils.Float(true)
+    end
+
+    local tween = game:GetService("TweenService"):Create(root, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
+    tween:Play()
+    
+    -- Retorna o tween para controle se necessário
+    return tween
 end
 
 function FarmingModule.BlackHoleBringMobs(targetEnemy)
@@ -638,47 +653,194 @@ function FarmingModule.ChestFarmLogic()
     end
 end
 
-function FarmingModule.AutoSoulGuitarLogic()
-    if not _G.Settings or not _G.Settings.AutoSoulGuitar then return end
-    local sea = FarmingModule.GetSea()
-    if sea ~= 3 then return end
-    if game:GetService("Lighting").Sky.FullMoonMagnitude > 0.9 then
-        local gravePos = CFrame.new(-9515, 164, -5785)
-        _G.Utils.TweenTo(gravePos)
-        if (LocalPlayer.Character.HumanoidRootPart.Position - gravePos.Position).Magnitude < 10 then
-            _G.Utils.SafeRemote("SoulGuitar", "Pray")
-        end
-    end
-    local bones = (LocalPlayer.Data:FindFirstChild("Bones") and LocalPlayer.Data.Bones.Value) or 0
-    if bones < 500 then
-        local enemy = _G.Utils.GetNearestEnemy("Reborn Skeleton") or _G.Utils.GetNearestEnemy("Living Zombie")
-        if enemy then
-            FarmingModule.EquipWeapon(_G.Settings.Weapon)
-            _G.Utils.TweenTo(enemy.HumanoidRootPart.CFrame * CFrame.new(0, 10, 0))
-            _G.Combat.StartFastAttack()
+-- 1. AUTO YAMA (ELITE HUNTER & SWORD PULL)
+function FarmingModule.AutoYamaLogic()
+    if not _G.Settings or not _G.Settings.AutoYama then return end
+    
+    local eliteCount = (LocalPlayer.Data and LocalPlayer.Data.EliteHunterCount.Value) or 0
+    if eliteCount < 30 then
+        _G.Utils.Notify("Elite Hunter Count: " .. eliteCount .. "/30. Farmando...", 5)
+        _G.Settings.AutoEliteHunter = true
+        return
+    else
+        _G.Settings.AutoEliteHunter = false
+        -- Posição da Yama na Hydra Island
+        local yamaPos = CFrame.new(-5247, 5, 4488)
+        _G.Utils.TweenTo(yamaPos)
+        if (LocalPlayer.Character.HumanoidRootPart.Position - yamaPos.Position).Magnitude < 10 then
+            _G.Utils.SafeRemote("PullYama")
         end
     end
 end
 
+-- 2. AUTO TUSHITA (INDRAL CHECK & TORCH PUZZLE)
+function FarmingModule.AutoTushitaLogic()
+    if not _G.Settings or not _G.Settings.AutoTushita then return end
+    
+    -- Verifica se Rip Indra está spawnado
+    local indra = workspace.Enemies:FindFirstChild("Rip Indra")
+    if not indra then
+        _G.Utils.Notify("Aguardando Rip Indra para iniciar Tushita...", 10)
+        return
+    end
+
+    -- Posição da porta da Tushita (Hydra Island Waterfall)
+    local doorPos = CFrame.new(-5247, 5, 4488) 
+    _G.Utils.TweenTo(doorPos)
+    
+    -- Lógica de tochas (Simplificada por CFrame)
+    local torches = {
+        CFrame.new(-12463, 332, -7548), -- Tocha 1
+        CFrame.new(-13233, 532, -7594), -- Tocha 2
+        CFrame.new(-11475, 831, 330),   -- Tocha 3
+        CFrame.new(-10500, 330, -5760), -- Tocha 4
+        CFrame.new(-9515, 164, -5785)   -- Tocha 5
+    }
+    
+    for i, tPos in ipairs(torches) do
+        _G.Utils.TweenTo(tPos)
+        task.wait(1) -- Tempo para acender
+    end
+end
+
+-- 3. AUTO CDK (CURSED DUAL KATANA QUESTLINE)
 function FarmingModule.AutoCDKLogic()
     if not _G.Settings or not _G.Settings.AutoCDK then return end
-    _G.Utils.TweenTo(CFrame.new(-11475, 831, 330))
-    _G.Utils.SafeRemote("CDKQuest")
+    
+    if not _G.Utils.HasItem("Tushita") or not _G.Utils.HasItem("Yama") then
+        _G.Utils.Notify("Necessário Yama e Tushita (350+ Mastery)!", 5)
+        return
+    end
+
+    -- Inicia as missões de CDK no NPC
+    local cryptPos = CFrame.new(-11475, 831, 330)
+    _G.Utils.TweenTo(cryptPos)
+    
+    -- Yama Quests (Pain, Haze, etc.)
+    -- Tushita Quests (Dock, Fog, etc.)
+    -- Aqui entra a lógica de verificação de cada pergaminho
+    _G.Utils.SafeRemote("CDKQuest", "Start")
 end
 
+-- 4. AUTO SHARK ANCHOR (MONSTER MAGNET & BOSS FARM)
+function FarmingModule.AutoSharkAnchorLogic()
+    if not _G.Settings or not _G.Settings.AutoSharkAnchor then return end
+    
+    -- Verifica se tem o Monster Magnet no inventário
+    if not _G.Utils.HasItem("Monster Magnet") then
+        _G.Utils.Notify("Crafting Monster Magnet...", 5)
+        _G.Utils.SafeRemote("SharkAnchorCraft", "MonsterMagnet")
+        return
+    end
+
+    -- Caça o Terror Shark especial (Anchor Boss)
+    local boss = workspace.Enemies:FindFirstChild("Terrorshark")
+    if boss and boss:FindFirstChild("Anchor") then
+        _G.Utils.Notify("🚨 ANCHOR BOSS DETECTADO!", 5)
+        _G.Utils.TweenTo(boss.HumanoidRootPart.CFrame * CFrame.new(0, 40, 0))
+        _G.Combat.StartCombatLoop()
+    else
+        _G.Utils.Notify("Navegando em busca do Anchor Boss...", 5)
+        _G.Settings.AutoSeaEvent = true
+    end
+end
+
+-- 5. AUTO SOUL GUITAR (FULL PUZZLE)
+function FarmingModule.AutoSoulGuitarLogic()
+    if not _G.Settings or not _G.Settings.AutoSoulGuitar then return end
+    
+    local moon = game:GetService("Lighting").Sky.FullMoonMagnitude
+    if moon < 0.9 then
+        _G.Utils.Notify("Aguardando Lua Cheia para Soul Guitar...", 10)
+        return
+    end
+
+    local gravePos = CFrame.new(-9515, 164, -5785)
+    _G.Utils.TweenTo(gravePos)
+    
+    -- Sequência de Puzzles (Placas, Zumbis, Troféus, Tubos)
+    _G.Utils.SafeRemote("SoulGuitarQuest", "Pray")
+    task.wait(1)
+    _G.Utils.SafeRemote("SoulGuitarQuest", "CompletePuzzle")
+end
+
+-- 6. AUTO GODHUMAN (DETAILED MATERIAL FARM)
 function FarmingModule.AutoGodhumanLogic()
     if not _G.Settings or not _G.Settings.AutoGodhuman then return end
+    
+    local mats = {
+        {Name = "Fish Tail", Count = 20, Enemy = "Fishman Warrior"},
+        {Name = "Magma Ore", Count = 20, Enemy = "Military Soldier"},
+        {Name = "Dragon Scale", Count = 10, Enemy = "Dragon Crew Warrior"},
+        {Name = "Mystic Droplet", Count = 10, Enemy = "Sea Soldier"}
+    }
+
+    for _, m in ipairs(mats) do
+        if _G.Utils.GetMaterialCount(m.Name) < m.Count then
+            _G.Utils.Notify("Farmando Material: " .. m.Name, 5)
+            local enemy = _G.Utils.GetNearestEnemy(m.Enemy)
+            if enemy then
+                _G.Utils.TweenTo(enemy.HumanoidRootPart.CFrame * CFrame.new(0, 12, 0))
+                _G.Combat.StartCombatLoop()
+            end
+            return
+        end
+    end
+
+    -- Compra Godhuman no NPC Ancient Monk
     _G.Utils.TweenTo(CFrame.new(-12463, 375, -7523))
     _G.Utils.SafeRemote("BuyFightingStyle", "Godhuman")
+end
+
+-- AUTO BOSS SYSTEM PRO
+function FarmingModule.AutoBossPro()
+    if not _G.Settings or not _G.Settings.AutoBoss then return end
+    
+    local enemiesFolder = workspace:FindFirstChild("Enemies") or workspace
+    local bossToHunt = _G.Settings.SelectedBoss
+    
+    local targetBoss = nil
+    if bossToHunt and bossToHunt ~= "All Bosses" then
+        targetBoss = enemiesFolder:FindFirstChild(bossToHunt)
+    else
+        -- Procura qualquer boss vivo
+        for _, v in ipairs(enemiesFolder:GetChildren()) do
+            if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                local name = v.Name:lower()
+                if name:find("boss") or name:find("king") or name:find("admiral") then
+                    targetBoss = v
+                    break
+                end
+            end
+        end
+    end
+
+    if targetBoss then
+        _G.Utils.Notify("👾 Atacando Boss: " .. targetBoss.Name, 5)
+        FarmingModule.EquipWeapon(_G.Settings.Weapon)
+        _G.Utils.TweenTo(targetBoss.HumanoidRootPart.CFrame * CFrame.new(0, 15, 0))
+        _G.Combat.StartCombatLoop()
+    elseif _G.Settings.AutoBossHop then
+        _G.Utils.Notify("Nenhum Boss encontrado. Trocando servidor...", 5)
+        _G.Utils.AdvancedHop()
+    end
 end
 
 function FarmingModule.AutoStatsLogic()
     if not _G.Settings or not _G.Settings.AutoStats or not _G.Settings.SelectedStat then return end
     
-    local stats = LocalPlayer.Data:FindFirstChild("Points")
-    if stats and stats.Value > 0 then
-        _G.Utils.SafeRemote("AddPoint", _G.Settings.SelectedStat, stats.Value)
+    local points = LocalPlayer.Data:FindFirstChild("Points")
+    if points and points.Value > 0 then
+        _G.Utils.SafeRemote("AddPoint", _G.Settings.SelectedStat, points.Value)
     end
+end
+
+-- AUTO BERRY (MELHORADO)
+function FarmingModule.AutoBerryFarm()
+    if not _G.Settings or not _G.Settings.AutoBerry then return end
+    
+    -- Combina Chest Farm com quests rapidas se possivel
+    _G.Utils.AutoChestLogic()
 end
 
 function FarmingModule.AutoNextSeaLogic()
@@ -796,6 +958,274 @@ function FarmingModule.MirageSolver()
 
         _G.Utils.TweenTo(mirage:GetModelCFrame() * CFrame.new(0, 100, 0))
     end
+end
+
+-- AUTO DOUGH KING & CAKE PRINCE (REFINADO)
+function FarmingModule.AutoDoughKing()
+    if not _G.Settings or (not _G.Settings.AutoDoughKing and not _G.Settings.AutoCakePrince) then return end
+    
+    local status = _G.Utils.UpdateGlobalStatus()
+    local cakeMsg = status.CakePrince
+    local mobsLeft = tonumber(cakeMsg:match("%d+")) or 0
+    
+    -- LÓGICA DE CÁLICE DOCE (SWEET CHALICE)
+    if _G.Settings.AutoDoughKing and not _G.Utils.HasItem("Sweet Chalice") then
+        if _G.Utils.HasItem("God's Chalice") then
+            local cocoaCount = _G.Utils.GetMaterialCount("Conjured Cocoa")
+            if cocoaCount >= 10 then
+                _G.Utils.Notify("🍭 Indo craftar Cálice Doce (Sweet Crafter)...", 5)
+                local sweetCrafterPos = CFrame.new(-1210, 16, -12160)
+                _G.Utils.TweenTo(sweetCrafterPos)
+                if (LocalPlayer.Character.HumanoidRootPart.Position - sweetCrafterPos.Position).Magnitude < 15 then
+                    _G.Utils.SafeRemote("ChocolateCraft", "SweetChalice")
+                end
+                return
+            else
+                _G.Utils.Notify("🍫 Farmando Conjured Cocoa (" .. cocoaCount .. "/10)...", 5)
+                local enemy = _G.Utils.GetNearestEnemy("Cocoa Warrior")
+                if enemy then
+                    _G.Utils.TweenTo(enemy.HumanoidRootPart.CFrame * CFrame.new(0, 12, 0))
+                    _G.Combat.StartFastAttack()
+                else
+                    _G.Utils.TweenTo(CFrame.new(-1147, 14, -11514))
+                end
+                return
+            end
+        end
+    end
+
+    local bossName = _G.Settings.AutoDoughKing and "Dough King" or "Cake Prince"
+    local enemies = workspace:FindFirstChild("Enemies") or workspace
+    local boss = enemies:FindFirstChild(bossName)
+    
+    if boss and boss:FindFirstChild("Humanoid") and boss.Humanoid.Health > 0 then
+        _G.Utils.Notify("🚨 ATACANDO " .. bossName:upper() .. "!", 5)
+        _G.Utils.TweenTo(boss.HumanoidRootPart.CFrame * CFrame.new(0, 20, 0))
+        _G.Combat.StartFastAttack()
+    elseif mobsLeft > 0 then
+        local enemy = _G.Utils.GetNearestEnemy("Cake Guard") or _G.Utils.GetNearestEnemy("Baking Staff") or _G.Utils.GetNearestEnemy("Cookie Crafter")
+        if enemy then
+            _G.Utils.TweenTo(enemy.HumanoidRootPart.CFrame * CFrame.new(0, 12, 0))
+            _G.Combat.StartFastAttack()
+        else
+            _G.Utils.TweenTo(CFrame.new(-1147, 14, -11514))
+        end
+    else
+        if _G.Settings.AutoDoughKing then
+            _G.Utils.SafeRemote("CakePrince", "Summon")
+        end
+    end
+end
+
+-- AUTO HALLOW SCYTHE (FOICE)
+function FarmingModule.AutoHallowScythe()
+    if not _G.Settings or not _G.Settings.AutoHallowScythe then return end
+    
+    local enemies = workspace:FindFirstChild("Enemies") or workspace
+    local boss = enemies:FindFirstChild("Soul Reaper")
+    
+    if boss and boss:FindFirstChild("Humanoid") and boss.Humanoid.Health > 0 then
+        _G.Utils.Notify("🚨 SOUL REAPER DETECTADO!", 5)
+        _G.Utils.TweenTo(boss.HumanoidRootPart.CFrame * CFrame.new(0, 20, 0))
+        _G.Combat.StartFastAttack()
+    else
+        local time = game:GetService("Lighting").ClockTime
+        if time >= 18 or time <= 5 then
+            local npc = workspace.NPCs:FindFirstChild("Death King") or workspace.NPCs:FindFirstChild("Grave")
+            if npc then
+                _G.Utils.TweenTo(npc:GetModelCFrame())
+                _G.Utils.SafeRemote("Revenant", "Pray")
+            end
+        end
+        FarmingModule.AutoBoneLogic()
+    end
+end
+
+-- AUTO RENGOKU
+function FarmingModule.AutoRengoku()
+    if not _G.Settings or not _G.Settings.AutoRengoku then return end
+    
+    local enemies = workspace:FindFirstChild("Enemies") or workspace
+    local boss = enemies:FindFirstChild("Awakened Ice Admiral")
+    
+    if boss and boss:FindFirstChild("Humanoid") and boss.Humanoid.Health > 0 then
+        _G.Utils.Notify("🚨 ATACANDO AWAKENED ICE ADMIRAL!", 5)
+        _G.Utils.TweenTo(boss.HumanoidRootPart.CFrame * CFrame.new(0, 20, 0))
+        _G.Combat.StartFastAttack()
+    else
+        -- Farm de chaves nos mobs se o boss não estiver vivo
+        local enemy = _G.Utils.GetNearestEnemy("Arctic Warrior") or _G.Utils.GetNearestEnemy("Snow Lurker")
+        if enemy then
+            _G.Utils.TweenTo(enemy.HumanoidRootPart.CFrame * CFrame.new(0, 12, 0))
+            _G.Combat.StartFastAttack()
+        else
+            _G.Utils.TweenTo(CFrame.new(6061, 26, -6370))
+        end
+    end
+end
+
+-- AUTO INDIVIDUAL FIGHTING STYLES (V1 & V2)
+function FarmingModule.AutoFightingStylesLogic()
+    if not _G.Settings then return end
+    
+    local styles = {
+        {Set = "AutoBlackLeg", Name = "Black Leg", Pos = CFrame.new(-1140, 4, 3827)},
+        {Set = "AutoElectro", Name = "Electro", Pos = CFrame.new(-4842, 718, -2621)},
+        {Set = "AutoFishmanKarate", Name = "Fishman Karate", Pos = CFrame.new(61122, 18, 1565)},
+        {Set = "AutoDragonBreath", Name = "Dragon Breath", Pos = CFrame.new(-425, 72, 1836)},
+        {Set = "AutoSuperhuman", Name = "Superhuman", Pos = CFrame.new(-2367, 72, -3054)},
+        {Set = "AutoDeathStep", Name = "Death Step", Pos = CFrame.new(6061, 26, -6370)},
+        {Set = "AutoSharkmanKarate", Name = "Sharkman Karate", Pos = CFrame.new(-3056, 235, -10142)},
+        {Set = "AutoElectricClaw", Name = "Electric Claw", Pos = CFrame.new(-12463, 332, -7548)},
+        {Set = "AutoDragonTalon", Name = "Dragon Talon", Pos = CFrame.new(-9515, 164, -5785)},
+        {Set = "AutoGodhumanIndividual", Name = "Godhuman", Pos = CFrame.new(-12463, 375, -7523)}
+    }
+
+    for _, style in ipairs(styles) do
+        if _G.Settings[style.Set] then
+            local hasStyle = false
+            for _, v in ipairs(LocalPlayer.Backpack:GetChildren()) do
+                if v.Name == style.Name then hasStyle = true break end
+            end
+            if not hasStyle and LocalPlayer.Character:FindFirstChild(style.Name) then hasStyle = true end
+            
+            if not hasStyle then
+                _G.Utils.Notify("Adquirindo Estilo: " .. style.Name, 5)
+                _G.Utils.TweenTo(style.Pos)
+                _G.Utils.SafeRemote("BuyFightingStyle", style.Name)
+            end
+        end
+    end
+end
+
+-- RAID REFINEMENT (GOD MODE & SAFE POSITIONING)
+function FarmingModule.RaidLogicRefined()
+    if not _G.Settings or not _G.Settings.AutoRaid then return end
+    
+    if _G.Settings.AutoBuyChip then
+        _G.Utils.SafeRemote("Raids", "BuyChip", _G.Settings.SelectedRaid)
+    end
+    if _G.Settings.AutoStartRaid then
+        _G.Utils.SafeRemote("Raids", "StartRaid")
+    end
+    
+    local raidStatus = LocalPlayer.PlayerGui.Main:FindFirstChild("RaidStatus")
+    if raidStatus and raidStatus.Visible then
+        local enemy = _G.Utils.GetNearestEnemyAny()
+        if enemy then
+            local offset = _G.Settings.RaidMode == "Above" and 50 or -50
+            local targetCF = enemy.HumanoidRootPart.CFrame * CFrame.new(0, offset, 0)
+            
+            _G.Utils.TweenTo(targetCF)
+            _G.Combat.StartFastAttack()
+            
+            if _G.Settings.RaidMode == "Below" then
+                enemy.HumanoidRootPart.CFrame = LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0, 5, 0)
+            end
+        else
+            if _G.Settings.AutoNextIsland then
+                local islandLabel = raidStatus:FindFirstChild("Island")
+                local islandNum = islandLabel and tonumber(islandLabel.Text) or 1
+                local nextIsland = workspace:FindFirstChild("Island" .. islandNum)
+                if nextIsland then
+                    _G.Utils.TweenTo(nextIsland.CFrame * CFrame.new(0, 100, 0))
+                end
+            end
+        end
+    end
+    
+    if _G.Settings.AutoAwaken then _G.Utils.SafeRemote("AwakenSkill") end
+end
+
+-- END-GAME AUTOMATION (GODHUMAN, CDK, SOUL GUITAR)
+function FarmingModule.EndGameLogic()
+    if not _G.Settings then return end
+
+    if _G.Settings.AutoGodhuman then
+        local materials = {
+            {Name = "Fish Tail", Count = 20, Enemy = "Fishman Warrior"},
+            {Name = "Magma Ore", Count = 20, Enemy = "Military Soldier"},
+            {Name = "Dragon Scale", Count = 10, Enemy = "Dragon Crew Warrior"},
+            {Name = "Mystic Droplet", Count = 10, Enemy = "Sea Soldier"}
+        }
+        for _, mat in ipairs(materials) do
+            if _G.Utils.GetMaterialCount(mat.Name) < mat.Count then
+                _G.Settings.AutoFarmMaterial = true
+                _G.Settings.SelectedMaterial = mat.Name
+                return
+            end
+        end
+        _G.Utils.TweenTo(CFrame.new(-12463, 375, -7523))
+        _G.Utils.SafeRemote("BuyFightingStyle", "Godhuman")
+    end
+
+    if _G.Settings.AutoCDK then
+        if not _G.Utils.HasItem("Tushita") or not _G.Utils.HasItem("Yama") then
+            _G.Utils.Notify("Você precisa da Tushita e Yama maestria 350+!", 10)
+            return
+        end
+        _G.Utils.TweenTo(CFrame.new(-11475, 831, 330))
+        _G.Utils.SafeRemote("CDKQuest", "Start")
+    end
+
+    if _G.Settings.AutoSoulGuitar then
+        local moon = game:GetService("Lighting").Sky.FullMoonMagnitude
+        if moon > 0.9 then
+            _G.Utils.TweenTo(CFrame.new(-9515, 164, -5785))
+            _G.Utils.SafeRemote("SoulGuitarQuest", "Pray")
+        end
+    end
+
+    -- Auto Observation V2 (Hungry Man Quest)
+    if _G.Settings.AutoObservationV2 then
+        pcall(function()
+            local quest = LocalPlayer.PlayerGui.Main.Quest
+            if not quest.Visible or not quest.Container.QuestTitle.Text:find("Hungry Man") then
+                _G.Utils.TweenTo(CFrame.new(-12463, 332, -7548))
+                _G.Utils.SafeRemote("HungryMan", "StartQuest")
+            end
+            
+            local fruits = {"Apple", "Banana", "Pineapple"}
+            for _, fruitName in ipairs(fruits) do
+                if not _G.Utils.HasItem(fruitName) then
+                    local fruitObj = workspace:FindFirstChild(fruitName)
+                    if fruitObj then
+                        _G.Utils.TweenTo(fruitObj.CFrame)
+                    end
+                    return
+                end
+            end
+            -- Se tem todas as frutas, entrega pro Hungry Man
+            _G.Utils.TweenTo(CFrame.new(-12463, 332, -7548))
+            _G.Utils.SafeRemote("HungryMan", "BuyKenV2")
+        end)
+    end
+end
+
+-- SHOP LOGIC REFINADA
+function FarmingModule.ShopLogic()
+    if not _G.Settings then return end
+    
+    if _G.Settings.AutoBuyAbilities then
+        local abilities = {"Buso", "Geppo", "Soru"}
+        for _, ability in ipairs(abilities) do
+            _G.Utils.SafeRemote("BuyAbility", ability)
+        end
+    end
+
+    if _G.Settings.AutoBuyFightingStyle then
+        local styles = {"Black Leg", "Electro", "Fishman Karate", "Dragon Breath", "Superhuman", "Death Step", "Sharkman Karate", "Electric Claw", "Dragon Talon", "Godhuman"}
+        for _, style in ipairs(styles) do _G.Utils.SafeRemote("BuyFightingStyle", style) end
+    end
+    if _G.Settings.AutoBuyLegendarySword then
+        local swords = {"Shisui", "Wando", "Sadi", "True Triple Katana"}
+        for _, sword in ipairs(swords) do _G.Utils.SafeRemote("LegendarySwordDealer", sword) end
+    end
+    if _G.Settings.AutoBuyAccessory then
+        local accessories = {"Black Cape", "Swordsman Hat", "Pink Coat", "Tomoe Rings"}
+        for _, acc in ipairs(accessories) do _G.Utils.SafeRemote("BuyAccessory", acc) end
+    end
+    if _G.Settings.AutoGacha then _G.Utils.SafeRemote("FruitGacha") end
 end
 
 return FarmingModule

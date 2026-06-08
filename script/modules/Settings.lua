@@ -50,7 +50,13 @@ SettingsModule.Values = {
     AutoRaceV4 = false, AutoGodHuman = false, AutoSoulGuitar = false, AutoCDK = false,
     AutoTushita = false, AutoYama = false, AutoSharkAnchor = false,
     AutoGodhuman = false, AutoSaber = false, AutoPole = false, AutoMidnightBlade = false,
-    AutoRengoku = false,
+    AutoRengoku = false, AutoHallowScythe = false, AutoObservationV2 = false,
+    AutoBuyAbilities = false,
+
+    -- Estilos de Luta Individual
+    AutoBlackLeg = false, AutoElectro = false, AutoFishmanKarate = false, AutoDragonBreath = false,
+    AutoSuperhuman = false, AutoDeathStep = false, AutoSharkmanKarate = false, AutoElectricClaw = false,
+    AutoDragonTalon = false, AutoGodhumanIndividual = false,
 
     -- Eventos
     AutoLeviathan = false, AutoTerrorShark = false, AutoFrozenDimension = false,
@@ -72,7 +78,7 @@ SettingsModule.Values = {
     AutoCompleteRaid = false, AutoStartRaid = false, AutoNextIsland = false, KillAuraRaid = false,
     AutoRaidHop = false, RaidHopDelay = 60, AutoDungeon = false, AutoDungeonV2 = false,
     AutoCollectTrinkets = false, AutoEquipBestTrinket = true, AutoLucienQuest = false,
-    SelectedRaid = "Flame", AutoAwaken = false,
+    SelectedRaid = "Flame", AutoAwaken = false, RaidMode = "Above", -- "Above" ou "Below"
 
     -- Loja
     AutoBuyFightingStyles = false, AutoBuyWeapons = false, AutoBuyHaki = false,
@@ -140,7 +146,10 @@ function SettingsModule.Load()
         "AutoDoughKing", "AutoCakePrince", "AutoBuyFightingStyle",
         "AutoBuyLegendarySword", "AutoBuyAccessory", "AutoNextSea",
         "AutoSoulGuitar", "AutoCDK", "AutoGodhuman", "AutoKickMod",
-        "AntiAFK", "ChatSpam", "AutoRedeemCodes", "AutoPvP"
+        "AntiAFK", "ChatSpam", "AutoRedeemCodes", "AutoPvP",
+        "AutoHallowScythe", "AutoBlackLeg", "AutoElectro", "AutoFishmanKarate",
+        "AutoDragonBreath", "AutoSuperhuman", "AutoDeathStep", "AutoSharkmanKarate",
+        "AutoElectricClaw", "AutoDragonTalon", "AutoGodhumanIndividual"
     }
     for _, name in ipairs(disabled) do
         target[name] = false

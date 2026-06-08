@@ -240,18 +240,26 @@ end
 
 function CombatModule.AutoBountyLogic()
     if not _G.Settings or not _G.Settings.AutoBounty then return end
+    
     local target = nil
+    local maxBounty = -1
+    
+    -- Seleciona o alvo com maior bounty no servidor (caça aos melhores)
     for _, v in ipairs(Players:GetPlayers()) do
         if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("Humanoid") and v.Character.Humanoid.Health > 0 then
-            target = v
-            break
+            local bounty = v:GetAttribute("Bounty") or 0
+            if bounty > maxBounty then
+                maxBounty = bounty
+                target = v
+            
+            end
         end
     end
     
     if target then
+        _G.Utils.Notify("🎯 Caçando Alvo: " .. target.Name .. " | Bounty: " .. maxBounty, 5)
         _G.Utils.TweenTo(target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 10, 0))
-        CombatModule.StartFastAttack()
-        CombatModule.AimBotLogic(target.Character.HumanoidRootPart)
+        CombatModule.AutoPvPLogic(target)
     end
 end
 

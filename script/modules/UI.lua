@@ -154,6 +154,34 @@ function UIModule.CreateHub()
     end)
 
     -- ABAS DO HUB
+    local StatusTab = UIModule.NewTab("Status", TabContainer, ContentArea)
+    UIModule.NewSection(StatusTab, "World Status")
+    local statusLabel = Instance.new("TextLabel", StatusTab)
+    statusLabel.Size = UDim2.new(1, 0, 0, 150)
+    statusLabel.BackgroundTransparency = 1
+    statusLabel.Font = Enum.Font.GothamSemibold
+    statusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    statusLabel.TextSize = 12
+    statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+    statusLabel.Text = "Carregando status..."
+    
+    task.spawn(function()
+        while task.wait(2) do
+            local s = _G.Utils.UpdateGlobalStatus()
+            local fruitCount = 0
+            for _, v in ipairs(workspace:GetChildren()) do
+                if v:IsA("Tool") and (v.Name:find("Fruit") or v.ToolTip == "Blox Fruit") then
+                    fruitCount = fruitCount + 1
+                end
+            end
+            
+            statusLabel.Text = string.format(
+                "  🏝️ Mirage: %s\n  🌕 Lua: %s\n  🍰 Cake Prince: %s\n  👾 Bosses: %s\n  🌊 Evento: %s\n  🍎 Frutas no Chão: %d\n  🕒 Tempo do Server: %s",
+                s.Mirage, s.Moon, s.CakePrince, #s.Bosses > 0 and table.concat(s.Bosses, ", ") or "Nenhum", s.SeaEvents, fruitCount, os.date("%X")
+            )
+        end
+    end)
+
     local MainTab = UIModule.NewTab("Main", TabContainer, ContentArea)
     UIModule.NewSection(MainTab, "Auto Farm Elite")
     UIModule.NewToggle(MainTab, "Supreme Auto Farm", "AutoFarm")
@@ -161,6 +189,11 @@ function UIModule.CreateHub()
     UIModule.NewToggle(MainTab, "Bring Mobs (Black Hole)", "BringMobs")
     UIModule.NewToggle(MainTab, "Auto Quest", "AutoQuest")
     UIModule.NewToggle(MainTab, "Auto Next Sea", "AutoNextSea")
+    UIModule.NewSection(MainTab, "Special Items Farm")
+    UIModule.NewToggle(MainTab, "Auto Dough King / Prince", "AutoDoughKing")
+    UIModule.NewToggle(MainTab, "Auto Hallow Scythe (Soul Reaper)", "AutoHallowScythe")
+    UIModule.NewToggle(MainTab, "Auto Rengoku (Ice Admiral)", "AutoRengoku")
+    UIModule.NewToggle(MainTab, "Auto Observation V2", "AutoObservationV2")
     UIModule.NewDropdown(MainTab, "Select Weapon", {"Melee", "Sword", "Fruit"}, "Weapon")
     UIModule.NewSlider(MainTab, "Farm Distance", 0, 30, 10, "Distance")
 
@@ -234,6 +267,19 @@ function UIModule.CreateHub()
         end
     end)
 
+    local StylesTab = UIModule.NewTab("Fighting Styles", TabContainer, ContentArea)
+    UIModule.NewSection(StylesTab, "Auto Styles (V1 & V2)")
+    UIModule.NewToggle(StylesTab, "Auto Black Leg", "AutoBlackLeg")
+    UIModule.NewToggle(StylesTab, "Auto Electro", "AutoElectro")
+    UIModule.NewToggle(StylesTab, "Auto Fishman Karate", "AutoFishmanKarate")
+    UIModule.NewToggle(StylesTab, "Auto Dragon Breath", "AutoDragonBreath")
+    UIModule.NewToggle(StylesTab, "Auto Superhuman", "AutoSuperhuman")
+    UIModule.NewToggle(StylesTab, "Auto Death Step", "AutoDeathStep")
+    UIModule.NewToggle(StylesTab, "Auto Sharkman Karate", "AutoSharkmanKarate")
+    UIModule.NewToggle(StylesTab, "Auto Electric Claw", "AutoElectricClaw")
+    UIModule.NewToggle(StylesTab, "Auto Dragon Talon", "AutoDragonTalon")
+    UIModule.NewToggle(StylesTab, "Auto Godhuman", "AutoGodhumanIndividual")
+
     UIModule.NewSection(TeleportTab, "World Teleport")
     UIModule.NewButton(TeleportTab, "Travel to Sea 2 (Lvl 700+)", function() 
         _G.Utils.TweenTo(CFrame.new(-10332, 730, 7866))
@@ -244,8 +290,19 @@ function UIModule.CreateHub()
         _G.Utils.SafeRemote("TravelZou") 
     end)
 
+    local RaidTab = UIModule.NewTab("Raid", TabContainer, ContentArea)
+    UIModule.NewSection(RaidTab, "Auto Raid Settings")
+    UIModule.NewToggle(RaidTab, "Enable Auto Raid", "AutoRaid")
+    UIModule.NewToggle(RaidTab, "Auto Buy Chip", "AutoBuyChip")
+    UIModule.NewToggle(RaidTab, "Auto Start Raid", "AutoStartRaid")
+    UIModule.NewToggle(RaidTab, "Auto Next Island", "AutoNextIsland")
+    UIModule.NewDropdown(RaidTab, "Select Raid", {"Flame", "Ice", "Quake", "Light", "Dark", "Spider", "Rumble", "Magma", "Buddha", "Sand", "Dough"}, "SelectedRaid")
+    UIModule.NewSection(RaidTab, "God Mode Positioning")
+    UIModule.NewDropdown(RaidTab, "Raid Mode", {"Above", "Below"}, "RaidMode")
+
     local ShopTab = UIModule.NewTab("Shop & Items", TabContainer, ContentArea)
-    UIModule.NewSection(ShopTab, "Fighting Styles")
+    UIModule.NewSection(ShopTab, "Abilities & Styles")
+    UIModule.NewToggle(ShopTab, "Auto Buy Abilities (Buso/Soru/..)", "AutoBuyAbilities")
     UIModule.NewToggle(ShopTab, "Auto Buy All Styles", "AutoBuyFightingStyle")
     UIModule.NewButton(ShopTab, "Buy Godhuman", function() _G.Farming.BuyItem("FightingStyle", "Godhuman") end)
     UIModule.NewSection(ShopTab, "Legendary Swords")

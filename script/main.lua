@@ -309,24 +309,27 @@ local function StartLoops()
     task.spawn(function()
         while _G.MakitoHubRunning do
             local status, err = pcall(function()
-                if _G.Settings.AutoKickMod or _G.Settings.AntiModerator then if _G.Utils then _G.Utils.CheckModerator() end end
-            
-            if _G.Combat then
+                if _G.Settings.SecurityMode then _G.Utils.SecurityBypass() end
+                if _G.Settings.AutoKickMod or _G.Settings.AntiModerator then _G.Utils.CheckModerator() end
                 if _G.Settings.FastAttack or _G.Settings.KillAura then
                     _G.Combat.StartCombatLoop()
                 else
                     _G.Combat.StopCombatLoop()
                 end
                 
-                _G.Combat.AimBotLogic()
-                _G.Combat.AutoComboLogic()
-                _G.Combat.AutoPvPLogic()
-            end
+                if _G.Combat then
+                    _G.Combat.AimBotLogic()
+                    _G.Combat.AutoComboLogic()
+                    _G.Combat.AutoPvPLogic()
+                end
                 
                 if _G.Utils then
                     _G.Utils.AutomationLogic()
-                    _G.Utils.OptimizeGraphics()
+                    _G.Utils.ExtremePerformance()
                     _G.Utils.DevilFruitNotifier()
+                    _G.Utils.AutoBuildStats()
+                    _G.Utils.UpdateGlobalStatus()
+                    _G.Utils.AutoHakiShop()
                 end
             end)
             if not status then warn("⚠️ [MAKITO HUB] Erro no Loop de Combate/Utilidades: " .. tostring(err)) end
@@ -342,12 +345,25 @@ local function StartLoops()
                 if _G.Settings.AutoFarm or _G.Settings.AutoFarmLevel then _G.Farming.SupremeAutoFarm() end
                 if _G.Settings.AutoFarmNearest then _G.Farming.AutoFarmNearestLogic() end
                 
+                _G.Farming.AutoBossPro()
+                _G.Farming.AutoBerryFarm()
                 _G.Farming.AutoStatsLogic()
                 _G.Farming.FruitLogic()
-                _G.Farming.RaidLogic()
                 _G.Farming.SeaEventLogic()
                 _G.Farming.EventAutomationLogic()
                 _G.Farming.ProgressionLogic()
+                _G.Farming.AutoYamaLogic()
+                _G.Farming.AutoTushitaLogic()
+                _G.Farming.AutoCDKLogic()
+                _G.Farming.AutoSharkAnchorLogic()
+                _G.Farming.AutoSoulGuitarLogic()
+                _G.Farming.AutoGodhumanLogic()
+                _G.Farming.EndGameLogic()
+                _G.Farming.AutoDoughKing()
+                _G.Farming.AutoHallowScythe()
+                _G.Farming.AutoRengoku()
+                _G.Farming.AutoFightingStylesLogic()
+                _G.Farming.RaidLogicRefined()
                 _G.Farming.SpecialBossLogic()
                 _G.Farming.ShopLogic()
                 _G.Farming.PuzzleLogic()
@@ -357,14 +373,14 @@ local function StartLoops()
                 _G.Farming.ChristmasEventLogic()
                 _G.Farming.ChestFarmLogic()
                 _G.Farming.AutoNextSeaLogic()
-                _G.Farming.AutoSoulGuitarLogic()
-                _G.Farming.AutoCDKLogic()
-                _G.Farming.AutoGodhumanLogic()
                 
                 if _G.Combat then
                     _G.Combat.AutoBountyLogic()
                     _G.Combat.ESPLogic()
                 end
+                
+                -- LOG PERIODICO DE INVENTARIO
+                if tick() % 300 < 1 then _G.Utils.LogInventory() end
             end)
             if not status then warn("⚠️ [MAKITO HUB] Erro no Loop de Farming/ESP: " .. tostring(err)) end
             task.wait(0.5)
