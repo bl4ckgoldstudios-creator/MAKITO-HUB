@@ -21,30 +21,32 @@ local InstanceCache = {
 
 -- SISTEMA DE CACHE INTELIGENTE (EVITA LAG DE BUSCA)
 function UtilsModule.UpdateInstanceCache()
-    if tick() - InstanceCache.LastUpdate < 1 then return end
-    InstanceCache.LastUpdate = tick()
-    
-    local enemiesFolder = workspace:FindFirstChild("Enemies") or workspace
-    local npcsFolder = workspace:FindFirstChild("NPCs") or workspace
-    
-    -- Cache de Inimigos Vivos
-    local newEnemies = {}
-    for _, v in ipairs(enemiesFolder:GetChildren()) do
-        if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
-            newEnemies[v.Name] = v
-            table.insert(newEnemies, v)
+    -- Cache de Inimigos Vivos (Atualiza mais rápido: 0.1s)
+    if tick() - (InstanceCache.LastEnemyUpdate or 0) > 0.1 then
+        InstanceCache.LastEnemyUpdate = tick()
+        local enemiesFolder = workspace:FindFirstChild("Enemies") or workspace
+        local newEnemies = {}
+        for _, v in ipairs(enemiesFolder:GetChildren()) do
+            if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
+                newEnemies[v.Name] = v
+                table.insert(newEnemies, v)
+            end
         end
+        InstanceCache.Enemies = newEnemies
     end
-    InstanceCache.Enemies = newEnemies
     
-    -- Cache de NPCs
-    local newNPCs = {}
-    for _, v in ipairs(npcsFolder:GetChildren()) do
-        if v:IsA("Model") or v:FindFirstChild("HumanoidRootPart") then
-            newNPCs[v.Name] = v
+    -- Cache de NPCs (Atualiza mais devagar: 5s)
+    if tick() - (InstanceCache.LastNPCUpdate or 0) > 5 then
+        InstanceCache.LastNPCUpdate = tick()
+        local npcsFolder = workspace:FindFirstChild("NPCs") or workspace
+        local newNPCs = {}
+        for _, v in ipairs(npcsFolder:GetChildren()) do
+            if v:IsA("Model") or v:FindFirstChild("HumanoidRootPart") then
+                newNPCs[v.Name] = v
+            end
         end
+        InstanceCache.NPCs = newNPCs
     end
-    InstanceCache.NPCs = newNPCs
 end
 
 function UtilsModule.GetInstanceCache()

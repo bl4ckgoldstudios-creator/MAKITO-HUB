@@ -234,52 +234,6 @@ function FarmingModule.SupremeAutoFarm()
         end
     end)
 end
-            
-            if _G.Settings.BringMobs or _G.Settings.AutoFarmMaterials then
-                FarmingModule.BlackHoleBringMobs(enemy)
-            end
-            
-            -- POSITIONING V3 (FLOAT ABOVE)
-            local offset = _G.Settings.Distance or 12
-            local targetCF = enemy.HumanoidRootPart.CFrame * CFrame.new(0, offset, 0)
-            
-            -- Look at enemy to keep it in focus
-            targetCF = CFrame.new(targetCF.Position, enemy.HumanoidRootPart.Position)
-            
-            local dist = (LocalPlayer.Character.HumanoidRootPart.Position - targetCF.Position).Magnitude
-            
-            -- Garantir Float e NoClip ativos durante o farm
-            _G.Utils.Float(true)
-            _G.Utils.SetNoClip(true)
-
-            if dist > 2 then
-                if dist > 150 or _G.Settings.InfiniteSpeed then
-                    _G.Utils.TweenTo(targetCF)
-                else
-                    LocalPlayer.Character.HumanoidRootPart.CFrame = targetCF
-                end
-            end
-            
-            -- ATTACK ACTIVATION
-            _G.Combat.StartFastAttack()
-            
-            -- AUTO SKILL (IF ENABLED)
-            if _G.Settings.AutoSkill and not _G.Settings.AutoMastery and not _G.Settings.AutoFarmMastery then
-                local keys = {"Z", "X", "C", "V"}
-                for _, key in ipairs(keys) do
-                    if _G.Settings["Skill" .. key] then
-                        _G.Combat.UseSkill(key)
-                    end
-                end
-            end
-        else
-            -- WAIT FOR SPAWN
-            local waitPos = Quest.Spawn or Quest.Pos
-            _G.Utils.TweenTo(waitPos * CFrame.new(0, 40, 0))
-            if _G.MakitoStatus then _G.MakitoStatus.Text = "Status: Aguardando Spawn de " .. Quest.Enemy end
-        end
-    end)
-end
 
 function FarmingModule.ProgressionLogic()
     if not _G.Settings then return end

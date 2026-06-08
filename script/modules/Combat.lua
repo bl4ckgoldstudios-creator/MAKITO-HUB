@@ -102,6 +102,15 @@ local function EliteKillAura()
     local char = LocalPlayer.Character
     local root = char and char:FindFirstChild("HumanoidRootPart")
     local weapon = char and char:FindFirstChildOfClass("Tool")
+    
+    -- Tenta equipar arma se não estiver com nada
+    if not weapon or not IsCombatWeapon(weapon) then
+        if _G.Farming and _G.Farming.EquipWeapon then
+            _G.Farming.EquipWeapon(_G.Settings.MainWeapon or "Melee")
+            weapon = char:FindFirstChildOfClass("Tool")
+        end
+    end
+    
     if not root or not weapon or not IsCombatWeapon(weapon) then return end
     
     local remote = GetCommF()
@@ -113,14 +122,18 @@ local function EliteKillAura()
     local targets = {}
     
     -- Varredura ultra-rápida usando o cache otimizado
-    for _, enemy in ipairs(_G.Utils.GetInstanceCache().Enemies) do
-        local eRoot = enemy:FindFirstChild("HumanoidRootPart")
-        if eRoot then
+    local enemies = _G.Utils.GetInstanceCache().Enemies
+    if #enemies == 0 then -- Fallback se o cache falhar
+        enemies = (workspace:FindFirstChild("Enemies") or workspace):GetChildren()
+    end
+
+    for _, enemy in ipairs(enemies) do
+        if enemy:IsA("Model") and enemy:FindFirstChild("HumanoidRootPart") and enemy:FindFirstChild("Humanoid") and enemy.Humanoid.Health > 0 then
+            local eRoot = enemy.HumanoidRootPart
             local dist = (myPos - eRoot.Position).Magnitude
             if dist <= attackDist then
-                -- Anti-Cheat Bypass: Raycast apenas para alvos distantes ou atrás de objetos
                 local canHit = true
-                if dist > 30 then
+                if dist > 40 then
                     local ray = Ray.new(myPos, (eRoot.Position - myPos).Unit * dist)
                     local part = workspace:FindPartOnRayWithIgnoreList(ray, {char, enemy, workspace:FindFirstChild("Map")})
                     if part then canHit = false end
@@ -135,9 +148,7 @@ local function EliteKillAura()
     
     -- Disparo otimizado (Silent Multi-Hit)
     if #targets > 0 then
-        -- O Blox Fruits processa múltiplos InvokeServer de "Attack" no mesmo step
-        -- Limite de 10 alvos simultâneos para evitar Kick por spam de pacote
-        for i = 1, math.min(#targets, 10) do
+        for i = 1, math.min(#targets, 15) do -- Aumentado para 15 alvos
             task.spawn(function()
                 remote:InvokeServer("Attack", targets[i])
             end)
