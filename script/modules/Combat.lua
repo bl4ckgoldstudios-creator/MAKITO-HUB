@@ -12,9 +12,15 @@ local CombatFrameworkRoot = nil
 
 -- CACHE DE REMOTOS PARA PERFORMANCE
 local CommF = nil
-pcall(function()
-    CommF = ReplicatedStorage:WaitForChild("Remotes", 5):WaitForChild("CommF", 5)
-end)
+local function GetCommF()
+    if CommF then return CommF end
+    pcall(function()
+        -- Tenta encontrar o remote principal (CommF_) em locais comuns
+        CommF = ReplicatedStorage:FindFirstChild("CommF_", true) or 
+                ReplicatedStorage:WaitForChild("Remotes", 5):WaitForChild("CommF_", 5)
+    end)
+    return CommF
+end
 
 local lastFrameworkCheck = 0
 local function GetFramework()
@@ -32,9 +38,11 @@ local function GetFramework()
             if type(v) == "table" then
                 if v.activeController and (v.activeController.attack or v.activeController.Attack) then
                     CombatFramework = v
+                    warn("✅ [MAKITO] Combat Framework Encontrado!")
                     return v
                 elseif v.Attack and v.AttackCD then
                     CombatFramework = {activeController = v}
+                    warn("✅ [MAKITO] Combat Framework (Variação) Encontrado!")
                     return CombatFramework
                 end
             end
@@ -136,8 +144,11 @@ function CombatModule.StartFastAttack()
                             
                             -- Envia o dano direto para o servidor (Sem soco visual)
                             if now - lastRemoteAttack >= attackDelay then
-                                CommF:InvokeServer("Attack", v.HumanoidRootPart)
-                                lastRemoteAttack = now
+                                local remote = GetCommF()
+                                if remote then
+                                    remote:InvokeServer("Attack", v.HumanoidRootPart)
+                                    lastRemoteAttack = now
+                                end
                             end
                         end
                     end
@@ -151,8 +162,11 @@ function CombatModule.StartFastAttack()
                         local dist = (myPos - v.HumanoidRootPart.Position).Magnitude
                         if dist <= attackDist then
                             if now - lastRemoteAttack >= attackDelay then
-                                CommF:InvokeServer("Attack", v.HumanoidRootPart)
-                                lastRemoteAttack = now
+                                local remote = GetCommF()
+                                if remote then
+                                    remote:InvokeServer("Attack", v.HumanoidRootPart)
+                                    lastRemoteAttack = now
+                                end
                             end
                             break 
                         end
