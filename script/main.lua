@@ -394,41 +394,37 @@ local function StartLoops()
             local status, err = pcall(function()
                 if not _G.Farming then return end
                 
-                if _G.Settings.AutoFarm or _G.Settings.AutoFarmLevel then _G.Farming.SupremeAutoFarm() end
-                if _G.Settings.AutoFarmNearest then _G.Farming.AutoFarmNearestLogic() end
-                
-                _G.Farming.AutoBossPro()
-                _G.Farming.AutoBerryFarm()
-                _G.Farming.AutoStatsLogic()
-                _G.Farming.FruitLogic()
-                _G.Farming.SeaEventLogic()
-                _G.Farming.EventAutomationLogic()
-                _G.Farming.ProgressionLogic()
-                _G.Farming.AutoYamaLogic()
-                _G.Farming.AutoTushitaLogic()
-                _G.Farming.AutoCDKLogic()
-                _G.Farming.AutoSharkAnchorLogic()
-                _G.Farming.AutoSoulGuitarLogic()
-                _G.Farming.AutoGodhumanLogic()
-                _G.Farming.EndGameLogic()
-                _G.Farming.AutoDoughKing()
-                _G.Farming.AutoHallowScythe()
-                _G.Farming.AutoRengoku()
-                _G.Farming.AutoFightingStylesLogic()
-                _G.Farming.RaidLogicRefined()
-                _G.Farming.SpecialBossLogic()
-                _G.Farming.AutoCyborgLogic()
-                _G.Farming.AutoRandomBoneLogic()
-                _G.Farming.AutoRaceV2Logic()
-                _G.Farming.AutoRaceV3Logic()
-                _G.Farming.ShopLogic()
-                _G.Farming.PuzzleLogic()
-                _G.Farming.SnipeLogic()
-                _G.Farming.DungeonV2Logic()
-                _G.Farming.PvPArenaLogic()
-                _G.Farming.ChristmasEventLogic()
-                _G.Farming.ChestFarmLogic()
-                _G.Farming.AutoNextSeaLogic()
+                if _G.Farming then
+                    -- FARM SUPREMO E MOVIMENTAÇÃO
+                    _G.Farming.SupremeAutoFarm()
+                    _G.Farming.AutoFarmNearestLogic()
+                    _G.Farming.AutoFarmBossesGlobal()
+                    _G.Farming.ChestFarmLogic()
+                    
+                    -- EVENTOS E MAR
+                    _G.Farming.SeaEventLogic()
+                    _G.Farming.SeaEventsV2()
+                    _G.Farming.KitsuneEventLogic()
+                    _G.Farming.AutoMirageAdvanced()
+                    
+                    -- PROGRESSÃO E ITENS ELITE
+                    _G.Farming.EndGameLogic()
+                    _G.Farming.ProgressionLogic()
+                    _G.Farming.AutoAwakeningLogic()
+                    _G.Farming.SanguineArtLogic()
+                    
+                    -- UTILIDADES DE FARM
+                    _G.Farming.FruitLogic()
+                    _G.Farming.ShopLogic()
+                    _G.Farming.AutoStatsLogic()
+                    _G.Farming.AutoBerryFarm()
+                    
+                    -- EVENTOS ESPECIAIS E ARENAS
+                    _G.Farming.DungeonV2Logic()
+                    _G.Farming.PvPArenaLogic()
+                    _G.Farming.ChristmasEventLogic()
+                    _G.Farming.SnipeLogic()
+                end
                 
                 if _G.Combat then
                     _G.Combat.AutoBountyLogic()

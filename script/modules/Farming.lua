@@ -745,7 +745,17 @@ function FarmingModule.ChestFarmLogic()
     end
 end
 
--- 1. AUTO YAMA (ELITE HUNTER & SWORD PULL)
+function FarmingModule.EndGameLogic()
+    if not _G.Settings then return end
+    
+    FarmingModule.AutoCDKLogic()
+    FarmingModule.AutoSoulGuitarLogic()
+    FarmingModule.AutoGodhumanLogic()
+    FarmingModule.AutoSharkAnchorLogic()
+    FarmingModule.SanguineArtLogic()
+    FarmingModule.AutoYamaLogic()
+    FarmingModule.AutoTushitaLogic()
+end
 function FarmingModule.AutoYamaLogic()
     if not _G.Settings or not _G.Settings.AutoYama then return end
     
@@ -995,9 +1005,94 @@ function FarmingModule.PvPArenaLogic()
     end
 end
 
-function FarmingModule.ChristmasEventLogic()
-    if not _G.Settings or not _G.Settings.AutoCollectCandy then return end
+function FarmingModule.SanguineArtLogic()
+    if not _G.Settings.AutoSanguineArt then return end
     
+    -- Verifica se tem o Leviathan Heart
+    if not _G.Utils.HasItem("Leviathan Heart") then
+        _G.Utils.Notify("Leviathan Heart necessário! Iniciando Sea Events...", 5)
+        _G.Settings.AutoLeviathan = true
+        return
+    end
+
+    -- Vai até o Shafi (NPC do Sanguine Art em Tiki Outpost)
+    _G.Utils.TweenTo(CFrame.new(-15200, 400, -11500))
+    _G.Utils.SafeRemote("SanguineArt", "Learn")
+end
+
+function FarmingModule.SeaEventsV2()
+    if not _G.Settings.AutoSeaEventsV2 then return end
+    
+    local seaFolder = workspace:FindFirstChild("SeaEvents") or workspace:FindFirstChild("Sea")
+    if not seaFolder then return end
+
+    -- Piranhas / Sharks
+    for _, v in ipairs(seaFolder:GetChildren()) do
+        if (v.Name == "Piranha" or v.Name == "Shark") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+            _G.Utils.TweenTo(v.HumanoidRootPart.CFrame * CFrame.new(0, 30, 0))
+            _G.Combat.StartFastAttack()
+            return
+        end
+    end
+
+    -- Ghost Ships
+    local ship = seaFolder:FindFirstChild("Ghost Ship") or seaFolder:FindFirstChild("Ship")
+    if ship and ship:FindFirstChild("Humanoid") then
+        _G.Utils.TweenTo(ship:GetModelCFrame() * CFrame.new(0, 60, 0))
+        _G.Combat.StartFastAttack()
+    end
+end
+
+function FarmingModule.KitsuneEventLogic()
+    if not _G.Settings.AutoKitsuneEvent then return end
+    
+    local kitsuneIsland = workspace:FindFirstChild("KitsuneIsland")
+    if kitsuneIsland then
+        _G.Utils.TweenTo(kitsuneIsland:GetModelCFrame())
+        -- Lógica de coleta de Azure Flames
+        for _, v in ipairs(workspace:GetChildren()) do
+            if v.Name == "AzureFlame" or v.Name == "Azure Orb" then
+                _G.Utils.TweenTo(v.CFrame)
+                task.wait(0.1)
+            end
+        end
+    else
+        -- Se não tiver a ilha, vai para o mar profundo (Tiki Outpost area)
+        _G.Utils.TweenTo(CFrame.new(-18000, 20, -15000))
+    end
+end
+
+function FarmingModule.AutoAwakeningLogic()
+    if not _G.Settings.AutoAwakening then return end
+    
+    local char = LocalPlayer.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    
+    -- Verifica se está na sala do Awakening (pós-raid)
+    local awakeningNPC = workspace.NPCs:FindFirstChild("Awakening Scientist")
+    if awakeningNPC then
+        _G.Utils.TweenTo(awakeningNPC.HumanoidRootPart.CFrame)
+        _G.Utils.SafeRemote("Awakening", "Check")
+    end
+end
+
+function FarmingModule.AutoFarmBossesGlobal()
+    if not _G.Settings.AutoFarmAllBosses then return end
+    
+    local enemies = workspace:FindFirstChild("Enemies") or workspace
+    for _, v in ipairs(enemies:GetChildren()) do
+        if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+            local name = v.Name:lower()
+            if name:find("boss") or name:find("king") or name:find("admiral") or name:find("rip") then
+                _G.Utils.TweenTo(v.HumanoidRootPart.CFrame * CFrame.new(0, 15, 0))
+                _G.Combat.StartFastAttack()
+                return
+            end
+        end
+    end
+    
+    if _G.Settings.AutoBossHop then _G.Utils.AdvancedHop() end
+end
     -- Lógica para coletar Candy (Moeda de Evento)
     local candyFolder = workspace:FindFirstChild("Candy") or workspace:FindFirstChild("ChristmasEvent")
     if candyFolder then

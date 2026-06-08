@@ -55,28 +55,6 @@ local function GetFramework()
     return success and result or nil
 end
 
--- MOTOR DE ATAQUE ULTRA-FAST (BYPASS DE ANIMAÇÃO)
-local function AttackNoAnim()
-    local framework = GetFramework()
-    if framework and framework.activeController then
-        local ac = framework.activeController
-        
-        -- Bypass de Cooldown e Animação
-        ac.hitboxMagnitude = 60
-        ac.attackCount = 0
-        ac.timeToNextAttack = 0
-        ac.increment = 0
-        if ac.AttackCD then ac.AttackCD = 0 end
-        
-        -- Executa o ataque via framework se possível
-        if ac.attack then ac:attack()
-        elseif ac.Attack then ac:Attack() end
-    else
-        -- Fallback para Input se o framework falhar
-        FallbackAttack()
-    end
-end
-
 -- DETECÇÃO DE ARMA ROBUSTA
 local function IsCombatWeapon(tool)
     if not tool or not tool:IsA("Tool") then return false end
@@ -109,6 +87,28 @@ local function FallbackAttack()
         task.wait()
         vim:SendMouseButtonEvent(centerX, centerY, 0, false, game, 0)
     end)
+end
+
+-- MOTOR DE ATAQUE ULTRA-FAST (BYPASS DE ANIMAÇÃO)
+local function AttackNoAnim()
+    local framework = GetFramework()
+    if framework and framework.activeController then
+        local ac = framework.activeController
+        
+        -- Bypass de Cooldown e Animação
+        ac.hitboxMagnitude = 60
+        ac.attackCount = 0
+        ac.timeToNextAttack = 0
+        ac.increment = 0
+        if ac.AttackCD then ac.AttackCD = 0 end
+        
+        -- Executa o ataque via framework se possível
+        if ac.attack then ac:attack()
+        elseif ac.Attack then ac:Attack() end
+    else
+        -- Fallback para Input se o framework falhar
+        FallbackAttack()
+    end
 end
 
 function CombatModule.StopCombatLoop()
