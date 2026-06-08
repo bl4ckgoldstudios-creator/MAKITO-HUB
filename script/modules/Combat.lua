@@ -15,10 +15,14 @@ local CommF = nil
 local function GetCommF()
     if CommF then return CommF end
     pcall(function()
-        -- Tenta encontrar o remote principal (CommF_) em locais comuns
         CommF = ReplicatedStorage:FindFirstChild("CommF_", true) or 
                 ReplicatedStorage:WaitForChild("Remotes", 5):WaitForChild("CommF_", 5)
     end)
+    if CommF then
+        warn("✅ [MAKITO] Remote CommF_ Encontrado!")
+    else
+        warn("❌ [MAKITO] Remote CommF_ NÃO Encontrado!")
+    end
     return CommF
 end
 
@@ -85,31 +89,35 @@ local function FallbackAttack()
     end)
 end
 
-function CombatModule.StopFastAttack()
+function CombatModule.StopCombatLoop()
     if FastAttackConn then
         FastAttackConn:Disconnect()
         FastAttackConn = nil
+        warn("⏹️ [MAKITO] Loop de Combate Parado")
     end
 end
 
--- SISTEMA UNIFICADO: FAST ATTACK + KILL AURA (NO ANIMATION - DAMAGE ONLY)
-function CombatModule.StartFastAttack()
+-- SISTEMA UNIFICADO: FAST ATTACK + KILL AURA (VERSÃO ELITE REFINADA)
+local activeTargets = {}
+function CombatModule.StartCombatLoop()
     if FastAttackConn then return end
+    warn("🚀 [MAKITO] Motor de Combate Elite Iniciado")
     
     local lastRemoteAttack = 0
     FastAttackConn = RunService.Stepped:Connect(function()
-        if not _G.Settings or not _G.Settings.FastAttack then 
-            CombatModule.StopFastAttack()
+        if not _G.Settings or (not _G.Settings.FastAttack and not _G.Settings.KillAura) then 
+            CombatModule.StopCombatLoop()
             return 
         end
         
-        -- SEGURANÇA: Não ataca se estiver falando com NPC
+        -- SEGURANÇA: Bloqueia se estiver em animação de diálogo, sentado ou stunado
         if _G.IsTalkingToNPC then return end
+        local char = LocalPlayer.Character
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        if not hum or hum.Health <= 0 or hum.Sit then return end
         
         pcall(function()
-            local char = LocalPlayer.Character
-            if not char or not char:FindFirstChild("HumanoidRootPart") then return end
-            
+            local root = char.HumanoidRootPart
             local weapon = char:FindFirstChildOfClass("Tool")
             if not weapon or not IsCombatWeapon(weapon) then return end
             
@@ -119,62 +127,74 @@ function CombatModule.StartFastAttack()
             
             local framework = GetFramework()
             local enemies = workspace:FindFirstChild("Enemies") or workspace
-            local myPos = char.HumanoidRootPart.Position
-            local foundTarget = false
+            local myPos = root.Position
             
-            -- 1. BYPASS SILENCIOSO (SEM ANIMAÇÃO)
+            -- 1. SINCRONIZAÇÃO DE FRAMEWORK (MODO SILENCIOSO)
             if framework and framework.activeController then
                 local controller = framework.activeController
-                
-                -- Resetamos os valores para o servidor aceitar o dano, mas NÃO chamamos controller.attack()
                 controller.hitboxMagnitude = attackDist
                 controller.attackCount = 0
                 controller.timeToNextAttack = 0
                 controller.increment = 0
-                
-                -- 2. REGISTRO DE DANO DIRETO (KILL AURA)
-                local count = 0
-                for _, v in ipairs(enemies:GetChildren()) do
-                    if count >= 15 then break end 
-                    if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
-                        local dist = (myPos - v.HumanoidRootPart.Position).Magnitude
-                        if dist <= attackDist then 
-                            foundTarget = true
-                            count = count + 1
-                            
-                            -- Envia o dano direto para o servidor (Sem soco visual)
-                            if now - lastRemoteAttack >= attackDelay then
-                                local remote = GetCommF()
-                                if remote then
-                                    remote:InvokeServer("Attack", v.HumanoidRootPart)
-                                    lastRemoteAttack = now
-                                end
-                            end
-                        end
-                    end
-                end
             end
 
-            -- 3. FALLBACK DE DANO (CASO O FRAMEWORK NÃO ESTEJA PRONTO)
-            if not foundTarget or not framework then
-                for _, v in ipairs(enemies:GetChildren()) do
-                    if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
-                        local dist = (myPos - v.HumanoidRootPart.Position).Magnitude
-                        if dist <= attackDist then
-                            if now - lastRemoteAttack >= attackDelay then
-                                local remote = GetCommF()
-                                if remote then
-                                    remote:InvokeServer("Attack", v.HumanoidRootPart)
-                                    lastRemoteAttack = now
+            -- 2. LOGICA DE DANO REFINADA (KILL AURA PRO)
+            if now - lastRemoteAttack >= attackDelay then
+                local remote = GetCommF()
+                if remote then
+                    local potentialTargets = {}
+                    
+                    -- Varredura inteligente: filtra e ordena por prioridade
+                    for _, v in ipairs(enemies:GetChildren()) do
+                        local eRoot = v:FindFirstChild("HumanoidRootPart")
+                        local eHum = v:FindFirstChild("Humanoid")
+                        
+                        if eRoot and eHum and eHum.Health > 0 then
+                            local dist = (myPos - eRoot.Position).Magnitude
+                            if dist <= attackDist then
+                                -- Raycast para evitar bater através de paredes impossíveis (Anti-Cheat Bypass)
+                                local ray = Ray.new(myPos, (eRoot.Position - myPos).Unit * dist)
+                                local part = workspace:FindPartOnRayWithIgnoreList(ray, {char, v, workspace:FindFirstChild("Map")})
+                                
+                                if not part then -- Linha de visão limpa
+                                    table.insert(potentialTargets, {part = eRoot, health = eHum.Health, dist = dist})
                                 end
                             end
-                            break 
                         end
                     end
+                    
+                    -- Ordena: Prioriza quem tem MENOS vida (Kill Confirmation)
+                    table.sort(potentialTargets, function(a, b) return a.health < b.health end)
+                    
+                    -- Dispara o Remote para os alvos selecionados (Limite de 15 para estabilidade)
+                    local count = 0
+                    for _, target in ipairs(potentialTargets) do
+                        if count >= 15 then break end
+                        remote:InvokeServer("Attack", target.part)
+                        count = count + 1
+                    end
+                    
+                    -- 3. AUTO-CLICK DINÂMICO (Se não houver alvo no raio, garante o Fast Attack manual)
+                    if count == 0 and _G.Settings.FastAttack then
+                        local nearest = _G.Utils.GetNearestEnemyAny()
+                        if nearest and (myPos - nearest.HumanoidRootPart.Position).Magnitude < 40 then
+                            remote:InvokeServer("Attack", nearest.HumanoidRootPart)
+                        end
+                    end
+                    
+                    lastRemoteAttack = now
                 end
             end
         end)
     end)
+end
+
+function CombatModule.StopFastAttack()
+    CombatModule.StopCombatLoop()
+end
+
+function CombatModule.StartFastAttack()
+    CombatModule.StartCombatLoop()
 end
 
 function CombatModule.StopKillAura()

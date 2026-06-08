@@ -81,14 +81,14 @@ function FarmingModule.SupremeQuestHandler(QuestData)
     if not hasQuest and _G.Settings and _G.Settings.AutoQuest then
         -- Verifica se já enviamos o comando de StartQuest recentemente (cache de 2 segundos)
         if _G.LastQuestTime and tick() - _G.LastQuestTime < 2 then
-            return BestQuest
+            return BestQuest, false
         end
 
         local npcPos = BestQuest.Pos
         local dist = (LocalPlayer.Character.HumanoidRootPart.Position - npcPos.Position).Magnitude
         
         if dist > 15 then
-            _G.IsTalkingToNPC = false
+            _G.IsTalkingToNPC = true -- Trava o farm enquanto vai ao NPC
             if _G.MakitoStatus then _G.MakitoStatus.Text = "Status: Indo ate NPC " .. BestQuest.NPC end
             _G.Utils.TweenTo(npcPos)
         else
@@ -97,11 +97,11 @@ function FarmingModule.SupremeQuestHandler(QuestData)
             _G.Utils.SafeRemote("StartQuest", BestQuest.Name, BestQuest.ID)
             _G.LastQuestTime = tick() -- Marca o tempo que pegou a missão
             task.wait(0.5)
-            _G.IsTalkingToNPC = false
+            -- Não removemos o IsTalkingToNPC aqui, deixamos o próximo ciclo da UI confirmar
         end
     end
     
-    return BestQuest
+    return BestQuest, hasQuest
 end
 
 function FarmingModule.EquipWeapon(weaponName)
@@ -186,8 +186,14 @@ function FarmingModule.SupremeAutoFarm()
     end
 
     pcall(function()
-        local Quest = FarmingModule.SupremeQuestHandler(_G.Data.QuestData)
+        local Quest, isQuestActive = FarmingModule.SupremeQuestHandler(_G.Data.QuestData)
         if not Quest then return end
+        
+        -- SÓ FARMA SE A MISSÃO ESTIVER REALMENTE ATIVA NA UI
+        if not isQuestActive then 
+            _G.Combat.StopFastAttack() -- Para de bater enquanto pega missão
+            return 
+        end
 
         local enemy = _G.Utils.GetNearestEnemy(Quest.Enemy)
         

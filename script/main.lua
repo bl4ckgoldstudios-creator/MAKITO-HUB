@@ -310,13 +310,18 @@ local function StartLoops()
         while _G.MakitoHubRunning do
             local status, err = pcall(function()
                 if _G.Settings.AutoKickMod or _G.Settings.AntiModerator then if _G.Utils then _G.Utils.CheckModerator() end end
-                if _G.Settings.FastAttack then if _G.Combat then _G.Combat.StartFastAttack() end else if _G.Combat then _G.Combat.StopFastAttack() end end
-                
-                if _G.Combat then
-                    _G.Combat.AimBotLogic()
-                    _G.Combat.AutoComboLogic()
-                    _G.Combat.AutoPvPLogic()
+            
+            if _G.Combat then
+                if _G.Settings.FastAttack or _G.Settings.KillAura then
+                    _G.Combat.StartCombatLoop()
+                else
+                    _G.Combat.StopCombatLoop()
                 end
+                
+                _G.Combat.AimBotLogic()
+                _G.Combat.AutoComboLogic()
+                _G.Combat.AutoPvPLogic()
+            end
                 
                 if _G.Utils then
                     _G.Utils.AutomationLogic()
