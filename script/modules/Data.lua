@@ -91,19 +91,20 @@ local FullQuestData = {
         {Min = 250, Name = "ColosseumQuest1", NPC = "Colosseum Quest Giver", ID = 1, Enemy = "Toga Warrior", Pos = CFrame.new(-1580, 7, -2980), Spawn = CFrame.new(-1800, 50, -2700)},
         {Min = 275, Name = "ColosseumQuest1", NPC = "Colosseum Quest Giver", ID = 2, Enemy = "Gladiator", Pos = CFrame.new(-1580, 7, -2980), Spawn = CFrame.new(-1800, 50, -2700)},
         {Min = 300, Name = "MagmaQuest", NPC = "Magma Quest Giver", ID = 1, Enemy = "Military Soldier", Pos = CFrame.new(-5313, 12, 8515), Spawn = CFrame.new(-5400, 50, 8600)},
-        {Min = 330, Name = "MagmaQuest", NPC = "Magma Quest Giver", ID = 2, Enemy = "Military Spy", Pos = CFrame.new(-5313, 12, 8515), Spawn = CFrame.new(-5400, 50, 8600)},
+        {Min = 325, Name = "MagmaQuest", NPC = "Magma Quest Giver", ID = 2, Enemy = "Military Spy", Pos = CFrame.new(-5313, 12, 8515), Spawn = CFrame.new(-5400, 50, 8600)},
         {Min = 350, Name = "MagmaQuest", NPC = "Magma Quest Giver", ID = 3, Enemy = "Magma Admiral", Pos = CFrame.new(-5313, 12, 8515), Spawn = CFrame.new(-5400, 50, 8600)},
         {Min = 375, Name = "FishmanQuest", NPC = "Underwater Quest Giver", ID = 1, Enemy = "Fishman Warrior", Pos = CFrame.new(61122, 18, 1565), Spawn = CFrame.new(61000, 15, 1500)},
         {Min = 400, Name = "FishmanQuest", NPC = "Underwater Quest Giver", ID = 2, Enemy = "Fishman Commando", Pos = CFrame.new(61122, 18, 1565), Spawn = CFrame.new(61000, 15, 1500)},
         {Min = 425, Name = "FishmanQuest", NPC = "Underwater Quest Giver", ID = 3, Enemy = "Fishman Lord", Pos = CFrame.new(61122, 18, 1565), Spawn = CFrame.new(61000, 15, 1500)},
         {Min = 450, Name = "SkyQuest2", NPC = "Sky Quest Giver", ID = 1, Enemy = "God's Guard", Pos = CFrame.new(-4721, 845, -1954), Spawn = CFrame.new(-4600, 850, -1900)},
         {Min = 475, Name = "SkyQuest2", NPC = "Sky Quest Giver", ID = 2, Enemy = "Shaman", Pos = CFrame.new(-4721, 845, -1954), Spawn = CFrame.new(-4600, 850, -1900)},
+        {Min = 500, Name = "SkyQuest2", NPC = "Sky Quest Giver", ID = 3, Enemy = "Wysper", Pos = CFrame.new(-4721, 845, -1954), Spawn = CFrame.new(-4600, 850, -1900)},
         {Min = 525, Name = "SkyQuest3", NPC = "Sky Quest Giver", ID = 1, Enemy = "Royal Squad", Pos = CFrame.new(-7906, 5545, -383), Spawn = CFrame.new(-7800, 5550, -400)},
         {Min = 550, Name = "SkyQuest3", NPC = "Sky Quest Giver", ID = 2, Enemy = "Royal Soldier", Pos = CFrame.new(-7906, 5545, -383), Spawn = CFrame.new(-7800, 5550, -400)},
-        {Min = 575, Name = "SkyQuest3", NPC = "Sky Quest Giver", ID = 3, Enemy = "Wysper", Pos = CFrame.new(-7906, 5545, -383), Spawn = CFrame.new(-7800, 5550, -400)},
+        {Min = 575, Name = "SkyQuest3", NPC = "Sky Quest Giver", ID = 3, Enemy = "Thunder God", Pos = CFrame.new(-7906, 5545, -383), Spawn = CFrame.new(-7800, 5550, -400)},
         {Min = 625, Name = "FountainQuest", NPC = "Fountain Quest Giver", ID = 1, Enemy = "Galley Pirate", Pos = CFrame.new(5259, 38, 4050), Spawn = CFrame.new(5500, 50, 4100)},
         {Min = 650, Name = "FountainQuest", NPC = "Fountain Quest Giver", ID = 2, Enemy = "Galley Captain", Pos = CFrame.new(5259, 38, 4050), Spawn = CFrame.new(5500, 50, 4100)},
-        {Min = 700, Name = "FountainQuest", NPC = "Fountain Quest Giver", ID = 3, Enemy = "Cyborg", Pos = CFrame.new(5259, 38, 4050), Spawn = CFrame.new(5500, 50, 4100)}
+        {Min = 675, Name = "FountainQuest", NPC = "Fountain Quest Giver", ID = 3, Enemy = "Cyborg", Pos = CFrame.new(5259, 38, 4050), Spawn = CFrame.new(5500, 50, 4100)}
     },
     [2] = {
         {Min = 700, Name = "Area1Quest", NPC = "Quest Giver", ID = 1, Enemy = "Raider", Pos = CFrame.new(-425, 72, 1836), Spawn = CFrame.new(-500, 72, 1900)},
@@ -171,7 +172,14 @@ DataModule.CurrentSea = CurrentSea
 
 DataModule.MaterialData = {
     ["Dragon Scale"] = {Enemy = "Dragon Crew Warrior", Pos = CFrame.new(5259, 604, 346)},
-    ["Fish Tail"] = {Enemy = "Fishman Warrior", Pos = CFrame.new(61122, 18, 1565)}
+    ["Fish Tail"] = {Enemy = "Fishman Warrior", Pos = CFrame.new(61122, 18, 1565)},
+    ["Conjured Cocoa"] = {Enemy = "Cocoa Warrior", Pos = CFrame.new(-1147, 14, -11514)},
+    ["Bones"] = {Enemy = "Reborn Skeleton", Pos = CFrame.new(-9515, 164, -5785)},
+    ["Scrap Metal"] = {Enemy = "Pirate", Pos = CFrame.new(-1222, 25, 3911)},
+    ["Leather"] = {Enemy = "Bandit", Pos = CFrame.new(1145, 17, 1634)},
+    ["Magma Ore"] = {Enemy = "Military Soldier", Pos = CFrame.new(-5400, 50, 8600)},
+    ["Vampire Fang"] = {Enemy = "Vampire", Pos = CFrame.new(-5600, 47, -900)},
+    ["Mystic Droplet"] = {Enemy = "Sea Soldier", Pos = CFrame.new(-3056, 235, -10142)}
 }
 
 DataModule.Combos = {

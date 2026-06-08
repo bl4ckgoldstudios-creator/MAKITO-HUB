@@ -113,15 +113,36 @@ function UtilsModule.Float(enabled)
 end
 
 local NoClipConn = nil
+local CharacterParts = {}
 function UtilsModule.SetNoClip(enabled)
     if enabled then
         if NoClipConn then return end
-        NoClipConn = RunService.Stepped:Connect(function()
+        
+        -- Cache de partes do personagem para evitar GetDescendants em loop
+        local function UpdateCache()
+            CharacterParts = {}
             if LocalPlayer.Character then
                 for _, v in pairs(LocalPlayer.Character:GetDescendants()) do
-                    if v:IsA("BasePart") and v.CanCollide then
-                        v.CanCollide = false
+                    if v:IsA("BasePart") then
+                        table.insert(CharacterParts, v)
                     end
+                end
+            end
+        end
+        
+        UpdateCache()
+        local charConn = LocalPlayer.CharacterAdded:Connect(UpdateCache)
+
+        NoClipConn = RunService.Stepped:Connect(function()
+            if not _G.Settings or not (_G.Settings.AutoFarm or _G.Settings.NoClip) then
+                if NoClipConn then NoClipConn:Disconnect() NoClipConn = nil end
+                if charConn then charConn:Disconnect() end
+                return
+            end
+            
+            for _, v in ipairs(CharacterParts) do
+                if v and v.Parent then
+                    v.CanCollide = false
                 end
             end
         end)
@@ -207,14 +228,44 @@ function UtilsModule.SafeRemote(remoteName, ...)
     return success, result
 end
 
--- ESP SYSTEM ELITE (REVISADO)
+-- ESP SYSTEM ELITE (CENTRALIZADO)
+local ESPLoopActive = false
+function UtilsModule.StartESPLoop()
+    if ESPLoopActive then return end
+    ESPLoopActive = true
+    
+    task.spawn(function()
+        while ESPLoopActive do
+            for id, container in pairs(ESPObjects) do
+                local obj = container.Object
+                local label = container.Label
+                local text = container.OriginalText
+                
+                if obj and obj.Parent and label then
+                    local dist = UtilsModule.GetDistanceTo(obj)
+                    label.Text = string.format("%s [%dm]", text, math.floor(dist))
+                else
+                    UtilsModule.RemoveESPById(id)
+                end
+            end
+            task.wait(0.5)
+        end
+    end)
+end
+
 function UtilsModule.CreateESP(obj, text, color, type)
     if not obj or not obj.Parent then return end
     
     local id = obj:GetDebugId()
-    if ESPObjects[id] then return end
+    if ESPObjects[id] then 
+        -- Apenas atualiza a cor se já existir
+        if ESPObjects[id].Label then ESPObjects[id].Label.TextColor3 = color end
+        return 
+    end
     
-    local container = {}
+    UtilsModule.StartESPLoop()
+    
+    local container = { Object = obj, OriginalText = text }
     
     local billboard = Instance.new("BillboardGui")
     billboard.Name = "MakitoESP_" .. id
@@ -234,6 +285,7 @@ function UtilsModule.CreateESP(obj, text, color, type)
     label.TextStrokeTransparency = 0.5
     
     container.Billboard = billboard
+    container.Label = label
 
     if _G.Settings and _G.Settings.BoxESP then
         local box = Instance.new("BoxHandleAdornment")
@@ -274,16 +326,6 @@ function UtilsModule.CreateESP(obj, text, color, type)
     end
 
     ESPObjects[id] = container
-
-    -- Thread de atualização de distância
-    task.spawn(function()
-        while billboard and billboard.Parent and obj and obj.Parent do
-            local dist = UtilsModule.GetDistanceTo(obj)
-            label.Text = string.format("%s [%dm]", text, math.floor(dist))
-            task.wait(0.5)
-        end
-        UtilsModule.RemoveESPById(id)
-    end)
 end
 
 function UtilsModule.RemoveESPById(id)
@@ -510,13 +552,22 @@ function UtilsModule.AutomationLogic()
             end
         end)
     end
+    
+    -- Auto Redeem Codes
+    if _G.Settings.AutoRedeemCodes then
+        local codes = {"REWARDDUNGEON", "NEWTROLL", "KITT_RESET", "Sub2CaptainMaui", "Sub2Fer999", "JCWK", "Magicbus", "Starcodeheo", "JCWK", "BIGNEWS", "FUDD10", "SUB2GAMERROBOT_EXP1", "Sub2NoobMaster123", "Sub2UncleKizaru", "Sub2Daigrock", "Axiore", "TantaiGaming", "StrawHatMaine"}
+        for _, code in ipairs(codes) do
+            _G.Utils.SafeRemote("RedeemCode", code)
+        end
+        _G.Settings.AutoRedeemCodes = false -- Só roda uma vez
+    end
 end
 
 -- VISUAL OPTIMIZATIONS
 function UtilsModule.OptimizeGraphics()
     if not _G.Settings then return end
     
-    if _G.Settings.LowGraphics or _G.Settings.RemoveTextures then
+    if _G.Settings.LowGraphics or _G.Settings.RemoveTextures or _G.Settings.PerformanceMode then
         for _, v in ipairs(workspace:GetDescendants()) do
             if v:IsA("BasePart") and not v:IsA("MeshPart") then
                 v.Material = Enum.Material.SmoothPlastic
@@ -529,13 +580,38 @@ function UtilsModule.OptimizeGraphics()
         end
     end
 
-    if _G.Settings.RemoveShadows then
+    if _G.Settings.RemoveShadows or _G.Settings.PerformanceMode then
         game:GetService("Lighting").GlobalShadows = false
     end
 
-    if _G.Settings.FPSBooster then
-        setfpscap(999)
+    if _G.Settings.FPSBooster or _G.Settings.PerformanceMode then
+        if setfpscap then setfpscap(999) end
         settings().Rendering.QualityLevel = 1
+    end
+    
+    if _G.Settings.WhiteScreen then
+        local gui = game:GetService("CoreGui"):FindFirstChild("MakitoWhiteScreen")
+        if not gui then
+            gui = Instance.new("ScreenGui", game:GetService("CoreGui"))
+            gui.Name = "MakitoWhiteScreen"
+            local f = Instance.new("Frame", gui)
+            f.Size = UDim2.new(1, 0, 1, 0)
+            f.BackgroundColor3 = Color3.new(1, 1, 1)
+            f.BorderSizePixel = 0
+        end
+    else
+        local gui = game:GetService("CoreGui"):FindFirstChild("MakitoWhiteScreen")
+        if gui then gui:Destroy() end
+    end
+end
+
+function UtilsModule.DevilFruitNotifier()
+    if not _G.Settings or not _G.Settings.DevilFruitNotifier then return end
+    
+    for _, v in ipairs(workspace:GetChildren()) do
+        if v:IsA("Tool") and (v.Name:find("Fruit") or v:FindFirstChild("Handle")) then
+            UtilsModule.Notify("🍎 FRUTA DETECTADA: " .. v.Name, 10)
+        end
     end
 end
 

@@ -13,19 +13,24 @@ local CombatFrameworkRoot = nil
 -- CACHE DE REMOTOS PARA PERFORMANCE
 local CommF = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_")
 
+local lastFrameworkCheck = 0
 local function GetFramework()
     local success, result = pcall(function()
         if CombatFramework and CombatFramework.activeController then 
             return CombatFramework 
         end
         
+        -- Só verifica no GC a cada 5 segundos para economizar CPU
+        local now = tick()
+        if now - lastFrameworkCheck < 5 then return nil end
+        lastFrameworkCheck = now
+
         for _, v in pairs(getgc(true)) do
             if type(v) == "table" then
-                -- Busca por padrões conhecidos do framework do Blox Fruits
                 if v.activeController and (v.activeController.attack or v.activeController.Attack) then
                     CombatFramework = v
                     return v
-                elseif v.Attack and v.AttackCD then -- Outra variação comum
+                elseif v.Attack and v.AttackCD then
                     CombatFramework = {activeController = v}
                     return CombatFramework
                 end
@@ -213,6 +218,42 @@ function CombatModule.AutoBountyLogic()
     end
 end
 
+function CombatModule.AutoPvPLogic()
+    if not _G.Settings or not _G.Settings.AutoPvP then return end
+    
+    local target = nil
+    local minDist = 500
+    for _, v in ipairs(Players:GetPlayers()) do
+        if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("Humanoid") and v.Character.Humanoid.Health > 0 then
+            local dist = (LocalPlayer.Character.HumanoidRootPart.Position - v.Character.HumanoidRootPart.Position).Magnitude
+            if dist < minDist then
+                minDist = dist
+                target = v
+            end
+        end
+    end
+    
+    if target then
+        CombatModule.AimBotLogic(target.Character.HumanoidRootPart)
+        if _G.Settings.AutoCombo then
+            CombatModule.AutoComboLogic(target.Character)
+        else
+            CombatModule.StartFastAttack()
+        end
+        
+        -- Auto Race Skill
+        if _G.Settings.AutoRaceSkill then
+            local raceAction = LocalPlayer.PlayerGui:FindFirstChild("RaceAction")
+            if raceAction and raceAction.Visible then
+                local vim = game:GetService("VirtualInputManager")
+                vim:SendKeyEvent(true, Enum.KeyCode.T, false, game)
+                task.wait(0.05)
+                vim:SendKeyEvent(false, Enum.KeyCode.T, false, game)
+            end
+        end
+    end
+end
+
 function CombatModule.UseSkill(key)
     pcall(function()
         local virtualInput = game:GetService("VirtualInputManager")
@@ -222,28 +263,34 @@ function CombatModule.UseSkill(key)
     end)
 end
 
-function CombatModule.AutoComboLogic()
+function CombatModule.AutoComboLogic(customTarget)
     if not _G.Settings or not _G.Settings.AutoCombo or not _G.Settings.SelectedFruit then return end
     
     local combo = _G.Data.Combos[_G.Settings.SelectedFruit]
     if not combo then return end
 
-    local nearest = nil
-    local minDist = 150
-    for _, v in ipairs(Players:GetPlayers()) do
-        if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") and v.Character:FindFirstChild("Humanoid") and v.Character.Humanoid.Health > 0 then
-            local dist = (LocalPlayer.Character.HumanoidRootPart.Position - v.Character.HumanoidRootPart.Position).Magnitude
-            if dist < minDist then
-                minDist = dist
-                nearest = v.Character
+    local target = customTarget
+    if not target then
+        local nearest = nil
+        local minDist = 150
+        for _, v in ipairs(Players:GetPlayers()) do
+            if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") and v.Character:FindFirstChild("Humanoid") and v.Character.Humanoid.Health > 0 then
+                local dist = (LocalPlayer.Character.HumanoidRootPart.Position - v.Character.HumanoidRootPart.Position).Magnitude
+                if dist < minDist then
+                    minDist = dist
+                    nearest = v.Character
+                end
             end
         end
+        target = nearest
     end
 
-    if nearest then
+    if target then
         for _, step in ipairs(combo) do
             if not _G.Settings.AutoCombo then break end
-            CombatModule.AimBotLogic(nearest.HumanoidRootPart)
+            if not target or not target:FindFirstChild("HumanoidRootPart") or target.Humanoid.Health <= 0 then break end
+            
+            CombatModule.AimBotLogic(target.HumanoidRootPart)
             CombatModule.UseSkill(step.Key)
             task.wait(step.Wait or 0.5)
         end
@@ -259,7 +306,9 @@ function CombatModule.ESPLogic()
         _G.Settings.EspChests or 
         _G.Settings.EspFruits or 
         _G.Settings.AutoFruitESP or 
-        _G.Settings.EspFlower
+        _G.Settings.EspFlower or
+        _G.Settings.IslandESP or
+        _G.Settings.BossESP
     )
 
     if not anyEspEnabled then
@@ -272,7 +321,8 @@ function CombatModule.ESPLogic()
     local chestColor = _G.Utils.ColorFromSettings("EspChestColor", Color3.fromRGB(255, 200, 0))
     local fruitColor = _G.Utils.ColorFromSettings("EspFruitColor", Color3.fromRGB(255, 60, 60))
     local flowerColor = _G.Utils.ColorFromSettings("EspFlowerColor", Color3.fromRGB(255, 120, 255))
-    local showHealth = _G.Settings and _G.Settings.EspShowHealth ~= false
+    local islandColor = Color3.fromRGB(255, 255, 255)
+    local bossColor = Color3.fromRGB(255, 0, 0)
 
     if _G.Settings and (_G.Settings.PlayerESP or _G.Settings.EspPlayers) then
         for _, v in ipairs(Players:GetPlayers()) do
@@ -289,22 +339,22 @@ function CombatModule.ESPLogic()
         end
     end
 
-    if _G.Settings and _G.Settings.NpcESP then
+    if _G.Settings and (_G.Settings.NpcESP or _G.Settings.BossESP) then
         local enemiesFolder = workspace:FindFirstChild("Enemies") or workspace
         for _, v in ipairs(enemiesFolder:GetChildren()) do
             if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
                 local isBoss = v.Name:find("Boss") or v.Name:find("King") or v.Name:find("Admiral")
-                if not _G.Settings.EspBossOnly or isBoss then
-                    local text = string.format("👾 %s (%d HP)", v.Name, math.floor(v.Humanoid.Health))
+                if (isBoss and _G.Settings.BossESP) or (not isBoss and _G.Settings.NpcESP) then
+                    local text = string.format("%s %s (%d HP)", isBoss and "👹" or "👾", v.Name, math.floor(v.Humanoid.Health))
                     if _G.Utils.PassesESPFilter(v.Name, _G.Utils.GetDistanceTo(v.HumanoidRootPart)) then
-                        _G.Utils.CreateESP(v.HumanoidRootPart, text, npcColor, "NPC")
+                        _G.Utils.CreateESP(v.HumanoidRootPart, text, isBoss and bossColor or npcColor, isBoss and "Boss" or "NPC")
                     end
                 end
             end
         end
     end
 
-    if _G.Settings and _G.Settings.EspChests then
+    if _G.Settings and (_G.Settings.EspChests or _G.Settings.ChestESP) then
         for _, v in ipairs(workspace:GetChildren()) do
             if v.Name:find("Chest") and v:IsA("BasePart") then
                 if _G.Utils.PassesESPFilter(v.Name, _G.Utils.GetDistanceTo(v)) then
@@ -314,7 +364,7 @@ function CombatModule.ESPLogic()
         end
     end
 
-    if _G.Settings and (_G.Settings.EspFruits or _G.Settings.AutoFruitESP) then
+    if _G.Settings and (_G.Settings.EspFruits or _G.Settings.FruitESP or _G.Settings.AutoFruitESP) then
         for _, v in ipairs(workspace:GetChildren()) do
             if v:IsA("Tool") and (v.Name:find("Fruit") or v:FindFirstChild("Handle")) then
                 local handle = v:FindFirstChild("Handle") or v
@@ -325,13 +375,24 @@ function CombatModule.ESPLogic()
         end
     end
 
-    if _G.Settings and _G.Settings.EspFlower then
+    if _G.Settings and (_G.Settings.EspFlower or _G.Settings.FlowerESP) then
         for _, v in ipairs(workspace:GetChildren()) do
             if v.Name:find("Flower") and v:IsA("BasePart") then
                 local color = v.Name:find("Red") and Color3.new(1, 0, 0) or v.Name:find("Blue") and Color3.new(0, 0, 1) or flowerColor
                 if _G.Utils.PassesESPFilter(v.Name, _G.Utils.GetDistanceTo(v)) then
                     _G.Utils.CreateESP(v, "🌸 " .. v.Name, color, "Flower")
                 end
+            end
+        end
+    end
+
+    if _G.Settings and _G.Settings.IslandESP then
+        local sea = _G.Data.GetSea()
+        local islands = _G.Data.SeaData[sea]
+        if islands then
+            for _, island in ipairs(islands) do
+                local text = "🏝️ " .. island.Name
+                _G.Utils.CreateESP(island.Pos.Position, text, islandColor, "Island")
             end
         end
     end

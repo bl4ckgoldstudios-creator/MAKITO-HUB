@@ -32,7 +32,8 @@ local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
-LogService.MessageOut:Connect(function(message, messageType)
+if _G.MakitoLogConn then _G.MakitoLogConn:Disconnect() end
+_G.MakitoLogConn = LogService.MessageOut:Connect(function(message, messageType)
     if messageType == Enum.MessageType.MessageError then
         if ERROR_WEBHOOK == "" then return end
         local msg = message:lower()
@@ -287,12 +288,14 @@ local function StartLoops()
     task.spawn(function()
         while _G.MakitoHubRunning do
             pcall(function()
-                if _G.Settings.AutoKickMod then _G.Utils.CheckModerator() end
+                if _G.Settings.AutoKickMod or _G.Settings.AntiModerator then _G.Utils.CheckModerator() end
                 if _G.Settings.FastAttack then _G.Combat.StartFastAttack() else _G.Combat.StopFastAttack() end
                 _G.Combat.AimBotLogic()
                 _G.Combat.AutoComboLogic()
+                _G.Combat.AutoPvPLogic()
                 _G.Utils.AutomationLogic()
                 _G.Utils.OptimizeGraphics()
+                _G.Utils.DevilFruitNotifier()
             end)
             task.wait(0.1)
         end
@@ -301,12 +304,14 @@ local function StartLoops()
     task.spawn(function()
         while _G.MakitoHubRunning do
             pcall(function()
-                if _G.Settings.AutoFarm then _G.Farming.SupremeAutoFarm() end
+                if _G.Settings.AutoFarm or _G.Settings.AutoFarmLevel then _G.Farming.SupremeAutoFarm() end
                 if _G.Settings.AutoFarmNearest then _G.Farming.AutoFarmNearestLogic() end
                 _G.Farming.AutoStatsLogic()
                 _G.Farming.FruitLogic()
                 _G.Farming.RaidLogic()
                 _G.Farming.SeaEventLogic()
+                _G.Farming.EventAutomationLogic()
+                _G.Farming.ProgressionLogic()
                 _G.Farming.SpecialBossLogic()
                 _G.Farming.ShopLogic()
                 _G.Farming.PuzzleLogic()

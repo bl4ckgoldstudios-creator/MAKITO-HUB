@@ -154,9 +154,8 @@ function FarmingModule.BlackHoleBringMobs(targetEnemy)
     
     for _, v in ipairs(enemiesFolder:GetChildren()) do
         if v.Name:find(targetEnemy.Name:split(" [")[1]) and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-            -- ULTRA BRING LOGIC
+            -- ULTRA BRING LOGIC (SAFE VERSION)
             v.HumanoidRootPart.CanCollide = false
-            v.HumanoidRootPart.Size = Vector3.new(50, 50, 50) -- Big Hitbox
             v.HumanoidRootPart.CFrame = targetPos
             v.HumanoidRootPart.Velocity = Vector3.new(0,0,0)
             
@@ -164,7 +163,7 @@ function FarmingModule.BlackHoleBringMobs(targetEnemy)
                 v.Humanoid.PlatformStand = true
             end
             
-            -- Anti-Despawn Bypass
+            -- Bypass anti-despawn mantendo o estado de combate local
             pcall(function()
                 if v:FindFirstChild("Data") and v.Data:FindFirstChild("SpawnPos") then
                     v.Data.SpawnPos.Value = targetPos.Position
@@ -175,7 +174,7 @@ function FarmingModule.BlackHoleBringMobs(targetEnemy)
 end
 
 function FarmingModule.SupremeAutoFarm()
-    if not _G.Settings or not _G.Settings.AutoFarm then return end
+    if not _G.Settings or (not _G.Settings.AutoFarm and not _G.Settings.AutoFarmLevel) then return end
     
     -- AUTO NEXT SEA INTEGRATION
     if _G.Settings.AutoNextSea then
@@ -200,13 +199,15 @@ function FarmingModule.SupremeAutoFarm()
         end
 
         if enemy then
-            if _G.Settings.AutoMastery then
+            if _G.Settings.AutoMastery or _G.Settings.AutoFarmMastery then
                 FarmingModule.MasteryLogic(enemy)
             else
                 FarmingModule.EquipWeapon(_G.Settings.Weapon)
             end
             
-            FarmingModule.BlackHoleBringMobs(enemy)
+            if _G.Settings.BringMobs or _G.Settings.AutoFarmMaterials then
+                FarmingModule.BlackHoleBringMobs(enemy)
+            end
             
             -- POSITIONING V3 (FLOAT ABOVE)
             local offset = _G.Settings.Distance or 12
@@ -233,7 +234,7 @@ function FarmingModule.SupremeAutoFarm()
             _G.Combat.StartFastAttack()
             
             -- AUTO SKILL (IF ENABLED)
-            if _G.Settings.AutoSkill and not _G.Settings.AutoMastery then
+            if _G.Settings.AutoSkill and not _G.Settings.AutoMastery and not _G.Settings.AutoFarmMastery then
                 local keys = {"Z", "X", "C", "V"}
                 for _, key in ipairs(keys) do
                     if _G.Settings["Skill" .. key] then
@@ -248,6 +249,73 @@ function FarmingModule.SupremeAutoFarm()
             if _G.MakitoStatus then _G.MakitoStatus.Text = "Status: Aguardando Spawn de " .. Quest.Enemy end
         end
     end)
+end
+
+function FarmingModule.ProgressionLogic()
+    if not _G.Settings then return end
+
+    if _G.Settings.AutoRaceV2 then
+        -- Lógica simplificada: Coleta flores
+        for _, flower in ipairs({"Flower1", "Flower2", "Flower3"}) do
+            local f = workspace:FindFirstChild(flower)
+            if f then _G.Utils.TweenTo(f.CFrame) end
+        end
+    end
+
+    if _G.Settings.AutoRaceV3 then
+        _G.Utils.SafeRemote("Arowe", "StartQuest")
+    end
+
+    if _G.Settings.AutoRaceV4 or _G.Settings.AutoTrial or _G.Settings.AutoRaceAwakening then
+        local trialPlate = workspace:FindFirstChild("TrialPlate")
+        if trialPlate then
+            _G.Utils.TweenTo(trialPlate.CFrame)
+            -- Simula o uso da skill T para ativar o trial
+            local vim = game:GetService("VirtualInputManager")
+            vim:SendKeyEvent(true, Enum.KeyCode.T, false, game)
+            task.wait(0.1)
+            vim:SendKeyEvent(false, Enum.KeyCode.T, false, game)
+        end
+    end
+
+    if _G.Settings.AutoSharkAnchor then
+        local boss = workspace.Enemies:FindFirstChild("Terrorshark")
+        if boss and boss:FindFirstChild("Humanoid") and boss.Humanoid.Health > 0 then
+            _G.Utils.TweenTo(boss.HumanoidRootPart.CFrame * CFrame.new(0, 30, 0))
+            _G.Combat.StartFastAttack()
+        end
+    end
+end
+
+function FarmingModule.EventAutomationLogic()
+    if not _G.Settings then return end
+
+    if _G.Settings.AutoFrozenDimension then
+        _G.Utils.TweenTo(CFrame.new(-19500, -500, -18000)) -- Posição aproximada
+    end
+
+    if _G.Settings.AutoKitsuneShrine then
+        local shrine = workspace:FindFirstChild("KitsuneShrine")
+        if shrine then _G.Utils.TweenTo(shrine.CFrame) end
+    end
+
+    if _G.Settings.AutoPrehistoricIsland then
+        local island = workspace:FindFirstChild("PrehistoricIsland")
+        if island then _G.Utils.TweenTo(island:GetModelCFrame()) end
+    end
+
+    if _G.Settings.AutoVolcanoEvent then
+        local volcano = workspace:FindFirstChild("Volcano")
+        if volcano then _G.Utils.TweenTo(volcano.CFrame) end
+    end
+
+    if _G.Settings.AutoDarkbeard then
+        local boss = workspace.Enemies:FindFirstChild("Darkbeard")
+        if boss and boss:FindFirstChild("Humanoid") and boss.Humanoid.Health > 0 then
+            _G.Utils.TweenTo(boss.HumanoidRootPart.CFrame * CFrame.new(0, 30, 0))
+            _G.Combat.StartFastAttack()
+        end
+    end
 end
 
 function FarmingModule.AutoFarmNearestLogic()
@@ -600,7 +668,11 @@ end
 
 function FarmingModule.AutoStatsLogic()
     if not _G.Settings or not _G.Settings.AutoStats or not _G.Settings.SelectedStat then return end
-    _G.Utils.SafeRemote("AddPoint", _G.Settings.SelectedStat, 1)
+    
+    local stats = LocalPlayer.Data:FindFirstChild("Points")
+    if stats and stats.Value > 0 then
+        _G.Utils.SafeRemote("AddPoint", _G.Settings.SelectedStat, stats.Value)
+    end
 end
 
 function FarmingModule.AutoNextSeaLogic()
