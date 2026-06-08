@@ -274,38 +274,69 @@ end
 if Data.ValidationIssues and #Data.ValidationIssues > 0 then
     warn("[MAKITO] Data.lua: " .. #Data.ValidationIssues .. " avisos de validacao")
 end
-_G.Data = Data
-_G.Utils = Utils
-_G.Combat = Combat
-_G.Farming = Farming
+-- MAKITO HUB - LOADER COMPATIBILITY FIX
+local function SafeLoad(name, module)
+    local success, result = pcall(function()
+        return module
+    end)
+    if success then
+        return result
+    else
+        warn("🚨 [MAKITO HUB] Falha ao carregar modulo: " .. name .. " | Erro: " .. tostring(result))
+        return nil
+    end
+end
+
+-- INICIALIZACAO DE MODULOS COM FALLBACK
+_G.Data = SafeLoad("Data", Data)
+_G.Utils = SafeLoad("Utils", Utils)
+_G.Combat = SafeLoad("Combat", Combat)
+_G.Farming = SafeLoad("Farming", Farming)
+_G.Settings = SafeLoad("Settings", _G.Settings)
+
+-- Verifica se os modulos basicos carregaram
+if not _G.Data or not _G.Utils or not _G.Settings then
+    return error("🚨 [MAKITO HUB] Erro critico: Modulos basicos nao encontrados. Verifique sua conexao.")
+end
+
 _G.MakitoHubRunning = true
 _G.MakitoStatus = { Text = "Carregado! Pressione RightControl para abrir o menu." }
 
 -- 2. ESCALONADOR DE TAREFAS
 local function StartLoops()
-    if _G.Settings.AntiAFK then _G.Utils.AntiAFK() end
+    if _G.Settings.AntiAFK and _G.Utils and _G.Utils.AntiAFK then _G.Utils.AntiAFK() end
 
     task.spawn(function()
         while _G.MakitoHubRunning do
-            pcall(function()
-                if _G.Settings.AutoKickMod or _G.Settings.AntiModerator then _G.Utils.CheckModerator() end
-                if _G.Settings.FastAttack then _G.Combat.StartFastAttack() else _G.Combat.StopFastAttack() end
-                _G.Combat.AimBotLogic()
-                _G.Combat.AutoComboLogic()
-                _G.Combat.AutoPvPLogic()
-                _G.Utils.AutomationLogic()
-                _G.Utils.OptimizeGraphics()
-                _G.Utils.DevilFruitNotifier()
+            local status, err = pcall(function()
+                if _G.Settings.AutoKickMod or _G.Settings.AntiModerator then if _G.Utils then _G.Utils.CheckModerator() end end
+                if _G.Settings.FastAttack then if _G.Combat then _G.Combat.StartFastAttack() end else if _G.Combat then _G.Combat.StopFastAttack() end end
+                
+                if _G.Combat then
+                    _G.Combat.AimBotLogic()
+                    _G.Combat.AutoComboLogic()
+                    _G.Combat.AutoPvPLogic()
+                end
+                
+                if _G.Utils then
+                    _G.Utils.AutomationLogic()
+                    _G.Utils.OptimizeGraphics()
+                    _G.Utils.DevilFruitNotifier()
+                end
             end)
+            if not status then warn("⚠️ [MAKITO HUB] Erro no Loop de Combate/Utilidades: " .. tostring(err)) end
             task.wait(0.1)
         end
     end)
 
     task.spawn(function()
         while _G.MakitoHubRunning do
-            pcall(function()
+            local status, err = pcall(function()
+                if not _G.Farming then return end
+                
                 if _G.Settings.AutoFarm or _G.Settings.AutoFarmLevel then _G.Farming.SupremeAutoFarm() end
                 if _G.Settings.AutoFarmNearest then _G.Farming.AutoFarmNearestLogic() end
+                
                 _G.Farming.AutoStatsLogic()
                 _G.Farming.FruitLogic()
                 _G.Farming.RaidLogic()
@@ -324,9 +355,13 @@ local function StartLoops()
                 _G.Farming.AutoSoulGuitarLogic()
                 _G.Farming.AutoCDKLogic()
                 _G.Farming.AutoGodhumanLogic()
-                _G.Combat.AutoBountyLogic()
-                _G.Combat.ESPLogic()
+                
+                if _G.Combat then
+                    _G.Combat.AutoBountyLogic()
+                    _G.Combat.ESPLogic()
+                end
             end)
+            if not status then warn("⚠️ [MAKITO HUB] Erro no Loop de Farming/ESP: " .. tostring(err)) end
             task.wait(0.5)
         end
     end)

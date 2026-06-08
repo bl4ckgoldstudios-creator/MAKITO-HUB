@@ -11,7 +11,10 @@ local CombatFramework = nil
 local CombatFrameworkRoot = nil
 
 -- CACHE DE REMOTOS PARA PERFORMANCE
-local CommF = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_")
+local CommF = nil
+pcall(function()
+    CommF = ReplicatedStorage:WaitForChild("Remotes", 5):WaitForChild("CommF", 5)
+end)
 
 local lastFrameworkCheck = 0
 local function GetFramework()
