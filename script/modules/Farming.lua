@@ -180,8 +180,18 @@ function FarmingModule.SupremeAutoFarm()
     if not _G.Settings or (not _G.Settings.AutoFarm and not _G.Settings.AutoFarmLevel) then return end
     
     local char = LocalPlayer.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
     local root = char and char:FindFirstChild("HumanoidRootPart")
-    if not root then return end
+    
+    if not root or not hum then return end
+
+    -- AUTO HEALTH SAFETY: Pausa se a vida estiver muito baixa (< 20%)
+    if hum.Health / hum.MaxHealth < 0.2 then
+        if _G.MakitoStatus then _G.MakitoStatus.Text = "Status: Recuperando Vida..." end
+        _G.Combat.StopCombatLoop()
+        root.CFrame = root.CFrame * CFrame.new(0, 100, 0) -- Sobe para segurança
+        return
+    end
 
     -- AUTO NEXT SEA INTEGRATION
     if _G.Settings.AutoNextSea then
@@ -202,23 +212,25 @@ function FarmingModule.SupremeAutoFarm()
 
         -- SÓ FARMA SE A MISSÃO ESTIVER REALMENTE ATIVA NA UI
         if not isQuestActive then 
-            _G.Combat.StopCombatLoop() -- Para de bater enquanto pega missão
+            _G.Combat.StopCombatLoop()
             return 
         end
 
         local enemy = _G.Utils.GetNearestEnemy(Quest.Enemy)
         
-        -- BOSS PRIORITY
+        -- BOSS PRIORITY: Verifica se o boss da missão spawnou
         local enemiesFolder = workspace:FindFirstChild("Enemies") or workspace
-        local boss = enemiesFolder:FindFirstChild(Quest.Enemy .. " [Boss]") or enemiesFolder:FindFirstChild(Quest.Enemy .. " [RAID BOSS]")
-        if boss and boss:FindFirstChild("Humanoid") and boss.Humanoid.Health > 0 then
-            enemy = boss
+        for _, v in ipairs(enemiesFolder:GetChildren()) do
+            if v.Name:find(Quest.Enemy) and (v.Name:find("Boss") or v.Name:find("RAID")) and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                enemy = v
+                break
+            end
         end
 
-        if enemy then
-            local targetPos = enemy.HumanoidRootPart.CFrame * CFrame.new(0, 20, 0) -- Posição de segurança (Acima do mob)
+        if enemy and enemy:FindFirstChild("HumanoidRootPart") then
+            local targetPos = enemy.HumanoidRootPart.CFrame * CFrame.new(0, _G.Settings.Distance or 12, 0)
 
-            -- Movimentação: Se a distância for enorme, usa Tween, se for perto, usa CFrame direto para evitar lag
+            -- Movimentação Inteligente
             local dist = (root.Position - targetPos.Position).Magnitude
             if dist > 300 then
                 _G.Utils.TweenTo(targetPos)
@@ -227,27 +239,116 @@ function FarmingModule.SupremeAutoFarm()
             end
 
             -- Lógica de Maestria e Arma
-            if _G.Settings.AutoMastery or _G.Settings.AutoFarmMastery then
+            if _G.Settings.AutoMastery then
                 FarmingModule.MasteryLogic(enemy)
             else
                 FarmingModule.EquipWeapon(_G.Settings.MainWeapon or "Melee")
             end
 
-            -- Ataca com a nova Kill Aura Elite V10
+            -- Ataca com o Motor de Combate Otimizado
             _G.Combat.StartCombatLoop()
             
-            -- Traz os mobs para perto
+            -- Traz os mobs para perto (Black Hole)
             FarmingModule.BlackHoleBringMobs(enemy)
         else
             -- Se não achou o inimigo mas a quest tá ativa, vai para o spawn deles
-            local spawnPos = Quest.EnemyPos or Quest.Pos
+            if _G.MakitoStatus then _G.MakitoStatus.Text = "Status: Aguardando Inimigos..." end
+            local spawnPos = Quest.Spawn or Quest.Pos
             _G.Utils.TweenTo(spawnPos * CFrame.new(0, 50, 0))
         end
     end)
 end
 
+function FarmingModule.AutoBossPro()
+    FarmingModule.SpecialBossLogic()
+end
+
+function FarmingModule.AutoBerryFarm()
+    if not _G.Settings or not _G.Settings.AutoFarmChests then return end
+    
+    for _, v in ipairs(workspace:GetChildren()) do
+        if v.Name:find("Chest") then
+            _G.Utils.TweenTo(v.CFrame)
+            firetouchinterest(LocalPlayer.Character.HumanoidRootPart, v, 0)
+            firetouchinterest(LocalPlayer.Character.HumanoidRootPart, v, 1)
+            break
+        end
+    end
+end
+
+function FarmingModule.AutoStatsLogic()
+    if _G.Utils and _G.Utils.AutoBuildStats then
+        _G.Utils.AutoBuildStats()
+    end
+end
+
+function FarmingModule.AutoNextSeaLogic()
+    local level = LocalPlayer.Data.Level.Value
+    local sea = FarmingModule.GetSea()
+    
+    if sea == 1 and level >= 700 then
+        -- Vai para o NPC do Sea 2 (Military Detective na Prisão)
+        _G.Utils.TweenTo(CFrame.new(4875, 5, 749))
+        _G.Utils.SafeRemote("TravelMain")
+    elseif sea == 2 and level >= 1500 then
+        -- Vai para o NPC do Sea 3 (Mr. Captain no Coliseu)
+        _G.Utils.TweenTo(CFrame.new(-1580, 7, -2980))
+        _G.Utils.SafeRemote("TravelZou")
+    end
+end
+
+function FarmingModule.SeaEventLogic()
+    FarmingModule.EventAutomationLogic()
+    
+    -- TERROR SHARK AUTO-FARM
+    if _G.Settings.AutoTerrorShark then
+        local boss = workspace.Enemies:FindFirstChild("Terrortshark") or workspace.Enemies:FindFirstChild("Terror Shark")
+        if boss and boss:FindFirstChild("Humanoid") and boss.Humanoid.Health > 0 then
+            _G.Utils.TweenTo(boss.HumanoidRootPart.CFrame * CFrame.new(0, 40, 0))
+            _G.Combat.StartFastAttack()
+            return
+        end
+    end
+
+    -- LEVIATHAN AUTO-FARM
+    if _G.Settings.AutoLeviathan then
+        local boss = workspace.Enemies:FindFirstChild("Leviathan")
+        if boss and boss:FindFirstChild("Humanoid") and boss.Humanoid.Health > 0 then
+            _G.Utils.TweenTo(boss.HumanoidRootPart.CFrame * CFrame.new(0, 60, 0))
+            _G.Combat.StartFastAttack()
+            return
+        end
+    end
+
+    -- KITSUNE ISLAND
+    if _G.Settings.AutoKitsune then
+        local island = workspace:FindFirstChild("KitsuneIsland")
+        if island then
+            _G.Utils.TweenTo(island:GetModelCFrame())
+            -- Coleta as esferas azuis
+            for _, v in ipairs(workspace:GetChildren()) do
+                if v.Name == "Azure Orb" then
+                    _G.Utils.TweenTo(v.CFrame)
+                end
+            end
+        end
+    end
+    
+    if _G.Settings.AutoSeaBeast then
+        local boss = workspace.Enemies:FindFirstChild("Sea Beast")
+        if boss and boss:FindFirstChild("Humanoid") and boss.Humanoid.Health > 0 then
+            _G.Utils.TweenTo(boss.HumanoidRootPart.CFrame * CFrame.new(0, 50, 0))
+            _G.Combat.StartFastAttack()
+        end
+    end
+end
+
 function FarmingModule.ProgressionLogic()
     if not _G.Settings then return end
+    
+    FarmingModule.RaidLogic()
+    FarmingModule.PuzzleLogic()
+end
 
     if _G.Settings.AutoRaceV2 then
         -- Lógica simplificada: Coleta flores

@@ -19,6 +19,101 @@ local InstanceCache = {
     LastUpdate = 0
 }
 
+-- SISTEMA DE ESP MASTER (UNIVERSAL)
+function UtilsModule.CreateESP(obj, name, color, type)
+    if ESPObjects[obj] then return end
+    
+    local folder = CoreGui:FindFirstChild("MakitoESP") or Instance.new("Folder", CoreGui)
+    folder.Name = "MakitoESP"
+    
+    local bg = Instance.new("BillboardGui")
+    bg.Name = "ESP"
+    bg.Adornee = obj
+    bg.AlwaysOnTop = true
+    bg.Size = UDim2.new(0, 100, 0, 30)
+    bg.StudsOffset = Vector3.new(0, 3, 0)
+    bg.Parent = folder
+    
+    local label = Instance.new("TextLabel", bg)
+    label.BackgroundTransparency = 1
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.Text = name or obj.Name
+    label.TextColor3 = color or Color3.new(1, 1, 1)
+    label.TextStrokeTransparency = 0
+    label.Font = Enum.Font.GothamBold
+    label.TextSize = 12
+    
+    local distLabel = Instance.new("TextLabel", bg)
+    distLabel.BackgroundTransparency = 1
+    distLabel.Size = UDim2.new(1, 0, 1, 0)
+    distLabel.Position = UDim2.new(0, 0, 0, 15)
+    distLabel.TextColor3 = Color3.new(0.8, 0.8, 0.8)
+    distLabel.TextStrokeTransparency = 0
+    distLabel.Font = Enum.Font.Gotham
+    distLabel.TextSize = 10
+    
+    -- BOX ESP (OPCIONAL)
+    local box = nil
+    if _G.Settings.BoxESP then
+        box = Instance.new("SelectionBox")
+        box.Name = "Box"
+        box.Adornee = obj
+        box.Color3 = color or Color3.new(1, 1, 1)
+        box.LineThickness = 0.05
+        box.Transparency = 0.5
+        box.Parent = obj
+    end
+
+    ESPObjects[obj] = {Gui = bg, Label = label, Dist = distLabel, Box = box, Type = type}
+    
+    obj.AncestryChanged:Connect(function()
+        if not obj:IsDescendantOf(workspace) then
+            if bg then bg:Destroy() end
+            if box then box:Destroy() end
+            ESPObjects[obj] = nil
+        end
+    end)
+end
+
+function UtilsModule.UpdateESP()
+    task.spawn(function()
+        while _G.MakitoHubRunning do
+            local char = LocalPlayer.Character
+            local root = char and char:FindFirstChild("HumanoidRootPart")
+            
+            for obj, data in pairs(ESPObjects) do
+                if obj and obj.Parent and root then
+                    local targetRoot = obj:IsA("Model") and (obj:FindFirstChild("HumanoidRootPart") or obj.PrimaryPart) or obj:IsA("BasePart") and obj
+                    if targetRoot then
+                        local dist = math.floor((root.Position - targetRoot.Position).Magnitude)
+                        data.Dist.Text = "[" .. dist .. "m]"
+                        
+                        -- Toggle Visibility based on Settings
+                        local visible = false
+                        if data.Type == "Player" and _G.Settings.EspPlayers then visible = true
+                        elseif data.Type == "NPC" and _G.Settings.NpcESP then visible = true
+                        elseif data.Type == "Chest" and _G.Settings.EspChests then visible = true
+                        elseif data.Type == "Fruit" and _G.Settings.EspFruits then visible = true
+                        end
+                        
+                        data.Gui.Enabled = visible
+                        if data.Box then data.Box.Visible = visible and _G.Settings.BoxESP end
+                    else
+                        data.Gui:Destroy()
+                        if data.Box then data.Box:Destroy() end
+                        ESPObjects[obj] = nil
+                    end
+                else
+                    if data.Gui then data.Gui:Destroy() end
+                    if data.Box then data.Box:Destroy() end
+                    ESPObjects[obj] = nil
+                end
+            end
+            task.wait(0.1)
+        end
+    end)
+end
+
 -- SISTEMA DE CACHE INTELIGENTE (EVITA LAG DE BUSCA)
 function UtilsModule.UpdateInstanceCache()
     -- Cache de Inimigos Vivos (Atualiza mais rápido: 0.1s)
@@ -30,6 +125,11 @@ function UtilsModule.UpdateInstanceCache()
             if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
                 newEnemies[v.Name] = v
                 table.insert(newEnemies, v)
+                
+                -- Auto-ESP for NPCs/Enemies
+                if _G.Settings.NpcESP then
+                    UtilsModule.CreateESP(v, v.Name, Color3.fromRGB(255, 80, 80), "NPC")
+                end
             end
         end
         InstanceCache.Enemies = newEnemies
@@ -43,14 +143,87 @@ function UtilsModule.UpdateInstanceCache()
         for _, v in ipairs(npcsFolder:GetChildren()) do
             if v:IsA("Model") or v:FindFirstChild("HumanoidRootPart") then
                 newNPCs[v.Name] = v
+                
+                if _G.Settings.NpcESP then
+                    UtilsModule.CreateESP(v, v.Name, Color3.fromRGB(255, 200, 200), "NPC")
+                end
             end
         end
         InstanceCache.NPCs = newNPCs
+    end
+
+    -- Discovery de Players
+    if _G.Settings.EspPlayers then
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                UtilsModule.CreateESP(p.Character.HumanoidRootPart, p.Name, Color3.fromRGB(100, 200, 255), "Player")
+            end
+        end
+    end
+
+    -- Discovery de Frutas e Baús
+    if _G.Settings.EspFruits or _G.Settings.EspChests then
+        for _, v in ipairs(workspace:GetChildren()) do
+            if _G.Settings.EspFruits and (v.Name:find("Fruit") or v:FindFirstChild("Handle")) and v:IsA("Tool") then
+                UtilsModule.CreateESP(v, v.Name, Color3.fromRGB(255, 60, 60), "Fruit")
+            elseif _G.Settings.EspChests and v.Name:find("Chest") then
+                UtilsModule.CreateESP(v, v.Name, Color3.fromRGB(255, 200, 0), "Chest")
+            end
+        end
     end
 end
 
 function UtilsModule.GetInstanceCache()
     return InstanceCache
+end
+
+-- SEGURANÇA E BYPASS
+function UtilsModule.CheckModerator()
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p:GetRankInGroup(2830050) > 0 or p:FindFirstChild("Moderator") then
+            if _G.Settings.AutoKickMod then
+                LocalPlayer:Kick("🛡️ MAKITO HUB: Moderador [" .. p.Name .. "] detectado no servidor.")
+            elseif _G.Settings.AutoModeratorHop then
+                UtilsModule.ServerHop()
+            end
+        end
+    end
+end
+
+function UtilsModule.SecurityBypass()
+    -- Bypass básico de teleporte e velocidade
+    pcall(function()
+        local char = LocalPlayer.Character
+        if char then
+            -- Remove detecção de queda e velocidade excessiva localmente
+            if char:FindFirstChild("Humanoid") then
+                char.Humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
+                char.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
+            end
+        end
+    end)
+end
+
+function UtilsModule.UpdateGlobalStatus()
+    if not _G.MakitoStatus then return end
+    
+    local level = LocalPlayer.Data.Level.Value
+    local fragments = LocalPlayer.Data.Fragments.Value
+    local beli = LocalPlayer.Data.Beli.Value
+    
+    _G.MakitoStatus.Text = string.format("Lvl: %d | Beli: %d | Frag: %d", level, beli, fragments)
+end
+
+function UtilsModule.AutoBuildStats()
+    if not _G.Settings.AutoStats or not _G.Settings.SelectedStat then return end
+    
+    local statName = _G.Settings.SelectedStat
+    if statName == "Demon Fruit" then statName = "Blox Fruit" end
+    
+    local points = LocalPlayer.Data.StatsPoints.Value
+    if points > 0 then
+        _G.Utils.SafeRemote("AddPoint", statName, points)
+    end
 end
 
 -- PROTEÇÕES E MISC (ESTILO ALCHEMY)
@@ -248,6 +421,67 @@ task.spawn(function()
         end
     end
 end)
+
+function UtilsModule.DevilFruitNotifier()
+    if not _G.Settings.DevilFruitNotifier then return end
+    
+    for _, v in ipairs(workspace:GetChildren()) do
+        if v:IsA("Tool") and (v.Name:find("Fruit") or v:FindFirstChild("Handle")) then
+            local name = v.Name
+            if not _G.NotifiedFruits then _G.NotifiedFruits = {} end
+            if not _G.NotifiedFruits[v] then
+                _G.NotifiedFruits[v] = true
+                -- Notificação simples via console e mensagem na tela
+                warn("🍎 [MAKITO HUB] FRUTA DETECTADA: " .. name)
+                if game:GetService("StarterGui") then
+                    game:GetService("StarterGui"):SetCore("SendNotification", {
+                        Title = "🍎 Fruta Detectada!",
+                        Text = "Uma " .. name .. " apareceu no mapa!",
+                        Duration = 10
+                    })
+                end
+            end
+        end
+    end
+end
+
+function UtilsModule.AutoHakiShop()
+    if not _G.Settings.AutoBuyHaki then return end
+    -- Compra Haki se o player estiver perto do NPC e tiver dinheiro
+    local npc = workspace.NPCs:FindFirstChild("Ability Teacher")
+    if npc and (LocalPlayer.Character.HumanoidRootPart.Position - npc.HumanoidRootPart.Position).Magnitude < 20 then
+        UtilsModule.SafeRemote("BuyHaki", "Buso")
+        UtilsModule.SafeRemote("BuyHaki", "Soru")
+        UtilsModule.SafeRemote("BuyHaki", "Geppo")
+    end
+end
+
+function UtilsModule.ServerHop()
+    local Http = game:GetService("HttpService")
+    local TPS = game:GetService("TeleportService")
+    local Api = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Desc&limit=100"
+    local _Servers = Http:JSONDecode(game:HttpGet(Api))
+    local _Next = _Servers.nextPageCursor
+    for i, v in pairs(_Servers.data) do
+        if v.playing < v.maxPlayers and v.id ~= game.JobId then
+            TPS:TeleportToPlaceInstance(game.PlaceId, v.id, LocalPlayer)
+        end
+    end
+end
+
+function UtilsModule.Rejoin()
+    game:GetService("TeleportService"):Teleport(game.PlaceId, LocalPlayer)
+end
+
+function UtilsModule.AutomationLogic()
+    -- Lógica de automação geral (Haki, Ken, etc)
+    if _G.Settings.AutoHaki then
+        local char = LocalPlayer.Character
+        if char and not char:FindFirstChild("HasBuso") then
+            UtilsModule.SafeRemote("Buso")
+        end
+    end
+end
 
 -- SISTEMA DE PROTEÇÃO ANTI-BAN (PACKET THROTTLING)
 local lastRemoteCall = 0

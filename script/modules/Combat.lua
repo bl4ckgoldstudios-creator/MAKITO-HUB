@@ -28,31 +28,53 @@ end
 
 local lastFrameworkCheck = 0
 local function GetFramework()
+    if CombatFramework and CombatFramework.activeController then 
+        return CombatFramework 
+    end
+    
+    local now = tick()
+    if now - lastFrameworkCheck < 2 then return nil end -- Verifica a cada 2 segundos
+    lastFrameworkCheck = now
+
     local success, result = pcall(function()
-        if CombatFramework and CombatFramework.activeController then 
-            return CombatFramework 
+        -- Tenta pegar do ambiente global primeiro (comum em scripts de BF)
+        if getgenv then
+            local g = getgenv()
+            if g.CombatFramework then return g.CombatFramework end
         end
-        
-        -- Só verifica no GC a cada 5 segundos para economizar CPU
-        local now = tick()
-        if now - lastFrameworkCheck < 5 then return nil end
-        lastFrameworkCheck = now
 
         for _, v in pairs(getgc(true)) do
             if type(v) == "table" then
                 if v.activeController and (v.activeController.attack or v.activeController.Attack) then
                     CombatFramework = v
-                    warn("✅ [MAKITO] Combat Framework Encontrado!")
                     return v
-                elseif v.Attack and v.AttackCD then
-                    CombatFramework = {activeController = v}
-                    warn("✅ [MAKITO] Combat Framework (Variação) Encontrado!")
-                    return CombatFramework
                 end
             end
         end
     end)
     return success and result or nil
+end
+
+-- MOTOR DE ATAQUE ULTRA-FAST (BYPASS DE ANIMAÇÃO)
+local function AttackNoAnim()
+    local framework = GetFramework()
+    if framework and framework.activeController then
+        local ac = framework.activeController
+        
+        -- Bypass de Cooldown e Animação
+        ac.hitboxMagnitude = 60
+        ac.attackCount = 0
+        ac.timeToNextAttack = 0
+        ac.increment = 0
+        if ac.AttackCD then ac.AttackCD = 0 end
+        
+        -- Executa o ataque via framework se possível
+        if ac.attack then ac:attack()
+        elseif ac.Attack then ac:Attack() end
+    else
+        -- Fallback para Input se o framework falhar
+        FallbackAttack()
+    end
 end
 
 -- DETECÇÃO DE ARMA ROBUSTA
@@ -98,11 +120,17 @@ function CombatModule.StopCombatLoop()
 end
 
 -- KILL AURA ELITE (MULTI-TARGET SILENT DAMAGE)
+local lastKillAuraAttack = 0
 local function EliteKillAura()
     local char = LocalPlayer.Character
     local root = char and char:FindFirstChild("HumanoidRootPart")
     local weapon = char and char:FindFirstChildOfClass("Tool")
     
+    -- Throttling de Segurança: Evita ban por spam de remotos (Max 10 ataques por segundo)
+    local now = tick()
+    if now - lastKillAuraAttack < 0.1 then return end
+    lastKillAuraAttack = now
+
     -- Tenta equipar arma se não estiver com nada
     if not weapon or not IsCombatWeapon(weapon) then
         if _G.Farming and _G.Farming.EquipWeapon then
@@ -123,7 +151,7 @@ local function EliteKillAura()
     
     -- Varredura ultra-rápida usando o cache otimizado
     local enemies = _G.Utils.GetInstanceCache().Enemies
-    if #enemies == 0 then -- Fallback se o cache falhar
+    if #enemies == 0 then
         enemies = (workspace:FindFirstChild("Enemies") or workspace):GetChildren()
     end
 
@@ -132,23 +160,15 @@ local function EliteKillAura()
             local eRoot = enemy.HumanoidRootPart
             local dist = (myPos - eRoot.Position).Magnitude
             if dist <= attackDist then
-                local canHit = true
-                if dist > 40 then
-                    local ray = Ray.new(myPos, (eRoot.Position - myPos).Unit * dist)
-                    local part = workspace:FindPartOnRayWithIgnoreList(ray, {char, enemy, workspace:FindFirstChild("Map")})
-                    if part then canHit = false end
-                end
-                
-                if canHit then
-                    table.insert(targets, eRoot)
-                end
+                table.insert(targets, eRoot)
             end
         end
     end
     
-    -- Disparo otimizado (Silent Multi-Hit)
+    -- Disparo Otimizado e Seguro (Silent Multi-Hit)
     if #targets > 0 then
-        for i = 1, math.min(#targets, 15) do -- Aumentado para 15 alvos
+        -- Ataca até 10 alvos por ciclo para manter a performance e segurança
+        for i = 1, math.min(#targets, 10) do 
             task.spawn(function()
                 remote:InvokeServer("Attack", targets[i])
             end)
@@ -162,7 +182,7 @@ function CombatModule.StartCombatLoop()
     warn("🚀 [MAKITO] Motor de Combate Elite V10 Iniciado")
     
     local lastAttack = 0
-    FastAttackConn = RunService.RenderStepped:Connect(function() -- RenderStepped para maior velocidade de resposta
+    FastAttackConn = RunService.RenderStepped:Connect(function()
         if not _G.Settings or (not _G.Settings.FastAttack and not _G.Settings.KillAura) then 
             CombatModule.StopCombatLoop()
             return 
@@ -174,32 +194,27 @@ function CombatModule.StartCombatLoop()
         if not hum or hum.Health <= 0 or hum.Sit then return end
         
         local now = tick()
-        local speed = _G.Settings.FastAttackSpeed or 0.001 -- Ultra rápido
+        -- Velocidade "Safe-Elite": 0.05s é o limite para não ser flaggado como exploit óbvio
+        local speed = _G.Settings.FastAttackSpeed or 0.05 
         
         if now - lastAttack >= speed then
             lastAttack = now
             
-            -- Sincronização de Framework (Modo Silencioso)
-            local framework = GetFramework()
-            if framework and framework.activeController then
-                local ac = framework.activeController
-                ac.hitboxMagnitude = 150
-                ac.attackCount = 0
-                ac.timeToNextAttack = 0
-                ac.increment = 0
-                -- Update 29: Alguns controladores precisam de reset no cooldown interno
-                if ac.AttackCD then ac.AttackCD = 0 end
-            end
+            -- Executa o ataque sem animação (Bypass de Cooldown Local)
+            AttackNoAnim()
             
-            -- Executa a Kill Aura Elite
+            -- Se Kill Aura estiver ativado, ele cuida dos múltiplos alvos de forma segura
             if _G.Settings.KillAura then
                 EliteKillAura()
             elseif _G.Settings.FastAttack then
-                -- Fast Attack clássico (Alvo mais próximo)
+                -- Fast Attack clássico (Alvo mais próximo via Remoto)
                 local remote = GetCommF()
                 local nearest = _G.Utils.GetNearestEnemyAny()
-                if remote and nearest and (root.Position - nearest.HumanoidRootPart.Position).Magnitude < 150 then
-                    remote:InvokeServer("Attack", nearest.HumanoidRootPart)
+                if remote and nearest then
+                    local dist = (char.HumanoidRootPart.Position - nearest.HumanoidRootPart.Position).Magnitude
+                    if dist < 150 then
+                        remote:InvokeServer("Attack", nearest.HumanoidRootPart)
+                    end
                 end
             end
         end
