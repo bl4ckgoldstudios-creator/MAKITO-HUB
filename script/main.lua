@@ -1,16 +1,18 @@
 -- MAKITO HUB PRO - V9.8 (UI + ESP + DEBUG)
--- 0. CONFIGURAÇÕES PRIVADAS (HARDCODED)
+-- 0. CONFIGURAÇÕES PRIVADAS (HARDCODED - FALLBACK)
 local MAIN_WEBHOOK = ""
 local ERROR_WEBHOOK = ""
 
 -- 0. FUNÇÃO DE APITO (DEBUG LOGS)
 _G.MakitoDebug = function(step, detail)
     pcall(function()
-        if ERROR_WEBHOOK == "" then return end
+        local webhook = (_G.Settings and _G.Settings.ErrorWebhookURL) or ERROR_WEBHOOK
+        if not webhook or webhook == "" then return end
+        
         local requestFunc = syn and syn.request or http_request or request
         if requestFunc then
             requestFunc({
-                Url = ERROR_WEBHOOK,
+                Url = webhook,
                 Method = "POST",
                 Headers = {["Content-Type"] = "application/json"},
                 Body = game:GetService("HttpService"):JSONEncode({
@@ -107,7 +109,9 @@ _G.MakitoLogConn = LogService.MessageOut:Connect(function(message, messageType)
                 ShowErrorPanel("🛑 ERRO DE RUNTIME DETECTADO:\n" .. message)
             end
 
-            if ERROR_WEBHOOK == "" then return end
+            local webhook = (_G.Settings and _G.Settings.ErrorWebhookURL) or ERROR_WEBHOOK
+            if not webhook or webhook == "" then return end
+            
             pcall(function()
                 local requestFunc = syn and syn.request or http_request or request
                 if requestFunc then
@@ -115,7 +119,7 @@ _G.MakitoLogConn = LogService.MessageOut:Connect(function(message, messageType)
                     pcall(function() pLevel = tostring(LocalPlayer.Data.Level.Value) end)
                     
                     requestFunc({
-                        Url = ERROR_WEBHOOK,
+                        Url = webhook,
                         Method = "POST",
                         Headers = {["Content-Type"] = "application/json"},
                         Body = HttpService:JSONEncode({
@@ -466,10 +470,11 @@ local function StartLoops()
                             _G.Settings.AutoFarm and "✅ ON" or "❌ OFF", _G.Settings.FastAttack and "✅ ON" or "❌ OFF", _G.MakitoStatus.Text
                         )
                         
+                        local webhook = (_G.Settings and _G.Settings.MainWebhookURL) or MAIN_WEBHOOK
                         local requestFunc = syn and syn.request or http_request or request
-                        if requestFunc and MAIN_WEBHOOK ~= "" then
+                        if requestFunc and webhook ~= "" then
                             requestFunc({
-                                Url = MAIN_WEBHOOK,
+                                Url = webhook,
                                 Method = "POST",
                                 Headers = {["Content-Type"] = "application/json"},
                                 Body = HttpService:JSONEncode({["embeds"] = {{["title"] = "MAKITO HUB - DATA SYNC", ["description"] = formattedText, ["color"] = 0x00FF96}}})

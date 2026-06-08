@@ -483,6 +483,138 @@ function UtilsModule.AutomationLogic()
     end
 end
 
+-- UTILS - FUNÇÕES AUXILIARES E PERFORMANCE
+function UtilsModule.FormatNumber(val)
+    local formatted = tostring(val)
+    while true do  
+        formatted, k = string.gsub(formatted, "^(-?%d+)(%d%d%d)", '%1,%2')
+        if (k == 0) then break end
+    end
+    return formatted
+end
+
+function UtilsModule.GetDistanceTo(obj)
+    local char = LocalPlayer.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    if not root or not obj then return math.huge end
+    
+    local pos = obj:IsA("BasePart") and obj.Position or obj:IsA("Model") and (obj:FindFirstChild("HumanoidRootPart") or obj.PrimaryPart) and (obj:FindFirstChild("HumanoidRootPart") or obj.PrimaryPart).Position or typeof(obj) == "Vector3" and obj or typeof(obj) == "CFrame" and obj.Position
+    if not pos then return math.huge end
+    
+    return (root.Position - pos).Magnitude
+end
+
+function UtilsModule.Notify(text, duration)
+    pcall(function()
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "MAKITO AI",
+            Text = text,
+            Duration = duration or 5,
+            Icon = "rbxassetid://10747383861"
+        })
+    end)
+end
+
+function UtilsModule.ExtremePerformance()
+    if not _G.Settings.ExtremePerformance then return end
+    
+    -- Redução agressiva de renderização
+    settings().Rendering.QualityLevel = 1
+    for _, v in ipairs(game:GetDescendants()) do
+        if v:IsA("BasePart") then
+            v.Material = Enum.Material.SmoothPlastic
+            v.Reflectance = 0
+        elseif v:IsA("Decal") or v:IsA("Texture") then
+            v.Transparency = 1
+        elseif v:IsA("ParticleEmitter") or v:IsA("Trail") then
+            v.Enabled = false
+        elseif v:IsA("Explosion") then
+            v.Visible = false
+        end
+    end
+end
+
+function UtilsModule.LogInventory()
+    local inventory = {}
+    for _, v in ipairs(LocalPlayer.Backpack:GetChildren()) do
+        if v:IsA("Tool") then table.insert(inventory, v.Name) end
+    end
+    print("📦 [MAKITO] Inventário Atual: " .. table.concat(inventory, ", "))
+end
+
+function UtilsModule.HasItem(itemName)
+    if LocalPlayer.Backpack:FindFirstChild(itemName) then return true end
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild(itemName) then return true end
+    
+    -- Verifica no Data (Blox Fruits específico)
+    local inventory = LocalPlayer:FindFirstChild("Data") and LocalPlayer.Data:FindFirstChild("Inventory")
+    if inventory and inventory:FindFirstChild(itemName) then return true end
+    
+    return false
+end
+
+function UtilsModule.GetMaterialCount(materialName)
+    local data = LocalPlayer:FindFirstChild("Data")
+    if data then
+        local mat = data:FindFirstChild(materialName)
+        if mat then return mat.Value end
+        
+        -- Alguns materiais ficam dentro de pastas específicas
+        local inventory = data:FindFirstChild("Inventory")
+        if inventory and inventory:FindFirstChild(materialName) then
+            return inventory[materialName].Value
+        end
+    end
+    return 0
+end
+
+function UtilsModule.AdvancedHop()
+    UtilsModule.Notify("Troca de servidor avançada iniciada...", 5)
+    UtilsModule.ServerHop()
+end
+
+function UtilsModule.AutoChestLogic()
+    if not _G.Settings.AutoChest then return end
+    for _, v in ipairs(workspace:GetChildren()) do
+        if v.Name:find("Chest") and v:IsA("BasePart") then
+            local dist = UtilsModule.GetDistanceTo(v)
+            if dist < 500 then
+                UtilsModule.TweenTo(v.CFrame)
+                firetouchinterest(LocalPlayer.Character.HumanoidRootPart, v, 0)
+                firetouchinterest(LocalPlayer.Character.HumanoidRootPart, v, 1)
+                task.wait(0.2)
+            end
+        end
+    end
+end
+
+function UtilsModule.ClearESP()
+    for obj, data in pairs(ESPObjects) do
+        if data.Gui then data.Gui:Destroy() end
+        if data.Box then data.Box:Destroy() end
+    end
+    ESPObjects = {}
+end
+
+function UtilsModule.PassesESPFilter(name, distance)
+    if _G.Settings.EspMaxDistance and distance > _G.Settings.EspMaxDistance then return false end
+    if _G.Settings.EspFilterName and _G.Settings.EspFilterName ~= "" then
+        if not name:lower():find(_G.Settings.EspFilterName:lower()) then return false end
+    end
+    return true
+end
+
+function UtilsModule.ColorFromSettings(settingName, defaultColor)
+    if _G.Settings[settingName] then
+        local c = _G.Settings[settingName]
+        if typeof(c) == "Color3" then return c end
+        if typeof(c) == "table" and c.R and c.G and c.B then
+            return Color3.new(c.R, c.G, c.B)
+        end
+    end
+    return defaultColor
+end
+
 -- SISTEMA DE PROTEÇÃO ANTI-BAN (PACKET THROTTLING)
 local lastRemoteCall = 0
 function UtilsModule.SafeRemote(remoteName, ...)

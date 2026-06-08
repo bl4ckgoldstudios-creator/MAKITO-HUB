@@ -93,8 +93,9 @@ SettingsModule.Values = {
     AutoFactory = false, AutoBoss = false, AutoBossHop = true,
 
     -- Misc
-    WebhookEnabled = false, WebhookURL = "",
+    WebhookEnabled = false, MainWebhookURL = "", ErrorWebhookURL = "",
     ThemeColor = Color3.fromRGB(0, 255, 150), CurrentTheme = "Default",
+    RainbowUI = false, ExtremePerformance = false,
     KillSwitchKey = Enum.KeyCode.RightControl
 }
 

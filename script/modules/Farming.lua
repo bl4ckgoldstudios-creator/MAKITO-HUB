@@ -350,6 +350,9 @@ function FarmingModule.ProgressionLogic()
     FarmingModule.PuzzleLogic()
 end
 
+function FarmingModule.EventAutomationLogic()
+    if not _G.Settings then return end
+
     if _G.Settings.AutoRaceV2 then
         -- Lógica simplificada: Coleta flores
         for _, flower in ipairs({"Flower1", "Flower2", "Flower3"}) do
@@ -381,10 +384,6 @@ end
             _G.Combat.StartFastAttack()
         end
     end
-end
-
-function FarmingModule.EventAutomationLogic()
-    if not _G.Settings then return end
 
     if _G.Settings.AutoFrozenDimension then
         _G.Utils.TweenTo(CFrame.new(-19500, -500, -18000)) -- Posição aproximada

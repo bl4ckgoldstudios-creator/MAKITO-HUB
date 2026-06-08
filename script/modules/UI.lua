@@ -304,6 +304,15 @@ function UIModule.CreateHub()
     UIModule.NewSection(MiscTab, "SERVER")
     UIModule.NewButton(MiscTab, "SERVER HOP", function() _G.Utils.ServerHop() end)
     UIModule.NewButton(MiscTab, "REJOIN", function() _G.Utils.Rejoin() end)
+    
+    UIModule.NewSection(MiscTab, "WEBHOOKS")
+    UIModule.NewTextBox(MiscTab, "MAIN WEBHOOK URL", "Insira a URL do Discord aqui...", "MainWebhookURL")
+    UIModule.NewTextBox(MiscTab, "ERROR WEBHOOK URL", "URL para logs de erro...", "ErrorWebhookURL")
+    UIModule.NewButton(MiscTab, "TEST WEBHOOK", function()
+        _G.Utils.Notify("Enviando teste de webhook...", 5)
+        _G.MakitoDebug("TEST", "Teste manual de webhook realizado com sucesso!")
+    end)
+
     UIModule.NewSection(MiscTab, "HUB CONFIG")
     UIModule.NewButton(MiscTab, "SAVE CONFIG", function() _G.MakitoSaveSettings() end)
 
