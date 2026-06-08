@@ -259,8 +259,26 @@ function FarmingModule.SupremeAutoFarm()
     end)
 end
 
-function FarmingModule.AutoBossPro()
-    FarmingModule.SpecialBossLogic()
+function FarmingModule.AutoCDKLogic()
+    if not _G.Settings.AutoCDK then return end
+    -- Yama & Tushita quests check
+    if not _G.Utils.HasItem("Yama") or not _G.Utils.HasItem("Tushita") then
+        FarmingModule.PuzzleLogic()
+        return
+    end
+    _G.Utils.SafeRemote("CDKQuest", "Start")
+end
+
+function FarmingModule.AutoSoulGuitarLogic()
+    if not _G.Settings.AutoSoulGuitar then return end
+    _G.Utils.TweenTo(CFrame.new(-1050, 40, -8500))
+    _G.Utils.SafeRemote("SoulGuitarQuest", "Pray")
+end
+
+function FarmingModule.AutoGodhumanLogic()
+    if not _G.Settings.AutoGodhuman then return end
+    _G.Utils.TweenTo(CFrame.new(-12463, 375, -7523))
+    _G.Utils.SafeRemote("BuyFightingStyle", "Godhuman")
 end
 
 function FarmingModule.AutoBerryFarm()

@@ -26,41 +26,52 @@ function UtilsModule.CreateESP(obj, name, color, type)
     local folder = CoreGui:FindFirstChild("MakitoESP") or Instance.new("Folder", CoreGui)
     folder.Name = "MakitoESP"
     
+    -- CORES NEON ULTRA-CHAMATIVAS (ESTILO GAMER)
+    local neonColor = color
+    if type == "Player" then neonColor = Color3.fromRGB(0, 255, 255) -- Cyan Neon
+    elseif type == "NPC" then neonColor = Color3.fromRGB(255, 0, 255) -- Magenta Neon
+    elseif type == "Chest" then neonColor = Color3.fromRGB(255, 255, 0) -- Yellow Neon
+    elseif type == "Fruit" then neonColor = Color3.fromRGB(0, 255, 0) -- Green Neon
+    end
+
     local bg = Instance.new("BillboardGui")
     bg.Name = "ESP"
     bg.Adornee = obj
     bg.AlwaysOnTop = true
-    bg.Size = UDim2.new(0, 100, 0, 30)
-    bg.StudsOffset = Vector3.new(0, 3, 0)
+    bg.Size = UDim2.new(0, 120, 0, 40) -- Maior para visibilidade
+    bg.StudsOffset = Vector3.new(0, 4, 0)
     bg.Parent = folder
     
     local label = Instance.new("TextLabel", bg)
     label.BackgroundTransparency = 1
-    label.Size = UDim2.new(1, 0, 1, 0)
+    label.Size = UDim2.new(1, 0, 0, 20)
     label.Text = name or obj.Name
-    label.TextColor3 = color or Color3.new(1, 1, 1)
-    label.TextStrokeTransparency = 0
+    label.TextColor3 = neonColor
+    label.TextStrokeTransparency = 0.2
+    label.TextStrokeColor3 = Color3.new(0,0,0)
     label.Font = Enum.Font.GothamBold
-    label.TextSize = 12
+    label.TextSize = 14
     
     local distLabel = Instance.new("TextLabel", bg)
     distLabel.BackgroundTransparency = 1
-    distLabel.Size = UDim2.new(1, 0, 1, 0)
-    distLabel.Position = UDim2.new(0, 0, 0, 15)
-    distLabel.TextColor3 = Color3.new(0.8, 0.8, 0.8)
-    distLabel.TextStrokeTransparency = 0
-    distLabel.Font = Enum.Font.Gotham
-    distLabel.TextSize = 10
+    distLabel.Size = UDim2.new(1, 0, 0, 15)
+    distLabel.Position = UDim2.new(0, 0, 0, 18)
+    distLabel.TextColor3 = Color3.new(1, 1, 1)
+    distLabel.TextStrokeTransparency = 0.5
+    distLabel.Font = Enum.Font.GothamBold
+    distLabel.TextSize = 11
     
-    -- BOX ESP (OPCIONAL)
+    -- BOX ESP AGRESSIVO
     local box = nil
     if _G.Settings.BoxESP then
         box = Instance.new("SelectionBox")
         box.Name = "Box"
         box.Adornee = obj
-        box.Color3 = color or Color3.new(1, 1, 1)
-        box.LineThickness = 0.05
-        box.Transparency = 0.5
+        box.Color3 = neonColor
+        box.LineThickness = 0.1 -- Mais grosso
+        box.Transparency = 0.3
+        box.SurfaceTransparency = 0.8
+        box.SurfaceColor3 = neonColor
         box.Parent = obj
     end
 
@@ -507,7 +518,7 @@ end
 function UtilsModule.Notify(text, duration)
     pcall(function()
         game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "MAKITO AI",
+            Title = "MAKITO HUB",
             Text = text,
             Duration = duration or 5,
             Icon = "rbxassetid://10747383861"

@@ -51,11 +51,12 @@ function UIModule.CreateHub()
     MainFrame.BackgroundColor3 = Color3.fromRGB(5, 5, 8)
     MainFrame.BorderSizePixel = 0
     MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-    MainFrame.Size = UDim2.new(0, 650, 0, 450)
-    MainFrame.ClipsDescendants = false -- Para permitir o brilho externo (Glow)
+    -- TAMANHO OTIMIZADO PARA MOBILE (MENOR E COMPACTO)
+    MainFrame.Size = UDim2.new(0, 560, 0, 350)
+    MainFrame.ClipsDescendants = false
 
     local MainCorner = Instance.new("UICorner", MainFrame)
-    MainCorner.CornerRadius = UDim.new(0, 10)
+    MainCorner.CornerRadius = UDim.new(0, 8)
 
     -- EFEITO DE BRILHO EXTERNO (NEON GLOW)
     local Glow = Instance.new("ImageLabel")
@@ -63,86 +64,69 @@ function UIModule.CreateHub()
     Glow.Parent = MainFrame
     Glow.AnchorPoint = Vector2.new(0.5, 0.5)
     Glow.Position = UDim2.new(0.5, 0, 0.5, 0)
-    Glow.Size = UDim2.new(1, 100, 1, 100)
+    Glow.Size = UDim2.new(1, 80, 1, 80)
     Glow.BackgroundTransparency = 1
     Glow.Image = "rbxassetid://6014264795"
     Glow.ImageColor3 = _G.Settings.ThemeColor or Color3.fromRGB(0, 255, 150)
-    Glow.ImageTransparency = 0.6
+    Glow.ImageTransparency = 0.7
     Glow.ZIndex = -2
 
     -- BORDA NEON AGRESSIVA
     local MainStroke = Instance.new("UIStroke", MainFrame)
     MainStroke.Color = _G.Settings.ThemeColor or Color3.fromRGB(0, 255, 150)
-    MainStroke.Thickness = 2.5
+    MainStroke.Thickness = 2
     MainStroke.Transparency = 0.2
     MainStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
-    -- GRADIENTE DE FUNDO "GAMER"
-    local MainGradient = Instance.new("UIGradient", MainFrame)
-    MainGradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(15, 15, 25)),
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(5, 5, 10)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(15, 15, 25))
-    })
-    MainGradient.Rotation = 45
-
-    -- SIDEBAR COM DESIGN IMPACTANTE
+    -- SIDEBAR COMPACTA
     local Sidebar = Instance.new("Frame")
     Sidebar.Name = "Sidebar"
     Sidebar.Parent = MainFrame
     Sidebar.BackgroundColor3 = Color3.fromRGB(8, 8, 12)
     Sidebar.BorderSizePixel = 0
-    Sidebar.Size = UDim2.new(0, 200, 1, 0)
+    Sidebar.Size = UDim2.new(0, 160, 1, 0)
     Sidebar.ZIndex = 2
 
     local SidebarCorner = Instance.new("UICorner", Sidebar)
-    SidebarCorner.CornerRadius = UDim.new(0, 10)
+    SidebarCorner.CornerRadius = UDim.new(0, 8)
     
-    local SidebarStroke = Instance.new("UIStroke", Sidebar)
-    SidebarStroke.Color = _G.Settings.ThemeColor or Color3.fromRGB(0, 255, 150)
-    SidebarStroke.Thickness = 1.5
-    SidebarStroke.Transparency = 0.8
-
     local SidebarTitle = Instance.new("TextLabel")
     SidebarTitle.Name = "Title"
     SidebarTitle.Parent = Sidebar
-    SidebarTitle.Size = UDim2.new(1, 0, 0, 80)
+    SidebarTitle.Size = UDim2.new(1, 0, 0, 60)
     SidebarTitle.BackgroundTransparency = 1
     SidebarTitle.Font = Enum.Font.GothamBold
-    SidebarTitle.Text = "MAKITO <font color='#00FF96'>AI</font>"
+    SidebarTitle.Text = "MAKITO <font color='#00FF96'>HUB</font>"
     SidebarTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-    SidebarTitle.TextSize = 28
+    SidebarTitle.TextSize = 22
     SidebarTitle.RichText = true
-    
-    -- Efeito de Sombra no Título
-    local TitleShadow = SidebarTitle:Clone()
-    TitleShadow.Name = "Shadow"
-    TitleShadow.Parent = SidebarTitle
-    TitleShadow.Position = UDim2.new(0, 2, 0, 2)
-    TitleShadow.TextColor3 = Color3.fromRGB(0, 0, 0)
-    TitleShadow.ZIndex = -1
 
     local TabContainer = Instance.new("ScrollingFrame")
     TabContainer.Name = "TabContainer"
     TabContainer.Parent = Sidebar
     TabContainer.BackgroundTransparency = 1
-    TabContainer.Position = UDim2.new(0, 15, 0, 90)
-    TabContainer.Size = UDim2.new(1, -30, 1, -110)
-    TabContainer.ScrollBarThickness = 0
+    TabContainer.Position = UDim2.new(0, 10, 0, 65)
+    TabContainer.Size = UDim2.new(1, -20, 1, -75)
+    TabContainer.ScrollBarThickness = 1
+    TabContainer.ScrollBarImageColor3 = _G.Settings.ThemeColor or Color3.fromRGB(0, 255, 150)
     TabContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
 
     local TabList = Instance.new("UIListLayout")
     TabList.Parent = TabContainer
-    TabList.Padding = UDim.new(0, 10)
+    TabList.Padding = UDim.new(0, 6)
     TabList.SortOrder = Enum.SortOrder.LayoutOrder
+    
+    TabList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        TabContainer.CanvasSize = UDim2.new(0, 0, 0, TabList.AbsoluteContentSize.Y + 10)
+    end)
 
-    -- CONTENT AREA COM DESIGN PREMIUM
+    -- CONTENT AREA COMPACTA
     local ContentArea = Instance.new("Frame")
     ContentArea.Name = "ContentArea"
     ContentArea.Parent = MainFrame
     ContentArea.BackgroundTransparency = 1
-    ContentArea.Position = UDim2.new(0, 215, 0, 20)
-    ContentArea.Size = UDim2.new(1, -235, 1, -40)
+    ContentArea.Position = UDim2.new(0, 170, 0, 15)
+    ContentArea.Size = UDim2.new(1, -180, 1, -30)
     ContentArea.ZIndex = 2
 
     -- SISTEMA RGB (OPCIONAL)
@@ -274,6 +258,51 @@ function UIModule.CreateHub()
     UIModule.NewToggle(CombatTab, "Auto Bounty (Hop)", "AutoBounty")
     UIModule.NewSlider(CombatTab, "Kill Aura Range", 50, 300, 150, "KillAuraDistance")
 
+    local StatsTab = UIModule.NewTab("Stats", "rbxassetid://10747373176", TabContainer, ContentArea)
+    UIModule.NewSection(StatsTab, "Auto Stats")
+    UIModule.NewToggle(StatsTab, "Enable Auto Stats", "AutoStats")
+    UIModule.NewDropdown(StatsTab, "Select Stat", {"Melee", "Defense", "Sword", "Gun", "Demon Fruit"}, "SelectedStat")
+
+    local TeleportTab = UIModule.NewTab("Teleport", "rbxassetid://10747373176", TabContainer, ContentArea)
+    UIModule.NewSection(TeleportTab, "Island Teleport")
+    local islandNames = {}
+    local currentSeaIslands = _G.Data and _G.Data.SeaData[_G.MakitoSea] or {}
+    for _, island in ipairs(currentSeaIslands) do table.insert(islandNames, island.Name) end
+    UIModule.NewDropdown(TeleportTab, "Select Island", islandNames, "SelectedIsland")
+    UIModule.NewButton(TeleportTab, "Teleport to Island", function()
+        if _G.Settings.SelectedIsland then
+            local island = _G.Data.GetIslandByName(_G.Settings.SelectedIsland, _G.MakitoSea)
+            if island then _G.Utils.TweenTo(island.Pos) end
+        end
+    end)
+    UIModule.NewSection(TeleportTab, "World Travel")
+    UIModule.NewButton(TeleportTab, "Travel to Sea 2", function() _G.Utils.SafeRemote("TravelMain") end)
+    UIModule.NewButton(TeleportTab, "Travel to Sea 3", function() _G.Utils.SafeRemote("TravelZou") end)
+
+    local SeaTab = UIModule.NewTab("Sea Events", "rbxassetid://10747373176", TabContainer, ContentArea)
+    UIModule.NewSection(SeaTab, "Sea Events")
+    UIModule.NewToggle(SeaTab, "Auto Sea Beast", "AutoSeaBeast")
+    UIModule.NewToggle(SeaTab, "Auto Terror Shark", "AutoTerrorShark")
+    UIModule.NewToggle(SeaTab, "Auto Leviathan", "AutoLeviathan")
+
+    local FruitTab = UIModule.NewTab("Fruits", "rbxassetid://10747373176", TabContainer, ContentArea)
+    UIModule.NewSection(FruitTab, "Fruit Automation")
+    UIModule.NewToggle(FruitTab, "Auto Gacha", "AutoGacha")
+    UIModule.NewToggle(FruitTab, "Auto Collect Fruits", "AutoCollectFruit")
+    UIModule.NewToggle(FruitTab, "Auto Store Fruits", "AutoStoreFruit")
+
+    local RaidTab = UIModule.NewTab("Raid", "rbxassetid://10747373176", TabContainer, ContentArea)
+    UIModule.NewSection(RaidTab, "Raid Settings")
+    UIModule.NewToggle(RaidTab, "Auto Raid", "AutoRaid")
+    UIModule.NewToggle(RaidTab, "Auto Start Raid", "AutoStartRaid")
+    UIModule.NewDropdown(RaidTab, "Select Raid", {"Flame", "Ice", "Quake", "Light", "Dark", "Spider", "Rumble", "Magma", "Buddha", "Sand", "Dough"}, "SelectedRaid")
+
+    local ShopTab = UIModule.NewTab("Shop", "rbxassetid://10747373176", TabContainer, ContentArea)
+    UIModule.NewSection(ShopTab, "Fighting Styles")
+    UIModule.NewButton(ShopTab, "Buy Godhuman", function() _G.Farming.BuyItem("FightingStyle", "Godhuman") end)
+    UIModule.NewSection(ShopTab, "Swords")
+    UIModule.NewButton(ShopTab, "Buy CDK", function() _G.Farming.BuyItem("Weapon", "Cursed Dual Katana") end)
+
     local VisualsTab = UIModule.NewTab("Visuals", "rbxassetid://10747372992", TabContainer, ContentArea)
     UIModule.NewSection(VisualsTab, "ESP System")
     UIModule.NewToggle(VisualsTab, "Player ESP", "EspPlayers")
@@ -305,14 +334,6 @@ function UIModule.CreateHub()
     UIModule.NewButton(MiscTab, "SERVER HOP", function() _G.Utils.ServerHop() end)
     UIModule.NewButton(MiscTab, "REJOIN", function() _G.Utils.Rejoin() end)
     
-    UIModule.NewSection(MiscTab, "WEBHOOKS")
-    UIModule.NewTextBox(MiscTab, "MAIN WEBHOOK URL", "Insira a URL do Discord aqui...", "MainWebhookURL")
-    UIModule.NewTextBox(MiscTab, "ERROR WEBHOOK URL", "URL para logs de erro...", "ErrorWebhookURL")
-    UIModule.NewButton(MiscTab, "TEST WEBHOOK", function()
-        _G.Utils.Notify("Enviando teste de webhook...", 5)
-        _G.MakitoDebug("TEST", "Teste manual de webhook realizado com sucesso!")
-    end)
-
     UIModule.NewSection(MiscTab, "HUB CONFIG")
     UIModule.NewButton(MiscTab, "SAVE CONFIG", function() _G.MakitoSaveSettings() end)
 
@@ -780,7 +801,7 @@ function UIModule.CreateWatermark()
                 ping = game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValueString():split(" ")[1]
             end)
             local time = os.date("%X")
-            TextLabel.Text = string.format("MAKITO <font color='#00FF96'>AI</font> | FPS: %d | PING: %s | %s", fps, ping, time)
+            TextLabel.Text = string.format("MAKITO <font color='#00FF96'>HUB</font> | FPS: %d | PING: %s | %s", fps, ping, time)
         end
     end)
     
