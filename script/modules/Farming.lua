@@ -1076,6 +1076,80 @@ function FarmingModule.AutoAwakeningLogic()
     end
 end
 
+-- AUTO ECTOPLASM (CURSED SHIP)
+function FarmingModule.AutoEctoplasmLogic()
+    if not _G.Settings or not _G.Settings.AutoEctoplasm then return end
+    if FarmingModule.GetSea() ~= 2 then return end
+
+    local enemy = _G.Utils.GetNearestEnemy("Ship Officer") or _G.Utils.GetNearestEnemy("Ship Engineer") or _G.Utils.GetNearestEnemy("Ship Steward") or _G.Utils.GetNearestEnemy("Ship Deckhand")
+    if enemy then
+        FarmingModule.EquipWeapon(_G.Settings.MainWeapon or "Melee")
+        _G.Utils.TweenTo(enemy.HumanoidRootPart.CFrame * CFrame.new(0, 12, 0))
+        _G.Combat.StartFastAttack()
+    else
+        _G.Utils.TweenTo(CFrame.new(923, 125, 32850)) -- Entrada do Cursed Ship
+    end
+end
+
+-- AUTO VAMPIRE FANG (GRAVEYARD)
+function FarmingModule.AutoVampireFangLogic()
+    if not _G.Settings or not _G.Settings.AutoVampireFang then return end
+    
+    local enemy = _G.Utils.GetNearestEnemy("Vampire")
+    if enemy then
+        FarmingModule.EquipWeapon(_G.Settings.MainWeapon or "Melee")
+        _G.Utils.TweenTo(enemy.HumanoidRootPart.CFrame * CFrame.new(0, 12, 0))
+        _G.Combat.StartFastAttack()
+    else
+        _G.Utils.TweenTo(CFrame.new(-3112, 77, -2391)) -- Spawn dos Vampiros (Sea 2)
+    end
+end
+
+-- AUTO DARK BLADE V2 QUEST
+function FarmingModule.AutoDarkBladeV2()
+    if not _G.Settings or not _G.Settings.AutoDarkBladeV2 then return end
+    if not _G.Utils.HasItem("Dark Blade") then return end
+
+    -- Lógica das 3 Cartas (Son, Robot, Dog)
+    _G.Utils.Notify("Iniciando Quest Dark Blade V2...", 5)
+    _G.Utils.TweenTo(CFrame.new(-1242, 16, -12140)) -- NPC Alchemist/Indra area
+    _G.Utils.SafeRemote("DarkBladeV2", "Start")
+end
+
+-- AUTO CASTLE RAID (SEA 3)
+function FarmingModule.AutoCastleRaid()
+    if not _G.Settings or not _G.Settings.AutoCastleRaid then return end
+    if FarmingModule.GetSea() ~= 3 then return end
+
+    local enemies = workspace:FindFirstChild("Enemies") or workspace
+    local raidInimigo = nil
+    for _, v in ipairs(enemies:GetChildren()) do
+        if v.Name:find("Pirate") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+            raidInimigo = v
+            break
+        end
+    end
+
+    if raidInimigo then
+        _G.Utils.Notify("🛡️ Defendendo o Castelo!", 5)
+        _G.Utils.TweenTo(raidInimigo.HumanoidRootPart.CFrame * CFrame.new(0, 15, 0))
+        _G.Combat.StartFastAttack()
+    end
+end
+
+-- AUTO FACTORY PRO (SEA 2)
+function FarmingModule.AutoFactoryPro()
+    if not _G.Settings or not _G.Settings.AutoFactory then return end
+    if FarmingModule.GetSea() ~= 2 then return end
+
+    local core = workspace:FindFirstChild("Core")
+    if core and core:FindFirstChild("Humanoid") and core.Humanoid.Health > 0 then
+        _G.Utils.Notify("🏭 Destruindo a Fábrica!", 5)
+        _G.Utils.TweenTo(core.CFrame * CFrame.new(0, 20, 0))
+        _G.Combat.StartFastAttack()
+    end
+end
+
 function FarmingModule.AutoFarmBossesGlobal()
     if not _G.Settings.AutoFarmAllBosses then return end
     

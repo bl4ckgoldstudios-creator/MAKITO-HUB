@@ -418,6 +418,11 @@ local function StartLoops()
                     _G.Farming.ShopLogic()
                     _G.Farming.AutoStatsLogic()
                     _G.Farming.AutoBerryFarm()
+                    _G.Farming.AutoEctoplasmLogic()
+                    _G.Farming.AutoVampireFangLogic()
+                    _G.Farming.AutoDarkBladeV2()
+                    _G.Farming.AutoCastleRaid()
+                    _G.Farming.AutoFactoryPro()
                     
                     -- EVENTOS ESPECIAIS E ARENAS
                     _G.Farming.DungeonV2Logic()

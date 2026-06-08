@@ -338,10 +338,16 @@ function UIModule.CreateHub()
     UIModule.NewDropdown(MiscTab, "SELECT THEME", {"Default", "Neon Red", "Deep Blue", "Golden", "Purple Night"}, "CurrentTheme", function(v)
         if _G.MakitoThemes[v] then
             _G.Settings.ThemeColor = _G.MakitoThemes[v]
-            -- Força atualização visual imediata (opcional, o script já lê _G.Settings)
         end
     end)
     
+    UIModule.NewSection(MiscTab, "RESOURCES")
+    UIModule.NewToggle(MiscTab, "Auto Ectoplasm", "AutoEctoplasm")
+    UIModule.NewToggle(MiscTab, "Auto Vampire Fang", "AutoVampireFang")
+    UIModule.NewToggle(MiscTab, "Auto Factory", "AutoFactory")
+    UIModule.NewToggle(MiscTab, "Auto Castle Raid", "AutoCastleRaid")
+    UIModule.NewToggle(MiscTab, "Auto Dark Blade V2", "AutoDarkBladeV2")
+
     UIModule.NewSection(MiscTab, "OPTIMIZATION")
     UIModule.NewButton(MiscTab, "BOOST FPS (POTATO MODE)", function() 
         for _, v in ipairs(game:GetDescendants()) do
