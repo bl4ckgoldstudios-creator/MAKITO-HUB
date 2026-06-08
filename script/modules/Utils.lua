@@ -12,6 +12,44 @@ local CoreGui = game:GetService("CoreGui")
 local isTweening = false
 local currentTween = nil
 local ESPObjects = {}
+local InstanceCache = {
+    Enemies = {},
+    NPCs = {},
+    Items = {},
+    LastUpdate = 0
+}
+
+-- SISTEMA DE CACHE INTELIGENTE (EVITA LAG DE BUSCA)
+function UtilsModule.UpdateInstanceCache()
+    if tick() - InstanceCache.LastUpdate < 1 then return end
+    InstanceCache.LastUpdate = tick()
+    
+    local enemiesFolder = workspace:FindFirstChild("Enemies") or workspace
+    local npcsFolder = workspace:FindFirstChild("NPCs") or workspace
+    
+    -- Cache de Inimigos Vivos
+    local newEnemies = {}
+    for _, v in ipairs(enemiesFolder:GetChildren()) do
+        if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
+            newEnemies[v.Name] = v
+            table.insert(newEnemies, v)
+        end
+    end
+    InstanceCache.Enemies = newEnemies
+    
+    -- Cache de NPCs
+    local newNPCs = {}
+    for _, v in ipairs(npcsFolder:GetChildren()) do
+        if v:IsA("Model") or v:FindFirstChild("HumanoidRootPart") then
+            newNPCs[v.Name] = v
+        end
+    end
+    InstanceCache.NPCs = newNPCs
+end
+
+function UtilsModule.GetInstanceCache()
+    return InstanceCache
+end
 
 -- PROTEÇÕES E MISC (ESTILO ALCHEMY)
 local StreamerConn = nil
@@ -436,12 +474,12 @@ function UtilsModule.Notify(text, duration)
 end
 
 function UtilsModule.GetNearestEnemy(name)
+    UtilsModule.UpdateInstanceCache()
     local nearest = nil
     local minDist = math.huge
-    local enemies = workspace:FindFirstChild("Enemies") or workspace
     
-    for _, v in ipairs(enemies:GetChildren()) do
-        if v.Name:find(name) and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+    for _, v in ipairs(InstanceCache.Enemies) do
+        if v.Name:find(name) then
             local dist = UtilsModule.GetDistanceTo(v.HumanoidRootPart)
             if dist < minDist then
                 minDist = dist
@@ -453,17 +491,15 @@ function UtilsModule.GetNearestEnemy(name)
 end
 
 function UtilsModule.GetNearestEnemyAny()
+    UtilsModule.UpdateInstanceCache()
     local nearest = nil
     local minDist = math.huge
-    local enemies = workspace:FindFirstChild("Enemies") or workspace
     
-    for _, v in ipairs(enemies:GetChildren()) do
-        if v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-            local dist = UtilsModule.GetDistanceTo(v.HumanoidRootPart)
-            if dist < minDist then
-                minDist = dist
-                nearest = v
-            end
+    for _, v in ipairs(InstanceCache.Enemies) do
+        local dist = UtilsModule.GetDistanceTo(v.HumanoidRootPart)
+        if dist < minDist then
+            minDist = dist
+            nearest = v
         end
     end
     return nearest

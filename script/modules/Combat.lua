@@ -143,43 +143,44 @@ function CombatModule.StartCombatLoop()
                 local remote = GetCommF()
                 if remote then
                     local potentialTargets = {}
+                    _G.Utils.UpdateInstanceCache()
                     
-                    -- Varredura inteligente: filtra e ordena por prioridade
-                    for _, v in ipairs(enemies:GetChildren()) do
+                    -- Varredura inteligente usando cache
+                    for _, v in ipairs(_G.Utils.GetInstanceCache().Enemies) do
                         local eRoot = v:FindFirstChild("HumanoidRootPart")
                         local eHum = v:FindFirstChild("Humanoid")
                         
                         if eRoot and eHum and eHum.Health > 0 then
                             local dist = (myPos - eRoot.Position).Magnitude
                             if dist <= attackDist then
-                                -- Raycast para evitar bater através de paredes impossíveis (Anti-Cheat Bypass)
-                                local ray = Ray.new(myPos, (eRoot.Position - myPos).Unit * dist)
-                                local part = workspace:FindPartOnRayWithIgnoreList(ray, {char, v, workspace:FindFirstChild("Map")})
+                                -- Raycast seletivo: Só faz se estiver perto de obstáculos (Anti-Cheat Bypass)
+                                local needsRaycast = dist > 40 -- Mobs muito perto geralmente não precisam
+                                local canAttack = true
                                 
-                                if not part then -- Linha de visão limpa
-                                    table.insert(potentialTargets, {part = eRoot, health = eHum.Health, dist = dist})
+                                if needsRaycast then
+                                    local ray = Ray.new(myPos, (eRoot.Position - myPos).Unit * dist)
+                                    local part = workspace:FindPartOnRayWithIgnoreList(ray, {char, v, workspace:FindFirstChild("Map")})
+                                    if part then canAttack = false end
+                                end
+                                
+                                if canAttack then
+                                    table.insert(potentialTargets, {part = eRoot, health = eHum.Health})
                                 end
                             end
                         end
                     end
                     
-                    -- Ordena: Prioriza quem tem MENOS vida (Kill Confirmation)
-                    table.sort(potentialTargets, function(a, b) return a.health < b.health end)
-                    
-                    -- Dispara o Remote para os alvos selecionados (Limite de 15 para estabilidade)
-                    local count = 0
-                    for _, target in ipairs(potentialTargets) do
-                        if count >= 15 then break end
-                        remote:InvokeServer("Attack", target.part)
-                        count = count + 1
+                    -- Ordena apenas se houver muitos alvos
+                    if #potentialTargets > 5 then
+                        table.sort(potentialTargets, function(a, b) return a.health < b.health end)
                     end
                     
-                    -- 3. AUTO-CLICK DINÂMICO (Se não houver alvo no raio, garante o Fast Attack manual)
-                    if count == 0 and _G.Settings.FastAttack then
-                        local nearest = _G.Utils.GetNearestEnemyAny()
-                        if nearest and (myPos - nearest.HumanoidRootPart.Position).Magnitude < 40 then
-                            remote:InvokeServer("Attack", nearest.HumanoidRootPart)
-                        end
+                    -- Dispara o Remote (Limite otimizado de 8 para evitar detecção de spam)
+                    local count = 0
+                    for _, target in ipairs(potentialTargets) do
+                        if count >= 8 then break end
+                        remote:InvokeServer("Attack", target.part)
+                        count = count + 1
                     end
                     
                     lastRemoteAttack = now

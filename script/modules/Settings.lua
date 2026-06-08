@@ -51,7 +51,7 @@ SettingsModule.Values = {
     AutoTushita = false, AutoYama = false, AutoSharkAnchor = false,
     AutoGodhuman = false, AutoSaber = false, AutoPole = false, AutoMidnightBlade = false,
     AutoRengoku = false, AutoHallowScythe = false, AutoObservationV2 = false,
-    AutoBuyAbilities = false,
+    AutoBuyAbilities = false, AutoCyborg = false, AutoRandomBone = false,
 
     -- Estilos de Luta Individual
     AutoBlackLeg = false, AutoElectro = false, AutoFishmanKarate = false, AutoDragonBreath = false,
@@ -62,6 +62,7 @@ SettingsModule.Values = {
     AutoLeviathan = false, AutoTerrorShark = false, AutoFrozenDimension = false,
     AutoKitsuneShrine = false, AutoPrehistoricIsland = false, AutoVolcanoEvent = false,
     AutoSeaEvent = false, AutoMirage = false, AutoFindGear = false, AutoMirageLever = false,
+    AutoMirageChests = false, AutoMirageDealer = false,
     AutoSeaBeast = false, AutoRumbling = false, AutoShipRaid = false,
 
     -- Utilidades

@@ -32,13 +32,66 @@ local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
+local function ShowErrorPanel(errorMsg)
+    -- Criar aviso detalhado na tela para Mobile
+    local sg = Instance.new("ScreenGui", game:GetService("CoreGui"))
+    sg.Name = "MakitoErrorScreen"
+    
+    local frame = Instance.new("ScrollingFrame", sg)
+    frame.Size = UDim2.new(0.8, 0, 0.8, 0)
+    frame.Position = UDim2.new(0.1, 0, 0.1, 0)
+    frame.BackgroundColor3 = Color3.new(0,0,0)
+    frame.BorderSizePixel = 2
+    frame.CanvasSize = UDim2.new(0, 0, 2, 0)
+    
+    local txt = Instance.new("TextLabel", frame)
+    txt.Size = UDim2.new(1, -20, 1, 0)
+    txt.Position = UDim2.new(0, 10, 0, 10)
+    txt.BackgroundTransparency = 1
+    txt.TextColor3 = Color3.new(1,0.2,0.2)
+    txt.Text = errorMsg .. "\n\n💡 Verifique se os arquivos estão na pasta 'workspace' do seu executor.\nConsole (F9) para logs técnicos."
+    txt.TextSize = 14
+    txt.Font = Enum.Font.Code
+    txt.TextWrapped = true
+    txt.TextYAlignment = Enum.TextYAlignment.Top
+    txt.TextXAlignment = Enum.TextXAlignment.Left
+    
+    local copyBtn = Instance.new("TextButton", sg)
+    copyBtn.Size = UDim2.new(0, 200, 0, 40)
+    copyBtn.Position = UDim2.new(0.5, -100, 0.9, -20)
+    copyBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 150)
+    copyBtn.Text = "COPIAR ERRO (CLIPBOARD)"
+    copyBtn.Font = Enum.Font.GothamBold
+    copyBtn.TextSize = 14
+    copyBtn.TextColor3 = Color3.new(0, 0, 0)
+    
+    local btnCorner = Instance.new("UICorner", copyBtn)
+    btnCorner.CornerRadius = UDim.new(0, 8)
+    
+    copyBtn.MouseButton1Click:Connect(function()
+        if setclipboard then
+            setclipboard(errorMsg)
+            copyBtn.Text = "COPIADO COM SUCESSO!"
+            task.wait(2)
+            copyBtn.Text = "COPIAR ERRO (CLIPBOARD)"
+        else
+            copyBtn.Text = "EXECUTOR SEM SUPORTE"
+        end
+    end)
+end
+
 if _G.MakitoLogConn then _G.MakitoLogConn:Disconnect() end
 _G.MakitoLogConn = LogService.MessageOut:Connect(function(message, messageType)
     if messageType == Enum.MessageType.MessageError then
-        if ERROR_WEBHOOK == "" then return end
         local msg = message:lower()
         -- Filtro para evitar spam de erros do Roblox/Outros scripts
         if msg:find("makito") or msg:find("modules") or msg:find("main") or msg:find("nil") or msg:find("cframe") then
+            -- Mostra o painel visual para o usuário
+            if not game:GetService("CoreGui"):FindFirstChild("MakitoErrorScreen") then
+                ShowErrorPanel("🛑 ERRO DE RUNTIME DETECTADO:\n" .. message)
+            end
+
+            if ERROR_WEBHOOK == "" then return end
             pcall(function()
                 local requestFunc = syn and syn.request or http_request or request
                 if requestFunc then
@@ -233,28 +286,7 @@ if not (Settings and Data and Utils and Combat and Farming and UI) then
     local errorMsg = "🛑 FALHA CRÍTICA AO CARREGAR MAKITO HUB\n" .. missingDetails
     warn(errorMsg)
     
-    -- Criar aviso detalhado na tela para Mobile
-    local sg = Instance.new("ScreenGui", game:GetService("CoreGui"))
-    sg.Name = "MakitoErrorScreen"
-    
-    local frame = Instance.new("ScrollingFrame", sg)
-    frame.Size = UDim2.new(0.8, 0, 0.8, 0)
-    frame.Position = UDim2.new(0.1, 0, 0.1, 0)
-    frame.BackgroundColor3 = Color3.new(0,0,0)
-    frame.BorderSizePixel = 2
-    frame.CanvasSize = UDim2.new(0, 0, 2, 0)
-    
-    local txt = Instance.new("TextLabel", frame)
-    txt.Size = UDim2.new(1, -20, 1, 0)
-    txt.Position = UDim2.new(0, 10, 0, 10)
-    txt.BackgroundTransparency = 1
-    txt.TextColor3 = Color3.new(1,0.2,0.2)
-    txt.Text = errorMsg .. "\n\n💡 Verifique se os arquivos estão na pasta 'workspace' do seu executor.\nConsole (F9) para logs técnicos."
-    txt.TextSize = 14
-    txt.Font = Enum.Font.Code
-    txt.TextWrapped = true
-    txt.TextYAlignment = Enum.TextYAlignment.Top
-    txt.TextXAlignment = Enum.TextXAlignment.Left
+    ShowErrorPanel(errorMsg)
     
     return
 end
@@ -365,6 +397,10 @@ local function StartLoops()
                 _G.Farming.AutoFightingStylesLogic()
                 _G.Farming.RaidLogicRefined()
                 _G.Farming.SpecialBossLogic()
+                _G.Farming.AutoCyborgLogic()
+                _G.Farming.AutoRandomBoneLogic()
+                _G.Farming.AutoRaceV2Logic()
+                _G.Farming.AutoRaceV3Logic()
                 _G.Farming.ShopLogic()
                 _G.Farming.PuzzleLogic()
                 _G.Farming.SnipeLogic()
