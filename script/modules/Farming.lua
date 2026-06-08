@@ -79,25 +79,36 @@ function FarmingModule.SupremeQuestHandler(QuestData)
 
     -- Debounce para evitar spam de NPC se a UI demorar a aparecer
     if not hasQuest and _G.Settings and _G.Settings.AutoQuest then
+        -- SEGURANÇA: Verifica se o personagem e o root part existem
+        local char = LocalPlayer.Character
+        local root = char and char:FindFirstChild("HumanoidRootPart")
+        
+        if not root then return BestQuest, false end
+
         -- Verifica se já enviamos o comando de StartQuest recentemente (cache de 2 segundos)
         if _G.LastQuestTime and tick() - _G.LastQuestTime < 2 then
             return BestQuest, false
         end
 
         local npcPos = BestQuest.Pos
-        local dist = (LocalPlayer.Character.HumanoidRootPart.Position - npcPos.Position).Magnitude
+        if not npcPos then return BestQuest, false end
+
+        local dist = (root.Position - npcPos.Position).Magnitude
         
-        if dist > 15 then
+        if dist > 20 then
             _G.IsTalkingToNPC = true -- Trava o farm enquanto vai ao NPC
-            if _G.MakitoStatus then _G.MakitoStatus.Text = "Status: Indo ate NPC " .. BestQuest.NPC end
+            if _G.MakitoStatus then _G.MakitoStatus.Text = "Status: Indo ate NPC " .. (BestQuest.NPC or "Desconhecido") end
             _G.Utils.TweenTo(npcPos)
         else
             _G.IsTalkingToNPC = true
-            if _G.MakitoStatus then _G.MakitoStatus.Text = "Status: Aceitando Missao " .. BestQuest.Enemy end
+            if _G.MakitoStatus then _G.MakitoStatus.Text = "Status: Aceitando Missao " .. (BestQuest.Enemy or "Inimigo") end
+            
+            -- Pequeno delay para estabilizar a posição antes de falar com o NPC
+            -- Isso evita o erro no NPCManager do Blox Fruits
+            task.wait(0.2)
             _G.Utils.SafeRemote("StartQuest", BestQuest.Name, BestQuest.ID)
             _G.LastQuestTime = tick() -- Marca o tempo que pegou a missão
-            task.wait(0.5)
-            -- Não removemos o IsTalkingToNPC aqui, deixamos o próximo ciclo da UI confirmar
+            task.wait(0.3)
         end
     end
     
