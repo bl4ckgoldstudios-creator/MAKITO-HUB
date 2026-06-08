@@ -168,6 +168,10 @@ end
 function FarmingModule.SupremeAutoFarm()
     if not _G.Settings or (not _G.Settings.AutoFarm and not _G.Settings.AutoFarmLevel) then return end
     
+    local char = LocalPlayer.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+
     -- AUTO NEXT SEA INTEGRATION
     if _G.Settings.AutoNextSea then
         local level = (LocalPlayer.Data and LocalPlayer.Data.Level.Value) or 0
@@ -181,9 +185,13 @@ function FarmingModule.SupremeAutoFarm()
         local Quest, isQuestActive = FarmingModule.SupremeQuestHandler(_G.Data.QuestData)
         if not Quest then return end
         
+        -- NO-CLIP E FLOAT SEMPRE ATIVOS DURANTE O FARM
+        _G.Utils.SetNoClip(true)
+        _G.Utils.Float(true)
+
         -- SÓ FARMA SE A MISSÃO ESTIVER REALMENTE ATIVA NA UI
         if not isQuestActive then 
-            _G.Combat.StopFastAttack() -- Para de bater enquanto pega missão
+            _G.Combat.StopCombatLoop() -- Para de bater enquanto pega missão
             return 
         end
 
@@ -197,11 +205,35 @@ function FarmingModule.SupremeAutoFarm()
         end
 
         if enemy then
+            local targetPos = enemy.HumanoidRootPart.CFrame * CFrame.new(0, 20, 0) -- Posição de segurança (Acima do mob)
+
+            -- Movimentação: Se a distância for enorme, usa Tween, se for perto, usa CFrame direto para evitar lag
+            local dist = (root.Position - targetPos.Position).Magnitude
+            if dist > 300 then
+                _G.Utils.TweenTo(targetPos)
+            else
+                root.CFrame = targetPos
+            end
+
+            -- Lógica de Maestria e Arma
             if _G.Settings.AutoMastery or _G.Settings.AutoFarmMastery then
                 FarmingModule.MasteryLogic(enemy)
             else
-                FarmingModule.EquipWeapon(_G.Settings.Weapon)
+                FarmingModule.EquipWeapon(_G.Settings.MainWeapon or "Melee")
             end
+
+            -- Ataca com a nova Kill Aura Elite V10
+            _G.Combat.StartCombatLoop()
+            
+            -- Traz os mobs para perto
+            FarmingModule.BlackHoleBringMobs(enemy)
+        else
+            -- Se não achou o inimigo mas a quest tá ativa, vai para o spawn deles
+            local spawnPos = Quest.EnemyPos or Quest.Pos
+            _G.Utils.TweenTo(spawnPos * CFrame.new(0, 50, 0))
+        end
+    end)
+end
             
             if _G.Settings.BringMobs or _G.Settings.AutoFarmMaterials then
                 FarmingModule.BlackHoleBringMobs(enemy)

@@ -97,96 +97,101 @@ function CombatModule.StopCombatLoop()
     end
 end
 
--- SISTEMA UNIFICADO: FAST ATTACK + KILL AURA (VERSÃO ELITE REFINADA)
-local activeTargets = {}
+-- KILL AURA ELITE (MULTI-TARGET SILENT DAMAGE)
+local function EliteKillAura()
+    local char = LocalPlayer.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    local weapon = char and char:FindFirstChildOfClass("Tool")
+    if not root or not weapon or not IsCombatWeapon(weapon) then return end
+    
+    local remote = GetCommF()
+    if not remote then return end
+    
+    _G.Utils.UpdateInstanceCache()
+    local myPos = root.Position
+    local attackDist = _G.Settings.KillAuraDistance or 150
+    local targets = {}
+    
+    -- Varredura ultra-rápida usando o cache otimizado
+    for _, enemy in ipairs(_G.Utils.GetInstanceCache().Enemies) do
+        local eRoot = enemy:FindFirstChild("HumanoidRootPart")
+        if eRoot then
+            local dist = (myPos - eRoot.Position).Magnitude
+            if dist <= attackDist then
+                -- Anti-Cheat Bypass: Raycast apenas para alvos distantes ou atrás de objetos
+                local canHit = true
+                if dist > 30 then
+                    local ray = Ray.new(myPos, (eRoot.Position - myPos).Unit * dist)
+                    local part = workspace:FindPartOnRayWithIgnoreList(ray, {char, enemy, workspace:FindFirstChild("Map")})
+                    if part then canHit = false end
+                end
+                
+                if canHit then
+                    table.insert(targets, eRoot)
+                end
+            end
+        end
+    end
+    
+    -- Disparo otimizado (Silent Multi-Hit)
+    if #targets > 0 then
+        -- O Blox Fruits processa múltiplos InvokeServer de "Attack" no mesmo step
+        -- Limite de 10 alvos simultâneos para evitar Kick por spam de pacote
+        for i = 1, math.min(#targets, 10) do
+            task.spawn(function()
+                remote:InvokeServer("Attack", targets[i])
+            end)
+        end
+    end
+end
+
+-- SISTEMA UNIFICADO: MOTOR DE COMBATE V10
 function CombatModule.StartCombatLoop()
     if FastAttackConn then return end
-    warn("🚀 [MAKITO] Motor de Combate Elite Iniciado")
+    warn("🚀 [MAKITO] Motor de Combate Elite V10 Iniciado")
     
-    local lastRemoteAttack = 0
-    FastAttackConn = RunService.Stepped:Connect(function()
+    local lastAttack = 0
+    FastAttackConn = RunService.RenderStepped:Connect(function() -- RenderStepped para maior velocidade de resposta
         if not _G.Settings or (not _G.Settings.FastAttack and not _G.Settings.KillAura) then 
             CombatModule.StopCombatLoop()
             return 
         end
         
-        -- SEGURANÇA: Bloqueia se estiver em animação de diálogo, sentado ou stunado
         if _G.IsTalkingToNPC then return end
         local char = LocalPlayer.Character
         local hum = char and char:FindFirstChildOfClass("Humanoid")
         if not hum or hum.Health <= 0 or hum.Sit then return end
         
-        pcall(function()
-            local root = char.HumanoidRootPart
-            local weapon = char:FindFirstChildOfClass("Tool")
-            if not weapon or not IsCombatWeapon(weapon) then return end
+        local now = tick()
+        local speed = _G.Settings.FastAttackSpeed or 0.001 -- Ultra rápido
+        
+        if now - lastAttack >= speed then
+            lastAttack = now
             
-            local now = tick()
-            local attackDelay = _G.Settings.FastAttackSpeed or 0.01
-            local attackDist = _G.Settings.KillAuraDistance or 150
-            
+            -- Sincronização de Framework (Modo Silencioso)
             local framework = GetFramework()
-            local enemies = workspace:FindFirstChild("Enemies") or workspace
-            local myPos = root.Position
-            
-            -- 1. SINCRONIZAÇÃO DE FRAMEWORK (MODO SILENCIOSO)
             if framework and framework.activeController then
-                local controller = framework.activeController
-                controller.hitboxMagnitude = attackDist
-                controller.attackCount = 0
-                controller.timeToNextAttack = 0
-                controller.increment = 0
+                local ac = framework.activeController
+                ac.hitboxMagnitude = 150
+                ac.attackCount = 0
+                ac.timeToNextAttack = 0
+                ac.increment = 0
+                -- Update 29: Alguns controladores precisam de reset no cooldown interno
+                if ac.AttackCD then ac.AttackCD = 0 end
             end
-
-            -- 2. LOGICA DE DANO REFINADA (KILL AURA PRO)
-            if now - lastRemoteAttack >= attackDelay then
+            
+            -- Executa a Kill Aura Elite
+            if _G.Settings.KillAura then
+                EliteKillAura()
+            elseif _G.Settings.FastAttack then
+                -- Fast Attack clássico (Alvo mais próximo)
                 local remote = GetCommF()
-                if remote then
-                    local potentialTargets = {}
-                    _G.Utils.UpdateInstanceCache()
-                    
-                    -- Varredura inteligente usando cache
-                    for _, v in ipairs(_G.Utils.GetInstanceCache().Enemies) do
-                        local eRoot = v:FindFirstChild("HumanoidRootPart")
-                        local eHum = v:FindFirstChild("Humanoid")
-                        
-                        if eRoot and eHum and eHum.Health > 0 then
-                            local dist = (myPos - eRoot.Position).Magnitude
-                            if dist <= attackDist then
-                                -- Raycast seletivo: Só faz se estiver perto de obstáculos (Anti-Cheat Bypass)
-                                local needsRaycast = dist > 40 -- Mobs muito perto geralmente não precisam
-                                local canAttack = true
-                                
-                                if needsRaycast then
-                                    local ray = Ray.new(myPos, (eRoot.Position - myPos).Unit * dist)
-                                    local part = workspace:FindPartOnRayWithIgnoreList(ray, {char, v, workspace:FindFirstChild("Map")})
-                                    if part then canAttack = false end
-                                end
-                                
-                                if canAttack then
-                                    table.insert(potentialTargets, {part = eRoot, health = eHum.Health})
-                                end
-                            end
-                        end
-                    end
-                    
-                    -- Ordena apenas se houver muitos alvos
-                    if #potentialTargets > 5 then
-                        table.sort(potentialTargets, function(a, b) return a.health < b.health end)
-                    end
-                    
-                    -- Dispara o Remote (Limite otimizado de 8 para evitar detecção de spam)
-                    local count = 0
-                    for _, target in ipairs(potentialTargets) do
-                        if count >= 8 then break end
-                        remote:InvokeServer("Attack", target.part)
-                        count = count + 1
-                    end
-                    
-                    lastRemoteAttack = now
+                local nearest = _G.Utils.GetNearestEnemyAny()
+                if remote and nearest and (root.Position - nearest.HumanoidRootPart.Position).Magnitude < 150 then
+                    remote:InvokeServer("Attack", nearest.HumanoidRootPart)
                 end
             end
-        end)
+        end
     end)
 end
 

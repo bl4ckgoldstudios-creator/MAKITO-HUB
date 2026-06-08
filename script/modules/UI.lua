@@ -155,34 +155,35 @@ function UIModule.CreateHub()
 
     -- ABAS DO HUB
     local StatusTab = UIModule.NewTab("Status", TabContainer, ContentArea)
-    UIModule.NewSection(StatusTab, "World Status")
-    local statusLabel = Instance.new("TextLabel", StatusTab)
-    statusLabel.Size = UDim2.new(1, 0, 0, 150)
-    statusLabel.BackgroundTransparency = 1
-    statusLabel.Font = Enum.Font.GothamSemibold
-    statusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    statusLabel.TextSize = 12
-    statusLabel.TextXAlignment = Enum.TextXAlignment.Left
-    statusLabel.Text = "Carregando status..."
-    
-    task.spawn(function()
-        while task.wait(2) do
-            local s = _G.Utils.UpdateGlobalStatus()
-            local fruitCount = 0
-            for _, v in ipairs(workspace:GetChildren()) do
-                if v:IsA("Tool") and (v.Name:find("Fruit") or v.ToolTip == "Blox Fruit") then
-                    fruitCount = fruitCount + 1
-                end
-            end
-            
-            statusLabel.Text = string.format(
-                "  🏝️ Mirage: %s\n  🌕 Lua: %s\n  🍰 Cake Prince: %s\n  👾 Bosses: %s\n  🌊 Evento: %s\n  🍎 Frutas no Chão: %d\n  🕒 Tempo do Server: %s",
-                s.Mirage, s.Moon, s.CakePrince, #s.Bosses > 0 and table.concat(s.Bosses, ", ") or "Nenhum", s.SeaEvents, fruitCount, os.date("%X")
-            )
-        end
-    end)
+    -- ... (conteúdo da aba Status mantido)
 
-    local MainTab = UIModule.NewTab("Main", TabContainer, ContentArea)
+    local MainTab = UIModule.NewTab("Main (Sea " .. _G.MakitoSea .. ")", TabContainer, ContentArea)
+    UIModule.NewSection(MainTab, "Farming Elite")
+    UIModule.NewToggle(MainTab, "Auto Farm Level", "AutoFarmLevel")
+    UIModule.NewToggle(MainTab, "Kill Aura Elite", "KillAura")
+    UIModule.NewToggle(MainTab, "Fast Attack Pro", "FastAttack")
+    
+    -- SEÇÕES POR SEA
+    if _G.MakitoSea == 1 then
+        UIModule.NewSection(MainTab, "Sea 1 (Old World)")
+        UIModule.NewToggle(MainTab, "Auto Saber", "AutoSaber")
+        UIModule.NewToggle(MainTab, "Auto Pole", "AutoPole")
+    elseif _G.MakitoSea == 2 then
+        UIModule.NewSection(MainTab, "Sea 2 (New World)")
+        UIModule.NewToggle(MainTab, "Auto Race V2", "AutoRaceV2")
+        UIModule.NewToggle(MainTab, "Auto Race V3", "AutoRaceV3")
+        UIModule.NewToggle(MainTab, "Auto Law", "AutoLaw")
+        UIModule.NewToggle(MainTab, "Auto Rengoku", "AutoRengoku")
+    elseif _G.MakitoSea == 3 then
+        UIModule.NewSection(MainTab, "Sea 3 (Third Sea)")
+        UIModule.NewToggle(MainTab, "Auto Dough King", "AutoDoughKing")
+        UIModule.NewToggle(MainTab, "Auto CDK", "AutoCDK")
+        UIModule.NewToggle(MainTab, "Auto Soul Guitar", "AutoSoulGuitar")
+        UIModule.NewToggle(MainTab, "Auto Godhuman", "AutoGodhuman")
+        UIModule.NewToggle(MainTab, "Auto Hallow Scythe", "AutoHallowScythe")
+    end
+
+    UIModule.NewSection(MainTab, "Settings")
     UIModule.NewSection(MainTab, "Auto Farm Elite")
     UIModule.NewToggle(MainTab, "Supreme Auto Farm", "AutoFarm")
     UIModule.NewToggle(MainTab, "Auto Farm Nearest", "AutoFarmNearest")

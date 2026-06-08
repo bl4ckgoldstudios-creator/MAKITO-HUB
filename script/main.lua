@@ -56,6 +56,22 @@ local function ShowErrorPanel(errorMsg)
     txt.TextYAlignment = Enum.TextYAlignment.Top
     txt.TextXAlignment = Enum.TextXAlignment.Left
     
+    local closeBtn = Instance.new("TextButton", sg)
+    closeBtn.Size = UDim2.new(0, 40, 0, 40)
+    closeBtn.Position = UDim2.new(0.9, -10, 0.1, 10)
+    closeBtn.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+    closeBtn.Text = "X"
+    closeBtn.Font = Enum.Font.GothamBold
+    closeBtn.TextSize = 20
+    closeBtn.TextColor3 = Color3.new(1, 1, 1)
+    
+    local closeCorner = Instance.new("UICorner", closeBtn)
+    closeCorner.CornerRadius = UDim.new(0, 8)
+    
+    closeBtn.MouseButton1Click:Connect(function()
+        sg:Destroy()
+    end)
+
     local copyBtn = Instance.new("TextButton", sg)
     copyBtn.Size = UDim2.new(0, 200, 0, 40)
     copyBtn.Position = UDim2.new(0.5, -100, 0.9, -20)
