@@ -151,7 +151,9 @@ function SettingsModule.Load()
         "AntiAFK", "ChatSpam", "AutoRedeemCodes", "AutoPvP",
         "AutoHallowScythe", "AutoBlackLeg", "AutoElectro", "AutoFishmanKarate",
         "AutoDragonBreath", "AutoSuperhuman", "AutoDeathStep", "AutoSharkmanKarate",
-        "AutoElectricClaw", "AutoDragonTalon", "AutoGodhumanIndividual"
+        "AutoElectricClaw", "AutoDragonTalon", "AutoGodhumanIndividual",
+        "AutoEctoplasm", "AutoVampireFang", "AutoBone", "AutoSanguineArt",
+        "AutoKitsuneEvent", "AutoSeaEventsV2", "AutoMirageAdvanced", "AutoDarkBladeV2"
     }
     for _, name in ipairs(disabled) do
         target[name] = false

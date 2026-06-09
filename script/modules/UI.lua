@@ -303,6 +303,17 @@ function UIModule.CreateHub()
     UIModule.NewToggle(EndGameTab, "Auto CDK", "AutoCDK")
     UIModule.NewToggle(EndGameTab, "Auto Soul Guitar", "AutoSoulGuitar")
     UIModule.NewToggle(EndGameTab, "Auto Shark Anchor", "AutoSharkAnchor")
+    UIModule.NewToggle(EndGameTab, "Auto Dark Blade V2", "AutoDarkBladeV2")
+
+    local ItemsTab = UIModule.NewTab("Items", "rbxassetid://10747373176", TabContainer, ContentArea)
+    UIModule.NewSection(ItemsTab, "Resource Farming")
+    UIModule.NewToggle(ItemsTab, "Auto Ectoplasm", "AutoEctoplasm")
+    UIModule.NewToggle(ItemsTab, "Auto Vampire Fang", "AutoVampireFang")
+    UIModule.NewToggle(ItemsTab, "Auto Bone Farm", "AutoBone")
+    UIModule.NewSection(ItemsTab, "World Resources")
+    UIModule.NewToggle(ItemsTab, "Auto Factory Pro", "AutoFactory")
+    UIModule.NewToggle(ItemsTab, "Auto Castle Raid", "AutoCastleRaid")
+    UIModule.NewToggle(ItemsTab, "Auto Chest Farm", "AutoChest")
 
     local FruitTab = UIModule.NewTab("Fruits", "rbxassetid://10747373176", TabContainer, ContentArea)
     UIModule.NewSection(FruitTab, "Fruit Automation")
@@ -341,13 +352,6 @@ function UIModule.CreateHub()
         end
     end)
     
-    UIModule.NewSection(MiscTab, "RESOURCES")
-    UIModule.NewToggle(MiscTab, "Auto Ectoplasm", "AutoEctoplasm")
-    UIModule.NewToggle(MiscTab, "Auto Vampire Fang", "AutoVampireFang")
-    UIModule.NewToggle(MiscTab, "Auto Factory", "AutoFactory")
-    UIModule.NewToggle(MiscTab, "Auto Castle Raid", "AutoCastleRaid")
-    UIModule.NewToggle(MiscTab, "Auto Dark Blade V2", "AutoDarkBladeV2")
-
     UIModule.NewSection(MiscTab, "OPTIMIZATION")
     UIModule.NewButton(MiscTab, "BOOST FPS (POTATO MODE)", function() 
         for _, v in ipairs(game:GetDescendants()) do
