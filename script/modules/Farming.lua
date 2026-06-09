@@ -97,7 +97,7 @@ function FarmingModule.SupremeAutoFarm()
     end
 
     local enemy = Makito.Utils.GetNearestEnemy(quest.Enemy)
-    if enemy and enemy:FindFirstChild("HumanoidRootPart") then
+    if enemy and enemy:FindFirstChild("HumanoidRootPart") and enemy:FindFirstChild("Humanoid") then
         local targetPos = enemy.HumanoidRootPart.CFrame * CFrame.new(0, Makito.Settings.Distance or 12, 0)
         
         if (root.Position - targetPos.Position).Magnitude > 300 then
@@ -107,7 +107,7 @@ function FarmingModule.SupremeAutoFarm()
         end
 
         -- Lógica de Mastery
-        if Makito.Settings.AutoMastery then
+        if Makito.Settings.AutoMastery and enemy:FindFirstChild("Humanoid") then
             if enemy.Humanoid.Health / enemy.Humanoid.MaxHealth <= (Makito.Settings.MasteryHealth / 100) then
                 FarmingModule.EquipWeapon(Makito.Settings.MasteryWeapon)
             else

@@ -14,7 +14,7 @@ local Tabs = {}
 local CurrentTab = nil
 
 -- UTILS PARA DESIGN
-local function Ripple(obj)
+local function Ripple(obj: any)
     obj.ClipsDescendants = true
     obj.MouseButton1Click:Connect(function()
         local mouse = LocalPlayer:GetMouse()
@@ -134,10 +134,10 @@ function UIModule.CreateHub()
     SidebarTitle.Size = UDim2.new(1, 0, 0, 60)
     SidebarTitle.BackgroundTransparency = 1
     SidebarTitle.Font = Enum.Font.GothamBold
+    SidebarTitle.RichText = true
     SidebarTitle.Text = "MAKITO <font color='#00FF96'>HUB</font>"
     SidebarTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
     SidebarTitle.TextSize = 22
-    SidebarTitle.RichText = true
 
     local TabContainer = Instance.new("ScrollingFrame")
     TabContainer.Name = "TabContainer"
@@ -162,8 +162,6 @@ function UIModule.CreateHub()
     ContentArea.Size = UDim2.new(1, -180, 1, -30)
     ContentArea.ZIndex = 2
 
-    -- ABAS (TODAS AS FUNÇÕES)
-    
     -- HOME
     local HomeTab = UIModule.NewTab("HOME", "rbxassetid://10747373176", TabContainer, ContentArea)
     UIModule.NewSection(HomeTab, "DASHBOARD")
@@ -280,10 +278,7 @@ function UIModule.CreateHub()
     return MakitoGui, MainFrame
 end
 
--- Funções NewTab, NewSection, NewToggle, NewButton, NewDropdown, NewSlider e CreateWatermark permanecem iguais...
--- (Omitindo para brevidade, mas devem ser incluídas no arquivo real)
-
-function UIModule.NewTab(name, iconId, container, contentArea)
+function UIModule.NewTab(name: string, iconId: string, container: any, contentArea: any)
     local TabBtn = Instance.new("TextButton")
     TabBtn.Name = name .. "Tab"
     TabBtn.Parent = container
@@ -330,7 +325,7 @@ function UIModule.NewTab(name, iconId, container, contentArea)
     return Page
 end
 
-function UIModule.NewSection(parent, name)
+function UIModule.NewSection(parent: any, name: string)
     local Label = Instance.new("TextLabel", parent)
     Label.Size = UDim2.new(1, 0, 0, 25)
     Label.BackgroundTransparency = 1
@@ -340,7 +335,7 @@ function UIModule.NewSection(parent, name)
     Label.TextSize = 12
 end
 
-function UIModule.NewToggle(parent, name, setting, callback)
+function UIModule.NewToggle(parent: any, name: string, setting: string, callback: any?)
     local Btn = Instance.new("TextButton", parent)
     Btn.Size = UDim2.new(1, -10, 0, 35)
     Btn.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
@@ -365,7 +360,7 @@ function UIModule.NewToggle(parent, name, setting, callback)
     Update()
 end
 
-function UIModule.NewButton(parent, name, callback)
+function UIModule.NewButton(parent: any, name: string, callback: any)
     local Btn = Instance.new("TextButton", parent)
     Btn.Size = UDim2.new(1, -10, 0, 35)
     Btn.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
@@ -377,7 +372,7 @@ function UIModule.NewButton(parent, name, callback)
     Btn.MouseButton1Click:Connect(callback)
 end
 
-function UIModule.NewDropdown(parent, name, options, setting, callback)
+function UIModule.NewDropdown(parent: any, name: string, options: {string}, setting: string, callback: any?)
     local Drop = Instance.new("TextButton", parent)
     Drop.Size = UDim2.new(1, -10, 0, 35)
     Drop.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
@@ -412,7 +407,7 @@ function UIModule.NewDropdown(parent, name, options, setting, callback)
     end
 end
 
-function UIModule.NewSlider(parent, name, min, max, default, setting, callback)
+function UIModule.NewSlider(parent: any, name: string, min: number, max: number, default: number, setting: string, callback: any?)
     local Slider = Instance.new("Frame", parent)
     Slider.Size = UDim2.new(1, -10, 0, 50)
     Slider.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
@@ -420,9 +415,9 @@ function UIModule.NewSlider(parent, name, min, max, default, setting, callback)
 
     local Label = Instance.new("TextLabel", Slider)
     Label.Size = UDim2.new(1, 0, 0, 20)
-    Label.Text = name .. ": " .. Makito.Settings[setting]
     Label.BackgroundTransparency = 1
     Label.TextColor3 = Color3.new(1,1,1)
+    Label.Text = name .. ": " .. Makito.Settings[setting]
 
     local Bar = Instance.new("Frame", Slider)
     Bar.Size = UDim2.new(1, -20, 0, 4)
@@ -433,9 +428,8 @@ function UIModule.NewSlider(parent, name, min, max, default, setting, callback)
     Fill.Size = UDim2.new((Makito.Settings[setting] - min)/(max-min), 0, 1, 0)
     Fill.BackgroundColor3 = (Makito.Settings and Makito.Settings.ThemeColor) or Color3.fromRGB(0, 255, 150)
     
-    -- Lógica básica de arraste do slider
     local dragging = false
-    local function Update(input)
+    local function Update(input: any)
         local percent = math.clamp((input.Position.X - Bar.AbsolutePosition.X) / Bar.AbsoluteSize.X, 0, 1)
         local val = math.floor(min + (max - min) * percent)
         Fill.Size = UDim2.new(percent, 0, 1, 0)
