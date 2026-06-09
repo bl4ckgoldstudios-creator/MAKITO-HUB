@@ -196,7 +196,11 @@ function UtilsModule.SecurityBypass()
     -- Infinite Geppo
     game:GetService("UserInputService").JumpRequest:Connect(function()
         if Makito.Settings and Makito.Settings.InfiniteGeppo then
-            LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+            local char = LocalPlayer.Character
+            local hum = char and char:FindFirstChildOfClass("Humanoid")
+            if hum then
+                hum:ChangeState(Enum.HumanoidStateType.Jumping)
+            end
         end
     end)
 end
@@ -213,25 +217,30 @@ function UtilsModule.ApplyVisualSettings()
 
     -- Full Bright
     if Makito.Settings and Makito.Settings.FullBright then
-        game:GetService("Lighting").Brightness = 2
-        game:GetService("Lighting").ClockTime = 14
-        game:GetService("Lighting").FogEnd = 100000
-        game:GetService("Lighting").GlobalShadows = false
-        game:GetService("Lighting").OutdoorAmbient = Color3.fromRGB(128, 128, 128)
+        local lighting = game:GetService("Lighting")
+        lighting.Brightness = 2
+        lighting.ClockTime = 14
+        lighting.FogEnd = 100000
+        lighting.GlobalShadows = false
+        lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 128)
     end
     
-    -- FPS Boost
-    if Makito.Settings and Makito.Settings.FPSBoost then
-        for _, v in ipairs(game:GetDescendants()) do
-            if v:IsA("Part") or v:IsA("MeshPart") or v:IsA("UnionOperation") then
-                v.Material = Enum.Material.SmoothPlastic
-                v.Reflectance = 0
-            elseif v:IsA("Decal") or v:IsA("Texture") then
-                v:Destroy()
-            elseif v:IsA("ParticleEmitter") or v:IsA("Trail") then
-                v.Enabled = false
+    -- FPS Boost (Otimizado para não travar)
+    if Makito.Settings and Makito.Settings.FPSBoost and not _G.FPSBoostApplied then
+        _G.FPSBoostApplied = true
+        task.spawn(function()
+            for _, v in ipairs(workspace:GetDescendants()) do
+                if v:IsA("Part") or v:IsA("MeshPart") or v:IsA("UnionOperation") then
+                    v.Material = Enum.Material.SmoothPlastic
+                    v.Reflectance = 0
+                elseif v:IsA("Decal") or v:IsA("Texture") then
+                    v.Transparency = 1
+                elseif v:IsA("ParticleEmitter") or v:IsA("Trail") then
+                    v.Enabled = false
+                end
+                if tick() % 100 == 0 then task.wait() end -- Anti-lag
             end
-        end
+        end)
     end
 end
 

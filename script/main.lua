@@ -125,8 +125,26 @@ end
 
 -- 4. CARREGAMENTO DE MÓDULOS
 local function SafeLoad(name: string, path: string)
-    local ok, content = pcall(readfile, path)
-    if not ok or not content then return nil end
+    local possiblePaths = {
+        path,
+        "MakitoHub/" .. path,
+        "script/" .. path,
+        "./" .. path
+    }
+    
+    local content = nil
+    for _, p in ipairs(possiblePaths) do
+        local ok, res = pcall(readfile, p)
+        if ok and res then
+            content = res
+            break
+        end
+    end
+
+    if not content then 
+        warn("⚠️ [MAKITO] Arquivo não encontrado: " .. path)
+        return nil 
+    end
     
     local fn, err = loadstring(content, "Makito_" .. name)
     if not fn then 
@@ -140,23 +158,25 @@ local function SafeLoad(name: string, path: string)
         return nil
     end
     
-    -- Se for Settings, injeta os valores no Makito.Settings
+    -- Se for Settings, injeta os valores no Makito.Settings de forma correta
     if name == "Settings" then
         Makito.Settings = result.Values
-        Makito.Themes = result.Themes
+        Makito.SettingsModule = result
         return result
     end
     
     return result
 end
 
--- CARREGAMENTO SEQUENCIAL (ORDRM IMPORTA)
+-- CARREGAMENTO SEQUENCIAL (ORDEM IMPORTA)
 local modules = {"Settings", "Data", "Utils", "Combat", "Farming", "UI"}
 for _, name in ipairs(modules) do
     local path = "modules/" .. name .. ".lua"
     local module = SafeLoad(name, path)
     if module then
-        Makito[name] = module
+        if name ~= "Settings" then
+            Makito[name] = module
+        end
         print("✅ Módulo carregado: " .. name)
     else
         warn("⚠️ Falha ao carregar módulo: " .. name)

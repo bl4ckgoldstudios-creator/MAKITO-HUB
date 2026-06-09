@@ -164,6 +164,7 @@ function FarmingModule.UpdateAutomation()
         if Makito.Settings.AutoCitizenQuest then FarmingModule.CitizenQuestLogic() end
         if Makito.Settings.AutoBuyHakiColors then FarmingModule.AutoBuyHakiColors() end
         if Makito.Settings.AutoNextSea then FarmingModule.AutoNextSea() end
+        if Makito.Settings.AutoRollRace then FarmingModule.AutoRollRaceLogic() end
         
         -- Frutas
         if Makito.Settings.AutoCollectFruit then FarmingModule.AutoCollectFruit() end
@@ -386,6 +387,29 @@ function FarmingModule.AutoNextSea()
         -- Go to Sea 3 (Mr. Captain NPC at Green Bit)
         Makito.Utils.TweenTo(CFrame.new(-2840, 10, 5318))
         Makito.Utils.SafeRemote("TravelDressrosa")
+    end
+end
+
+function FarmingModule.AutoRollRaceLogic()
+    if not Makito.Settings.AutoRollRace then return end
+    
+    local currentRace = tostring(LocalPlayer.Data.Race.Value)
+    local targetRace = Makito.Settings.TargetRace
+    
+    if currentRace ~= targetRace then
+        local frags = LocalPlayer.Data.Fragments.Value
+        if frags >= 3000 then
+            local res = Makito.Utils.SafeRemote("BlackbeardReward", "Reroll", "2")
+            if res then
+                Makito.Utils.Notify("Raça alterada para: " .. tostring(LocalPlayer.Data.Race.Value))
+            end
+        else
+            Makito.Utils.Notify("Fragmentos insuficientes para Roll Race (3000 necessários)")
+            Makito.Settings.AutoRollRace = false
+        end
+    else
+        Makito.Utils.Notify("Raça alvo alcançada: " .. targetRace)
+        Makito.Settings.AutoRollRace = false
     end
 end
 

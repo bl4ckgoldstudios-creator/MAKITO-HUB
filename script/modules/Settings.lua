@@ -86,6 +86,8 @@ SettingsModule.Values = {
     SelectedIsland = "None",
     WebhookURL = "",
     AutoWebhook = false,
+    AutoRollRace = false,
+    TargetRace = "Human",
 }
 
 SettingsModule.Themes = {
