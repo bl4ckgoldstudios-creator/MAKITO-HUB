@@ -156,6 +156,15 @@ function FarmingModule.UpdateAutomation()
         if Makito.Settings.AutoFarmAllBosses then FarmingModule.AutoFarmAllBosses() end
         if Makito.Settings.AutoEliteHunter then FarmingModule.AutoEliteHunter() end
         
+        if Makito.Settings.AutoBoneFarm then FarmingModule.AutoBoneFarm() end
+        if Makito.Settings.AutoFarmFactory then FarmingModule.FactoryFarmLogic() end
+        if Makito.Settings.AutoFarmShipRaid then FarmingModule.ShipRaidLogic() end
+        if Makito.Settings.AutoFarmMaterials then FarmingModule.AutoFarmMaterials() end
+        if Makito.Settings.AutoBartiloQuest then FarmingModule.BartiloQuestLogic() end
+        if Makito.Settings.AutoCitizenQuest then FarmingModule.CitizenQuestLogic() end
+        if Makito.Settings.AutoBuyHakiColors then FarmingModule.AutoBuyHakiColors() end
+        if Makito.Settings.AutoNextSea then FarmingModule.AutoNextSea() end
+        
         -- Frutas
         if Makito.Settings.AutoCollectFruit then FarmingModule.AutoCollectFruit() end
         if Makito.Settings.AutoStoreFruit then FarmingModule.AutoStoreFruit() end
@@ -239,6 +248,145 @@ function FarmingModule.RaidLogic()
     
     -- Dungeon Logic inside Raid
     FarmingModule.DungeonModeLogic()
+end
+
+function FarmingModule.AutoBoneFarm()
+    if Makito.Sea ~= 3 then return end
+    local enemies = {"Reborn Skeleton", "Living Zombie", "Demonic Soul", "Posessed Mummy"}
+    local nearest = nil
+    local dist = math.huge
+    
+    for _, name in ipairs(enemies) do
+        local enemy = Makito.Utils.GetNearestEnemy(name)
+        if enemy then
+            local d = (LocalPlayer.Character.HumanoidRootPart.Position - enemy.HumanoidRootPart.Position).Magnitude
+            if d < dist then
+                dist = d
+                nearest = enemy
+            end
+        end
+    end
+
+    if nearest then
+        Makito.Utils.TweenTo(nearest.HumanoidRootPart.CFrame * CFrame.new(0, 12, 0))
+        FarmingModule.EquipWeapon(Makito.Settings.MainWeapon)
+        Makito.Combat.StartCombatLoop()
+    else
+        Makito.Utils.TweenTo(CFrame.new(-9515, 164, -5785)) -- Haunted Castle
+    end
+end
+
+function FarmingModule.FactoryFarmLogic()
+    if Makito.Sea ~= 2 then return end
+    local factory = workspace:FindFirstChild("Factory")
+    if not factory then return end
+    
+    local core = factory:FindFirstChild("Core")
+    if core and core:FindFirstChild("Humanoid") and core.Humanoid.Health > 0 then
+        Makito.Utils.TweenTo(core.CFrame * CFrame.new(0, 20, 0))
+        Makito.Combat.StartCombatLoop()
+    end
+end
+
+function FarmingModule.ShipRaidLogic()
+    if Makito.Sea ~= 2 then return end
+    local seaEvents = workspace:FindFirstChild("SeaEvents")
+    if not seaEvents then return end
+    
+    for _, v in ipairs(seaEvents:GetChildren()) do
+        if v.Name:find("Ship") and v:FindFirstChild("HumanoidRootPart") then
+            Makito.Utils.TweenTo(v.HumanoidRootPart.CFrame * CFrame.new(0, 30, 0))
+            Makito.Combat.StartCombatLoop()
+            return
+        end
+    end
+end
+
+function FarmingModule.AutoFarmMaterials()
+    local selected = Makito.Settings.SelectedMaterial
+    local data = Makito.Data.MaterialData[selected]
+    if not data then return end
+    
+    local enemy = Makito.Utils.GetNearestEnemy(data.Enemy)
+    if enemy then
+        Makito.Utils.TweenTo(enemy.HumanoidRootPart.CFrame * CFrame.new(0, 12, 0))
+        FarmingModule.EquipWeapon(Makito.Settings.MainWeapon)
+        Makito.Combat.StartCombatLoop()
+    else
+        Makito.Utils.TweenTo(data.Pos)
+    end
+end
+
+function FarmingModule.BartiloQuestLogic()
+    if Makito.Sea ~= 2 then return end
+    -- Step 1: Kill 50 Swan Pirates
+    -- Step 2: Kill Jeremy
+    -- Step 3: Free Gladiators (Code)
+    local quest = Makito.Utils.SafeRemote("BartiloQuest", "GetStatus")
+    if quest == "KillSwanPirates" then
+        local enemy = Makito.Utils.GetNearestEnemy("Swan Pirate")
+        if enemy then
+            Makito.Utils.TweenTo(enemy.HumanoidRootPart.CFrame * CFrame.new(0, 12, 0))
+            Makito.Combat.StartCombatLoop()
+        else
+            Makito.Utils.TweenTo(CFrame.new(-650, 72, 2100))
+        end
+    elseif quest == "KillJeremy" then
+        local jeremy = Makito.Utils.GetNearestEnemy("Jeremy")
+        if jeremy then
+            Makito.Utils.TweenTo(jeremy.HumanoidRootPart.CFrame * CFrame.new(0, 12, 0))
+            Makito.Combat.StartCombatLoop()
+        else
+            Makito.Utils.TweenTo(CFrame.new(-2367, 72, -3054))
+        end
+    elseif quest == "FreeGladiators" then
+        -- This step is usually manual or requires specific CFrame clicks
+        Makito.Utils.TweenTo(CFrame.new(-1850, 7, -2980)) -- Colosseum
+    end
+end
+
+function FarmingModule.CitizenQuestLogic()
+    if Makito.Sea ~= 3 then return end
+    -- Kill 50 Forest Pirates and Captain Elephant
+    local quest = Makito.Utils.SafeRemote("CitizenQuest", "GetStatus")
+    if quest == "KillForestPirates" then
+        local enemy = Makito.Utils.GetNearestEnemy("Forest Pirate")
+        if enemy then
+            Makito.Utils.TweenTo(enemy.HumanoidRootPart.CFrame * CFrame.new(0, 12, 0))
+            Makito.Combat.StartCombatLoop()
+        else
+            Makito.Utils.TweenTo(CFrame.new(-13233, 532, -7594))
+        end
+    elseif quest == "KillCaptainElephant" then
+        local boss = Makito.Utils.GetNearestEnemy("Captain Elephant")
+        if boss then
+            Makito.Utils.TweenTo(boss.HumanoidRootPart.CFrame * CFrame.new(0, 12, 0))
+            Makito.Combat.StartCombatLoop()
+        else
+            Makito.Utils.TweenTo(CFrame.new(-13233, 532, -7594))
+        end
+    end
+end
+
+function FarmingModule.AutoBuyHakiColors()
+    local npc = workspace:FindFirstChild("Master of Auras")
+    if npc then
+        Makito.Utils.TweenTo(npc.WorldPivot)
+        Makito.Utils.SafeRemote("HakiColorDealer", "Buy")
+    end
+end
+
+function FarmingModule.AutoNextSea()
+    local level = LocalPlayer.Data.Level.Value
+    if Makito.Sea == 1 and level >= 700 then
+        -- Go to Sea 2 (Military Detective NPC)
+        Makito.Utils.TweenTo(CFrame.new(-4807, 23, 4335))
+        Makito.Utils.SafeRemote("TravelMain")
+    elseif Makito.Sea == 2 and level >= 1500 then
+        -- Go to Sea 3 (Mr. Captain NPC at Green Bit)
+        Makito.Utils.TweenTo(CFrame.new(-2840, 10, 5318))
+        Makito.Utils.SafeRemote("TravelDressrosa")
+    end
 end
 
 -- Outras lógicas (Chest, Dungeon, Valentine, SeaEvents, End-Game) permanecem as mesmas ou foram integradas
@@ -336,8 +484,13 @@ function FarmingModule.SeaEventLogic()
     if Makito.Settings.AutoKitsuneEvent then
         local island = SeaEvents:FindFirstChild("Kitsune Island")
         if island then
-            Makito.Utils.TweenTo(island.WorldPivot)
-            -- Lógica de coletar fogos azul aqui
+            local ember = island:FindFirstChild("Azure Ember") or island:FindFirstChild("AzureEmber")
+            if ember then
+                Makito.Utils.TweenTo(ember.CFrame)
+            else
+                Makito.Utils.TweenTo(island.WorldPivot * CFrame.new(0, 50, 0))
+            end
+            return
         end
     end
 end

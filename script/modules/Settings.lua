@@ -26,6 +26,12 @@ SettingsModule.Values = {
     AutoFarmBoss = false,
     AutoFarmAllBosses = false,
     AutoEliteHunter = false,
+    AutoBoneFarm = false,
+    AutoFarmFactory = false,
+    AutoFarmShipRaid = false,
+    AutoBartiloQuest = false,
+    AutoCitizenQuest = false,
+    AutoBuyHakiColors = false,
 
     -- Mastery & Materials
     AutoMastery = false,
@@ -72,10 +78,14 @@ SettingsModule.Values = {
     AutoChest = false,
     AutoFishing = false,
     FPSBoost = false,
+    WhiteScreen = false,
     FullBright = false,
     RainbowUI = false,
+    InfiniteGeppo = false,
     ThemeColor = Color3.fromRGB(0, 255, 150),
     SelectedIsland = "None",
+    WebhookURL = "",
+    AutoWebhook = false,
 }
 
 SettingsModule.Themes = {

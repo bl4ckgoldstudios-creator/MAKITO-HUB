@@ -66,6 +66,9 @@ local function UltraKillAura()
     local remote = ReplicatedStorage:FindFirstChild("CommF_", true)
     if not remote or not remote:IsA("RemoteFunction") then return end
     
+    -- Teleport Enemies to Player (Black Hole/Bring Mobs) logic can be integrated here for Kill Aura
+    -- But for now we focus on attacking.
+
     -- Stealth vs Rage logic
     local range = Makito.Settings.KillAuraDistance or 100
     if Makito.Settings.StealthMode then
@@ -93,10 +96,14 @@ local function UltraKillAura()
             remote:InvokeServer("Buso")
         end
         
-        for _, target in ipairs(targets) do
-            task.spawn(function()
-                remote:InvokeServer("Attack", target)
-            end)
+        -- Bypass de Animação de Ataque (Clicker)
+        if Makito.Settings.FastAttack then
+            for _, target in ipairs(targets) do
+                task.spawn(function()
+                    -- Remote call for damage
+                    remote:InvokeServer("Attack", target)
+                end)
+            end
         end
     end
 end
@@ -131,18 +138,6 @@ function CombatModule.StopCombatLoop()
     if FastAttackConn then
         FastAttackConn:Disconnect()
         FastAttackConn = nil
-    end
-end
-
-return CombatModule
-    if _G.Settings.SelectedFruit == "Dough" then
-        local skills = {"Z", "X", "C", "V"}
-        for _, skill in ipairs(skills) do
-            task.spawn(function()
-                remote:InvokeServer("Skill", skill)
-            end)
-            task.wait(0.2)
-        end
     end
 end
 

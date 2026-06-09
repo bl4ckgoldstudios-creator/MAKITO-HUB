@@ -213,9 +213,20 @@ function UIModule.CreateHub()
     UIModule.NewSection(FarmTab, "Main Farm")
     UIModule.NewToggle(FarmTab, "Auto Farm Level", "AutoFarm")
     UIModule.NewToggle(FarmTab, "Auto Quest", "AutoQuest")
+    UIModule.NewToggle(FarmTab, "Auto Next Sea", "AutoNextSea")
     UIModule.NewToggle(FarmTab, "Auto Farm All Bosses", "AutoFarmAllBosses")
     UIModule.NewToggle(FarmTab, "Auto Elite Hunter", "AutoEliteHunter")
+    UIModule.NewToggle(FarmTab, "Auto Bone Farm (S3)", "AutoBoneFarm")
+    UIModule.NewToggle(FarmTab, "Auto Factory (S2)", "AutoFarmFactory")
+    UIModule.NewToggle(FarmTab, "Auto Ship Raid (S2)", "AutoFarmShipRaid")
+    UIModule.NewToggle(FarmTab, "Auto Bartilo Quest (S2)", "AutoBartiloQuest")
+    UIModule.NewToggle(FarmTab, "Auto Citizen Quest (S3)", "AutoCitizenQuest")
+    UIModule.NewToggle(FarmTab, "Auto Buy Haki Colors", "AutoBuyHakiColors")
     UIModule.NewSection(FarmTab, "Mastery & Materials")
+    UIModule.NewToggle(FarmTab, "Auto Farm Materials", "AutoFarmMaterials")
+    local materials = {}
+    for k, _ in pairs(Makito.Data.MaterialData) do table.insert(materials, k) end
+    UIModule.NewDropdown(FarmTab, "Select Material", materials, "SelectedMaterial")
     UIModule.NewToggle(FarmTab, "Auto Mastery", "AutoMastery")
     UIModule.NewDropdown(FarmTab, "Mastery Weapon", {"Melee", "Sword", "Fruit"}, "MasteryWeapon")
     UIModule.NewSlider(FarmTab, "Mastery Health %", 5, 50, 20, "MasteryHealth")
@@ -269,11 +280,17 @@ function UIModule.CreateHub()
     local SettingsTab = UIModule.NewTab("SETTINGS", "rbxassetid://10747373176", TabContainer, ContentArea)
     UIModule.NewSection(SettingsTab, "Customization")
     UIModule.NewToggle(SettingsTab, "Rainbow UI", "RainbowUI")
+    UIModule.NewToggle(SettingsTab, "Infinite Geppo", "InfiniteGeppo")
     UIModule.NewToggle(SettingsTab, "FPS Boost", "FPSBoost")
+    UIModule.NewToggle(SettingsTab, "White Screen (CPU Save)", "WhiteScreen")
     UIModule.NewToggle(SettingsTab, "Full Bright", "FullBright")
     UIModule.NewSlider(SettingsTab, "Tween Speed", 100, 500, 350, "TweenSpeed")
     UIModule.NewButton(SettingsTab, "Server Hop", function() Makito.Utils.ServerHop() end)
     UIModule.NewButton(SettingsTab, "Rejoin", function() Makito.Utils.Rejoin() end)
+    UIModule.NewSection(SettingsTab, "Webhooks")
+    UIModule.NewToggle(SettingsTab, "Send Stats to Webhook", "AutoWebhook")
+    -- In a real scenario, we'd need a TextBox for WebhookURL, but for now we'll assume it's set in Settings.lua
+    -- or provided via _G.
 
     return MakitoGui, MainFrame
 end

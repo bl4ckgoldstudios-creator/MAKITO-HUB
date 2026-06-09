@@ -45,6 +45,8 @@ function UtilsModule.CreateESP(obj: Instance, name: string, color: Color3, type:
     elseif type == "NPC" then neonColor = Color3.fromRGB(255, 0, 255)
     elseif type == "Chest" then neonColor = Color3.fromRGB(255, 255, 0)
     elseif type == "Fruit" then neonColor = Color3.fromRGB(0, 255, 0)
+    elseif type == "Mirage" then neonColor = Color3.fromRGB(0, 0, 255)
+    elseif type == "Gear" then neonColor = Color3.fromRGB(255, 255, 255)
     end
 
     local bg = Instance.new("BillboardGui")
@@ -120,6 +122,27 @@ function UtilsModule.UpdateInstanceCache()
                 end
             end
         end
+        if Makito.Settings.EspFruits then
+            for _, v in ipairs(workspace:GetChildren()) do
+                if v:IsA("Tool") and (v.Name:find("Fruit") or v:FindFirstChild("Handle")) then
+                    UtilsModule.CreateESP(v:FindFirstChild("Handle") or v, v.Name, Color3.fromRGB(0, 255, 0), "Fruit")
+                end
+            end
+        end
+
+        if Makito.Settings.AutoMirageAdvanced then
+            local mirage = workspace:FindFirstChild("Mirage Island")
+            if mirage then
+                UtilsModule.CreateESP(mirage, "MIRAGE ISLAND", Color3.fromRGB(0, 0, 255), "Mirage")
+                
+                -- Search for Blue Gear
+                for _, v in ipairs(mirage:GetDescendants()) do
+                    if v.Name == "Blue Gear" or v.Name == "Gear" then
+                        UtilsModule.CreateESP(v, "BLUE GEAR", Color3.fromRGB(255, 255, 255), "Gear")
+                    end
+                end
+            end
+        end
     end
 end
 
@@ -169,6 +192,47 @@ function UtilsModule.SecurityBypass()
             hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
         end
     end)
+    
+    -- Infinite Geppo
+    game:GetService("UserInputService").JumpRequest:Connect(function()
+        if Makito.Settings and Makito.Settings.InfiniteGeppo then
+            LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+        end
+    end)
+end
+
+function UtilsModule.ApplyVisualSettings()
+    -- White Screen (Extreme FPS Boost)
+    if Makito.Settings and Makito.Settings.WhiteScreen then
+        if not game:GetService("RunService"):IsStudio() then
+            game:GetService("RunService"):Set3dRenderingEnabled(false)
+        end
+    else
+        game:GetService("RunService"):Set3dRenderingEnabled(true)
+    end
+
+    -- Full Bright
+    if Makito.Settings and Makito.Settings.FullBright then
+        game:GetService("Lighting").Brightness = 2
+        game:GetService("Lighting").ClockTime = 14
+        game:GetService("Lighting").FogEnd = 100000
+        game:GetService("Lighting").GlobalShadows = false
+        game:GetService("Lighting").OutdoorAmbient = Color3.fromRGB(128, 128, 128)
+    end
+    
+    -- FPS Boost
+    if Makito.Settings and Makito.Settings.FPSBoost then
+        for _, v in ipairs(game:GetDescendants()) do
+            if v:IsA("Part") or v:IsA("MeshPart") or v:IsA("UnionOperation") then
+                v.Material = Enum.Material.SmoothPlastic
+                v.Reflectance = 0
+            elseif v:IsA("Decal") or v:IsA("Texture") then
+                v:Destroy()
+            elseif v:IsA("ParticleEmitter") or v:IsA("Trail") then
+                v.Enabled = false
+            end
+        end
+    end
 end
 
 function UtilsModule.Float(enabled: boolean)
@@ -237,9 +301,10 @@ function UtilsModule.GetWorldStatus()
         if Makito.Sea == 3 then
             local counter = UtilsModule.GetCakeCounter()
             if counter then
-                status.CakeCounter = tostring(counter)
-                if counter == "0" or counter == 0 then
-                    status.DoughKing = "🟢 PRONTO"
+                local countNum = tonumber(counter) or 0
+                status.CakeCounter = tostring(500 - countNum) .. " restantes"
+                if countNum >= 500 then
+                    status.DoughKing = "🟢 PRONTO (Fale c/ NPC)"
                 end
             end
             

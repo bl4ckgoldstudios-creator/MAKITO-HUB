@@ -175,6 +175,7 @@ if Makito.Utils then
                 -- 1. Atualização de Cache e Status
                 Makito.Utils.UpdateInstanceCache()
                 Makito.Utils.AutoBuildStats()
+                Makito.Utils.ApplyVisualSettings()
                 
                 -- 2. Orquestração de Farming e Eventos
                 if Makito.Farming and Makito.Farming.UpdateAutomation then
@@ -186,6 +187,17 @@ if Makito.Utils then
                     Makito.Combat.StartCombatLoop()
                 else
                     Makito.Combat.StopCombatLoop()
+                end
+
+                -- 4. Webhook Stats (A cada 10 minutos)
+                if Makito.Settings and Makito.Settings.AutoWebhook then
+                    if not _G.LastWebhook or tick() - _G.LastWebhook > 600 then
+                        _G.LastWebhook = tick()
+                        Makito.Debug("STATS_UPDATE", string.format(
+                            "Level: %d | Beli: %d | Fragments: %d",
+                            LocalPlayer.Data.Level.Value, LocalPlayer.Data.Beli.Value, LocalPlayer.Data.Fragments.Value
+                        ))
+                    end
                 end
             end)
             

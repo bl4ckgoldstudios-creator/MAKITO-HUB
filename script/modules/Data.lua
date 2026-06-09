@@ -1,6 +1,10 @@
+--!strict
 local DataModule = {}
 
--- FILTRO DE MAR PARA EVITAR CRASHES POR DADOS INEXISTENTES
+-- INTERNAL STATE
+local Makito = getgenv().Makito
+
+-- FILTRO DE MAR
 local function GetSea()
     local placeId = game.PlaceId
     if placeId == 2753915549 then return 1
@@ -10,10 +14,7 @@ local function GetSea()
     return 1
 end
 
-local CurrentSea = _G.MakitoSea or GetSea()
-
-DataModule.SeaData = {}
-DataModule.QuestData = {}
+local CurrentSea = (Makito and Makito.Sea) or GetSea()
 
 local FullSeaData = {
     [1] = {
@@ -167,7 +168,6 @@ local FullQuestData = {
     }
 }
 
--- Mantem o banco completo disponivel para consultas seguras da UI e dos modulos.
 DataModule.SeaData = FullSeaData
 DataModule.QuestData = FullQuestData
 DataModule.CurrentSea = CurrentSea
@@ -184,48 +184,16 @@ DataModule.MaterialData = {
     ["Mystic Droplet"] = {Enemy = "Sea Soldier", Pos = CFrame.new(-3056, 235, -10142)}
 }
 
-DataModule.Combos = {
-    ["Dough"] = {{Key = "V", Wait = 0.5}, {Key = "C", Wait = 0.4}, {Key = "X", Wait = 0.5}, {Key = "Z", Wait = 0.3}},
-    ["Kitsune"] = {{Key = "C", Wait = 0.4}, {Key = "V", Wait = 0.6}, {Key = "Z", Wait = 0.3}, {Key = "X", Wait = 0.4}},
-    ["Leopard"] = {{Key = "Z", Wait = 0.3}, {Key = "X", Wait = 0.3}, {Key = "C", Wait = 0.4}, {Key = "V", Wait = 0.5}},
-    ["Buddha"] = {{Key = "Z", Wait = 0.3}, {Key = "X", Wait = 0.3}, {Key = "C", Wait = 0.3}, {Key = "V", Wait = 0.4}},
-    ["Dragon"] = {{Key = "X", Wait = 0.4}, {Key = "C", Wait = 0.4}, {Key = "V", Wait = 0.5}, {Key = "Z", Wait = 0.3}},
-    ["Venom"] = {{Key = "Z", Wait = 0.3}, {Key = "X", Wait = 0.3}, {Key = "C", Wait = 0.4}, {Key = "V", Wait = 0.5}},
-    ["Control"] = {{Key = "C", Wait = 0.4}, {Key = "Z", Wait = 0.3}, {Key = "X", Wait = 0.3}, {Key = "V", Wait = 0.5}},
-    ["Spirit"] = {{Key = "X", Wait = 0.4}, {Key = "C", Wait = 0.4}, {Key = "Z", Wait = 0.3}, {Key = "V", Wait = 0.5}},
-    ["Shadow"] = {{Key = "Z", Wait = 0.3}, {Key = "X", Wait = 0.3}, {Key = "C", Wait = 0.4}, {Key = "V", Wait = 0.5}},
-    ["Portal"] = {{Key = "V", Wait = 0.5}, {Key = "Z", Wait = 0.3}, {Key = "X", Wait = 0.3}, {Key = "C", Wait = 0.4}},
-    ["Gravity"] = {{Key = "Z", Wait = 0.3}, {Key = "X", Wait = 0.3}, {Key = "C", Wait = 0.4}, {Key = "V", Wait = 0.5}},
-    ["Magma"] = {{Key = "X", Wait = 0.4}, {Key = "C", Wait = 0.4}, {Key = "Z", Wait = 0.3}, {Key = "V", Wait = 0.5}},
-    ["Rumble"] = {{Key = "Z", Wait = 0.3}, {Key = "X", Wait = 0.3}, {Key = "C", Wait = 0.4}, {Key = "V", Wait = 0.5}},
-    ["Light"] = {{Key = "X", Wait = 0.4}, {Key = "C", Wait = 0.4}, {Key = "Z", Wait = 0.3}, {Key = "V", Wait = 0.5}},
-    ["Ice"] = {{Key = "Z", Wait = 0.3}, {Key = "X", Wait = 0.3}, {Key = "C", Wait = 0.4}, {Key = "V", Wait = 0.5}},
-    ["Quake"] = {{Key = "X", Wait = 0.4}, {Key = "C", Wait = 0.4}, {Key = "Z", Wait = 0.3}, {Key = "V", Wait = 0.5}},
-    ["Dark"] = {{Key = "Z", Wait = 0.3}, {Key = "X", Wait = 0.3}, {Key = "C", Wait = 0.4}, {Key = "V", Wait = 0.5}},
-    ["Spider"] = {{Key = "X", Wait = 0.4}, {Key = "C", Wait = 0.4}, {Key = "Z", Wait = 0.3}, {Key = "V", Wait = 0.5}},
-    ["Love"] = {{Key = "Z", Wait = 0.3}, {Key = "X", Wait = 0.3}, {Key = "C", Wait = 0.4}, {Key = "V", Wait = 0.5}},
-    ["Sound"] = {{Key = "X", Wait = 0.4}, {Key = "C", Wait = 0.4}, {Key = "Z", Wait = 0.3}, {Key = "V", Wait = 0.5}},
-    ["Phoenix"] = {{Key = "Z", Wait = 0.3}, {Key = "X", Wait = 0.3}, {Key = "C", Wait = 0.4}, {Key = "V", Wait = 0.5}},
-    ["Blizzard"] = {{Key = "X", Wait = 0.4}, {Key = "C", Wait = 0.4}, {Key = "Z", Wait = 0.3}, {Key = "V", Wait = 0.5}},
-    ["Rocket"] = {{Key = "Z", Wait = 0.3}, {Key = "X", Wait = 0.3}, {Key = "C", Wait = 0.4}, {Key = "V", Wait = 0.5}},
-    ["Smoke"] = {{Key = "X", Wait = 0.4}, {Key = "C", Wait = 0.4}, {Key = "Z", Wait = 0.3}, {Key = "V", Wait = 0.5}},
-    ["Spin"] = {{Key = "Z", Wait = 0.3}, {Key = "X", Wait = 0.3}, {Key = "C", Wait = 0.4}, {Key = "V", Wait = 0.5}},
-    ["Spring"] = {{Key = "X", Wait = 0.4}, {Key = "C", Wait = 0.4}, {Key = "Z", Wait = 0.3}, {Key = "V", Wait = 0.5}},
-    ["Chop"] = {{Key = "Z", Wait = 0.3}, {Key = "X", Wait = 0.3}, {Key = "C", Wait = 0.4}, {Key = "V", Wait = 0.5}},
-    ["Diamond"] = {{Key = "X", Wait = 0.4}, {Key = "C", Wait = 0.4}, {Key = "Z", Wait = 0.3}, {Key = "V", Wait = 0.5}},
-    ["Rubber"] = {{Key = "Z", Wait = 0.3}, {Key = "X", Wait = 0.3}, {Key = "C", Wait = 0.4}, {Key = "V", Wait = 0.5}},
-    ["Barrier"] = {{Key = "X", Wait = 0.4}, {Key = "C", Wait = 0.4}, {Key = "Z", Wait = 0.3}, {Key = "V", Wait = 0.5}},
-    ["Ghost"] = {{Key = "Z", Wait = 0.3}, {Key = "X", Wait = 0.3}, {Key = "C", Wait = 0.4}, {Key = "V", Wait = 0.5}},
-    ["Soul"] = {{Key = "X", Wait = 0.4}, {Key = "C", Wait = 0.4}, {Key = "Z", Wait = 0.3}, {Key = "V", Wait = 0.5}},
-    ["Falcon"] = {{Key = "Z", Wait = 0.3}, {Key = "X", Wait = 0.3}, {Key = "C", Wait = 0.4}, {Key = "V", Wait = 0.5}},
-    ["Pain"] = {{Key = "X", Wait = 0.4}, {Key = "C", Wait = 0.4}, {Key = "Z", Wait = 0.3}, {Key = "V", Wait = 0.5}},
-    ["T-Rex"] = {{Key = "Z", Wait = 0.3}, {Key = "X", Wait = 0.3}, {Key = "C", Wait = 0.4}, {Key = "V", Wait = 0.5}},
-    ["Mammoth"] = {{Key = "X", Wait = 0.4}, {Key = "C", Wait = 0.4}, {Key = "Z", Wait = 0.3}, {Key = "V", Wait = 0.5}},
-    ["Dough V2"] = {{Key = "V", Wait = 0.5}, {Key = "C", Wait = 0.4}, {Key = "X", Wait = 0.5}, {Key = "Z", Wait = 0.3}}
-}
+function DataModule.IsBoss(name: string)
+    local bosses = {"rip_indra", "Dough King", "Cake Prince", "Bobby", "Yeti", "Vice Admiral", "Warden", "Chief Warden", "Swan", "Magma Admiral", "Fishman Lord", "Wysper", "Thunder God", "Cyborg"}
+    for _, boss in ipairs(bosses) do
+        if name:find(boss) then return true end
+    end
+    return false
+end
 
 function DataModule.GetSea()
-    return _G.MakitoSea or GetSea()
+    return (Makito and Makito.Sea) or GetSea()
 end
 
 function DataModule.GetIslands(sea)
@@ -240,95 +208,10 @@ end
 
 function DataModule.GetIslandByName(name, sea)
     if not name or name == "" or name == "None" then return nil end
-
     for _, island in ipairs(DataModule.GetIslands(sea)) do
-        if island.Name == name then
-            return island
-        end
+        if island.Name == name then return island end
     end
-
     return nil
 end
-
-function DataModule.GetBestQuest(level, sea)
-    level = tonumber(level) or 0
-    local bestQuest = nil
-
-    for _, quest in ipairs(DataModule.GetQuests(sea)) do
-        if level >= (quest.Min or 0) then
-            bestQuest = quest
-        end
-    end
-
-    return bestQuest
-end
-
-function DataModule.GetQuestEnemies(sea)
-    local enemies = {}
-    local seen = {}
-
-    for _, quest in ipairs(DataModule.GetQuests(sea)) do
-        if quest.Enemy and not seen[quest.Enemy] then
-            seen[quest.Enemy] = true
-            table.insert(enemies, quest.Enemy)
-        end
-    end
-
-    table.sort(enemies)
-    return enemies
-end
-
-function DataModule.Validate()
-    local issues = {}
-
-    for sea, islands in pairs(DataModule.SeaData) do
-        if type(islands) ~= "table" or #islands == 0 then
-            table.insert(issues, "SeaData[" .. tostring(sea) .. "] sem ilhas")
-        else
-            for index, island in ipairs(islands) do
-                if not island.Name or island.Name == "" then
-                    table.insert(issues, "SeaData[" .. tostring(sea) .. "][" .. index .. "] sem Name")
-                end
-                if not island.Pos then
-                    table.insert(issues, "SeaData[" .. tostring(sea) .. "][" .. index .. "] sem Pos")
-                end
-            end
-        end
-    end
-
-    for sea, quests in pairs(DataModule.QuestData) do
-        if type(quests) ~= "table" or #quests == 0 then
-            table.insert(issues, "QuestData[" .. tostring(sea) .. "] sem quests")
-        else
-            local lastLevel = -1
-            for index, quest in ipairs(quests) do
-                if type(quest.Min) ~= "number" then
-                    table.insert(issues, "QuestData[" .. tostring(sea) .. "][" .. index .. "] sem Min numerico")
-                elseif quest.Min < lastLevel then
-                    table.insert(issues, "QuestData[" .. tostring(sea) .. "][" .. index .. "] fora de ordem por level")
-                else
-                    lastLevel = quest.Min
-                end
-
-                if not quest.Name or quest.Name == "" then
-                    table.insert(issues, "QuestData[" .. tostring(sea) .. "][" .. index .. "] sem Name")
-                end
-                if not quest.Enemy or quest.Enemy == "" then
-                    table.insert(issues, "QuestData[" .. tostring(sea) .. "][" .. index .. "] sem Enemy")
-                end
-                if not quest.Pos then
-                    table.insert(issues, "QuestData[" .. tostring(sea) .. "][" .. index .. "] sem Pos")
-                end
-                if not quest.Spawn then
-                    quest.Spawn = quest.Pos
-                end
-            end
-        end
-    end
-
-    return issues
-end
-
-DataModule.ValidationIssues = DataModule.Validate()
 
 return DataModule
