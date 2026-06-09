@@ -161,7 +161,9 @@ local FullQuestData = {
         {Min = 2575, Name = "TikiQuest2", NPC = "Quest Giver", ID = 2, Enemy = "Serpent Hunter", Pos = CFrame.new(-16234, 12, 467), Spawn = CFrame.new(-16300, 12, 500)},
         {Min = 2600, Name = "SubmergedQuest1", NPC = "Submerged Quest Giver", ID = 1, Enemy = "Ancient Guardian", Pos = CFrame.new(-18500, -540, -18500), Spawn = CFrame.new(-18600, -540, -18600)},
         {Min = 2650, Name = "SubmergedQuest1", NPC = "Submerged Quest Giver", ID = 2, Enemy = "Abyssal Warrior", Pos = CFrame.new(-18500, -540, -18500), Spawn = CFrame.new(-18700, -540, -18700)},
-        {Min = 2725, Name = "DragonPalaceQuest", NPC = "Palace Quest Giver", ID = 1, Enemy = "Tiki Overlord", Pos = CFrame.new(-21000, -790, -21000), Spawn = CFrame.new(-21100, -790, -21100)}
+        {Min = 2725, Name = "DragonPalaceQuest", NPC = "Palace Quest Giver", ID = 1, Enemy = "Tiki Overlord", Pos = CFrame.new(-21000, -790, -21000), Spawn = CFrame.new(-21100, -790, -21100)},
+        {Min = 2775, Name = "DragonPalaceQuest", NPC = "Palace Quest Giver", ID = 2, Enemy = "Ancient Soul", Pos = CFrame.new(-21000, -790, -21000), Spawn = CFrame.new(-21200, -790, -21200)},
+        {Min = 2825, Name = "DragonPalaceQuest", NPC = "Palace Quest Giver", ID = 3, Enemy = "Guardian of the Deep", Pos = CFrame.new(-21000, -790, -21000), Spawn = CFrame.new(-21300, -790, -21300)}
     }
 }
 

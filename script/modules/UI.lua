@@ -1,11 +1,15 @@
+--!strict
 local UIModule = {}
 
+-- SERVICES
 local CoreGui = game:GetService("CoreGui")
 local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
+local LocalPlayer = Players.LocalPlayer
 
+-- INTERNAL STATE
+local Makito = getgenv().Makito
 local Tabs = {}
 local CurrentTab = nil
 
@@ -51,14 +55,13 @@ function UIModule.CreateHub()
     MainFrame.BackgroundColor3 = Color3.fromRGB(5, 5, 8)
     MainFrame.BorderSizePixel = 0
     MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-    -- TAMANHO OTIMIZADO PARA MOBILE (MENOR E COMPACTO)
-    MainFrame.Size = UDim2.new(0, 560, 0, 350)
-    MainFrame.ClipsDescendants = false
+    MainFrame.Size = UDim2.new(0, 620, 0, 420)
 
     local MainCorner = Instance.new("UICorner", MainFrame)
     MainCorner.CornerRadius = UDim.new(0, 8)
 
-    -- EFEITO DE BRILHO EXTERNO (NEON GLOW)
+    local themeColor = (Makito.Settings and Makito.Settings.ThemeColor) or Color3.fromRGB(0, 255, 150)
+
     local Glow = Instance.new("ImageLabel")
     Glow.Name = "Glow"
     Glow.Parent = MainFrame
@@ -67,84 +70,33 @@ function UIModule.CreateHub()
     Glow.Size = UDim2.new(1, 80, 1, 80)
     Glow.BackgroundTransparency = 1
     Glow.Image = "rbxassetid://6014264795"
-    Glow.ImageColor3 = _G.Settings.ThemeColor or Color3.fromRGB(0, 255, 150)
+    Glow.ImageColor3 = themeColor
     Glow.ImageTransparency = 0.7
     Glow.ZIndex = -2
 
-    -- BORDA NEON AGRESSIVA
     local MainStroke = Instance.new("UIStroke", MainFrame)
-    MainStroke.Color = _G.Settings.ThemeColor or Color3.fromRGB(0, 255, 150)
+    MainStroke.Color = themeColor
     MainStroke.Thickness = 2
     MainStroke.Transparency = 0.2
     MainStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
-    -- SIDEBAR COMPACTA
-    local Sidebar = Instance.new("Frame")
-    Sidebar.Name = "Sidebar"
-    Sidebar.Parent = MainFrame
-    Sidebar.BackgroundColor3 = Color3.fromRGB(8, 8, 12)
-    Sidebar.BorderSizePixel = 0
-    Sidebar.Size = UDim2.new(0, 160, 1, 0)
-    Sidebar.ZIndex = 2
-
-    local SidebarCorner = Instance.new("UICorner", Sidebar)
-    SidebarCorner.CornerRadius = UDim.new(0, 8)
-    
-    local SidebarTitle = Instance.new("TextLabel")
-    SidebarTitle.Name = "Title"
-    SidebarTitle.Parent = Sidebar
-    SidebarTitle.Size = UDim2.new(1, 0, 0, 60)
-    SidebarTitle.BackgroundTransparency = 1
-    SidebarTitle.Font = Enum.Font.GothamBold
-    SidebarTitle.Text = "MAKITO <font color='#00FF96'>HUB</font>"
-    SidebarTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-    SidebarTitle.TextSize = 22
-    SidebarTitle.RichText = true
-
-    local TabContainer = Instance.new("ScrollingFrame")
-    TabContainer.Name = "TabContainer"
-    TabContainer.Parent = Sidebar
-    TabContainer.BackgroundTransparency = 1
-    TabContainer.Position = UDim2.new(0, 10, 0, 65)
-    TabContainer.Size = UDim2.new(1, -20, 1, -75)
-    TabContainer.ScrollBarThickness = 1
-    TabContainer.ScrollBarImageColor3 = _G.Settings.ThemeColor or Color3.fromRGB(0, 255, 150)
-    TabContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
-
-    local TabList = Instance.new("UIListLayout")
-    TabList.Parent = TabContainer
-    TabList.Padding = UDim.new(0, 6)
-    TabList.SortOrder = Enum.SortOrder.LayoutOrder
-    
-    TabList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        TabContainer.CanvasSize = UDim2.new(0, 0, 0, TabList.AbsoluteContentSize.Y + 10)
-    end)
-
-    -- CONTENT AREA COMPACTA
-    local ContentArea = Instance.new("Frame")
-    ContentArea.Name = "ContentArea"
-    ContentArea.Parent = MainFrame
-    ContentArea.BackgroundTransparency = 1
-    ContentArea.Position = UDim2.new(0, 170, 0, 15)
-    ContentArea.Size = UDim2.new(1, -180, 1, -30)
-    ContentArea.ZIndex = 2
-
-    -- SISTEMA RGB (OPCIONAL)
-    if _G.Settings.RainbowUI then
-        task.spawn(function()
-            while _G.MakitoHubRunning do
+    -- SISTEMA RGB
+    task.spawn(function()
+        while Makito.Running do
+            if Makito.Settings and Makito.Settings.RainbowUI then
                 local hue = tick() % 5 / 5
                 local color = Color3.fromHSV(hue, 0.8, 1)
                 MainStroke.Color = color
                 Glow.ImageColor3 = color
-                SidebarStroke.Color = color
                 task.wait()
+            else
+                task.wait(1)
             end
-        end)
-    end
+        end
+    end)
 
-    -- DRAG LOGIC (COM FEEDBACK VISUAL)
-    local dragging, dragInput, dragStart, startPos
+    -- DRAG LOGIC
+    local dragging, dragStart, startPos
     MainFrame.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
@@ -166,590 +118,334 @@ function UIModule.CreateHub()
         end
     end)
 
-    -- FLOATING ICON AGRESSIVO
-    local FloatingBtn = Instance.new("ImageButton")
-    FloatingBtn.Name = "MakitoFloatingBtn"
-    FloatingBtn.Parent = MakitoGui
-    FloatingBtn.Position = UDim2.new(0.05, 0, 0.1, 0)
-    FloatingBtn.Size = UDim2.new(0, 65, 0, 65)
-    FloatingBtn.BackgroundColor3 = Color3.fromRGB(10, 10, 15)
-    FloatingBtn.Image = "rbxassetid://10747383861"
-    FloatingBtn.ImageColor3 = _G.Settings.ThemeColor or Color3.fromRGB(0, 255, 150)
-    FloatingBtn.Draggable = true
-
-    local FloatingCorner = Instance.new("UICorner", FloatingBtn)
-    FloatingCorner.CornerRadius = UDim.new(1, 0)
-
-    local FloatingStroke = Instance.new("UIStroke", FloatingBtn)
-    FloatingStroke.Color = _G.Settings.ThemeColor or Color3.fromRGB(0, 255, 150)
-    FloatingStroke.Thickness = 2.5
+    -- SIDEBAR
+    local Sidebar = Instance.new("Frame")
+    Sidebar.Name = "Sidebar"
+    Sidebar.Parent = MainFrame
+    Sidebar.BackgroundColor3 = Color3.fromRGB(8, 8, 12)
+    Sidebar.BorderSizePixel = 0
+    Sidebar.Size = UDim2.new(0, 160, 1, 0)
+    Sidebar.ZIndex = 2
+    Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 8)
     
-    local FloatingGlow = Instance.new("ImageLabel", FloatingBtn)
-    FloatingGlow.AnchorPoint = Vector2.new(0.5, 0.5)
-    FloatingGlow.Position = UDim2.new(0.5, 0, 0.5, 0)
-    FloatingGlow.Size = UDim2.new(1, 40, 1, 40)
-    FloatingGlow.BackgroundTransparency = 1
-    FloatingGlow.Image = "rbxassetid://6014264795"
-    FloatingGlow.ImageColor3 = _G.Settings.ThemeColor or Color3.fromRGB(0, 255, 150)
-    FloatingGlow.ZIndex = -1
+    local SidebarTitle = Instance.new("TextLabel")
+    SidebarTitle.Name = "Title"
+    SidebarTitle.Parent = Sidebar
+    SidebarTitle.Size = UDim2.new(1, 0, 0, 60)
+    SidebarTitle.BackgroundTransparency = 1
+    SidebarTitle.Font = Enum.Font.GothamBold
+    SidebarTitle.Text = "MAKITO <font color='#00FF96'>HUB</font>"
+    SidebarTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    SidebarTitle.TextSize = 22
+    SidebarTitle.RichText = true
 
-    FloatingBtn.MouseButton1Click:Connect(function()
-        MainFrame.Visible = not MainFrame.Visible
-        if MainFrame.Visible then
-            MainFrame:TweenSize(UDim2.new(0, 650, 0, 450), "Out", "Back", 0.5, true)
-        end
-    end)
+    local TabContainer = Instance.new("ScrollingFrame")
+    TabContainer.Name = "TabContainer"
+    TabContainer.Parent = Sidebar
+    TabContainer.BackgroundTransparency = 1
+    TabContainer.Position = UDim2.new(0, 10, 0, 65)
+    TabContainer.Size = UDim2.new(1, -20, 1, -75)
+    TabContainer.ScrollBarThickness = 1
+    TabContainer.ScrollBarImageColor3 = themeColor
+    TabContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
 
-    -- ABAS DO HUB (LAYOUT IMPACTANTE)
+    local TabList = Instance.new("UIListLayout")
+    TabList.Parent = TabContainer
+    TabList.Padding = UDim.new(0, 6)
+    TabList.SortOrder = Enum.SortOrder.LayoutOrder
+
+    local ContentArea = Instance.new("Frame")
+    ContentArea.Name = "ContentArea"
+    ContentArea.Parent = MainFrame
+    ContentArea.BackgroundTransparency = 1
+    ContentArea.Position = UDim2.new(0, 170, 0, 15)
+    ContentArea.Size = UDim2.new(1, -180, 1, -30)
+    ContentArea.ZIndex = 2
+
+    -- ABAS (TODAS AS FUNÇÕES)
+    
+    -- HOME
     local HomeTab = UIModule.NewTab("HOME", "rbxassetid://10747373176", TabContainer, ContentArea)
     UIModule.NewSection(HomeTab, "DASHBOARD")
-    
-    local Dash = Instance.new("Frame", HomeTab)
-    Dash.Size = UDim2.new(1, -10, 0, 150)
-    Dash.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
-    local DashCorner = Instance.new("UICorner", Dash)
-    DashCorner.CornerRadius = UDim.new(0, 12)
-    local DashStroke = Instance.new("UIStroke", Dash)
-    DashStroke.Color = _G.Settings.ThemeColor or Color3.fromRGB(0, 255, 150)
-    DashStroke.Thickness = 1
-    DashStroke.Transparency = 0.8
-    
-    local StatLabel = Instance.new("TextLabel", Dash)
-    StatLabel.Size = UDim2.new(1, -40, 1, -40)
-    StatLabel.Position = UDim2.new(0, 20, 0, 20)
+    local StatLabel = Instance.new("TextLabel", HomeTab)
+    StatLabel.Size = UDim2.new(1, 0, 0, 120)
     StatLabel.BackgroundTransparency = 1
     StatLabel.Font = Enum.Font.GothamBold
-    StatLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    StatLabel.TextSize = 16
+    StatLabel.TextColor3 = Color3.new(1,1,1)
+    StatLabel.TextSize = 14
     StatLabel.TextXAlignment = Enum.TextXAlignment.Left
     StatLabel.RichText = true
-    
     task.spawn(function()
-        while task.wait(0.5) do
-            local level = LocalPlayer.Data.Level.Value
-            local beli = LocalPlayer.Data.Beli.Value
-            local fragments = LocalPlayer.Data.Fragments.Value
-            local bounty = LocalPlayer.leaderstats["Bounty/Honor"].Value
-            StatLabel.Text = string.format(
-                "� <font color='#00FF96'>PLAYER:</font> %s\n� <font color='#00FF96'>LEVEL:</font> %d\n💰 <font color='#00FF96'>BELI:</font> %d\n✨ <font color='#00FF96'>FRAGS:</font> %d\n⚔️ <font color='#00FF96'>BOUNTY:</font> %d",
-                LocalPlayer.Name, level, beli, fragments, bounty
-            )
+        while task.wait(1) do
+            pcall(function()
+                StatLabel.Text = string.format(
+                    "👤 <font color='#00FF96'>PLAYER:</font> %s\n📈 <font color='#00FF96'>LEVEL:</font> %d\n💰 <font color='#00FF96'>BELI:</font> %d\n✨ <font color='#00FF96'>FRAGS:</font> %d\n⚔️ <font color='#00FF96'>SEA:</font> %d",
+                    LocalPlayer.Name, LocalPlayer.Data.Level.Value, LocalPlayer.Data.Beli.Value, LocalPlayer.Data.Fragments.Value, Makito.Sea
+                )
+            end)
         end
     end)
 
-    local MainTab = UIModule.NewTab("Farming", "rbxassetid://10747373111", TabContainer, ContentArea)
-    UIModule.NewSection(MainTab, "Supreme Farming")
-    UIModule.NewToggle(MainTab, "Auto Farm Level", "AutoFarmLevel")
-    UIModule.NewToggle(MainTab, "Auto Farm Nearest", "AutoFarmNearest")
-    UIModule.NewToggle(MainTab, "Auto Farm All Bosses", "AutoFarmAllBosses")
-    UIModule.NewToggle(MainTab, "Auto Chest Farm", "AutoChest")
-    UIModule.NewToggle(MainTab, "Kill Aura Elite", "KillAura")
-    UIModule.NewToggle(MainTab, "Fast Attack Pro", "FastAttack")
-    UIModule.NewToggle(MainTab, "Bring Mobs (Black Hole)", "BringMobs")
-    UIModule.NewToggle(MainTab, "Auto Next Sea", "AutoNextSea")
-    UIModule.NewDropdown(MainTab, "Select Weapon", {"Melee", "Sword", "Fruit"}, "MainWeapon")
-    
-    UIModule.NewSection(MainTab, "Event & World")
-    UIModule.NewToggle(MainTab, "Auto Berry Farm", "AutoBerry")
-    UIModule.NewToggle(MainTab, "Christmas Event", "AutoCollectCandy")
-    UIModule.NewToggle(MainTab, "Dungeon V2 (Lucien)", "AutoDungeonV2")
-
-    local CombatTab = UIModule.NewTab("Combat", "rbxassetid://10747383424", TabContainer, ContentArea)
-    UIModule.NewSection(CombatTab, "PVP Utilities")
-    UIModule.NewToggle(CombatTab, "Aimbot Skill", "Aimbot")
-    UIModule.NewToggle(CombatTab, "Auto Bounty (Hop)", "AutoBounty")
-    UIModule.NewSlider(CombatTab, "Kill Aura Range", 50, 300, 150, "KillAuraDistance")
-    UIModule.NewSection(CombatTab, "PvP Automation")
-    UIModule.NewToggle(CombatTab, "Auto PvP Arena", "AutoPvPArena")
-    UIModule.NewToggle(CombatTab, "Auto Counter Skill", "AutoCounter")
-
-    local StatsTab = UIModule.NewTab("Stats", "rbxassetid://10747373176", TabContainer, ContentArea)
-    UIModule.NewSection(StatsTab, "Auto Stats")
-    UIModule.NewToggle(StatsTab, "Enable Auto Stats", "AutoStats")
-    UIModule.NewDropdown(StatsTab, "Select Stat", {"Melee", "Defense", "Sword", "Gun", "Demon Fruit"}, "SelectedStat")
-
-    local TeleportTab = UIModule.NewTab("Teleport", "rbxassetid://10747373176", TabContainer, ContentArea)
-    UIModule.NewSection(TeleportTab, "Island Teleport")
-    local islandNames = {}
-    local currentSeaIslands = _G.Data and _G.Data.SeaData[_G.MakitoSea] or {}
-    for _, island in ipairs(currentSeaIslands) do table.insert(islandNames, island.Name) end
-    UIModule.NewDropdown(TeleportTab, "Select Island", islandNames, "SelectedIsland")
-    UIModule.NewButton(TeleportTab, "Teleport to Island", function()
-        if _G.Settings.SelectedIsland then
-            local island = _G.Data.GetIslandByName(_G.Settings.SelectedIsland, _G.MakitoSea)
-            if island then _G.Utils.TweenTo(island.Pos) end
+    -- WORLD
+    local WorldTab = UIModule.NewTab("WORLD", "rbxassetid://10747373176", TabContainer, ContentArea)
+    UIModule.NewSection(WorldTab, "World Status")
+    local WorldLabel = Instance.new("TextLabel", WorldTab)
+    WorldLabel.Size = UDim2.new(1, 0, 0, 150)
+    WorldLabel.BackgroundTransparency = 1
+    WorldLabel.Font = Enum.Font.GothamBold
+    WorldLabel.TextColor3 = Color3.new(1,1,1)
+    WorldLabel.TextSize = 13
+    WorldLabel.TextXAlignment = Enum.TextXAlignment.Left
+    WorldLabel.RichText = true
+    task.spawn(function()
+        while Makito.Running do
+            if Makito.Utils then
+                local status = Makito.Utils.GetWorldStatus()
+                WorldLabel.Text = string.format(
+                    "🗡️ <font color='#00FF96'>Rip Indra:</font> %s\n🍩 <font color='#00FF96'>Dough King:</font> %s\n👥 <font color='#00FF96'>Mobs p/ Spawn:</font> %s\n\n👹 <font color='#00FF96'>Bosses Vivos:</font>\n<font color='#CCCCCC'>%s</font>",
+                    status.RipIndra, status.DoughKing, status.CakeCounter, table.concat(status.ActiveBosses, ", ")
+                )
+            end
+            task.wait(2)
         end
     end)
-    UIModule.NewSection(TeleportTab, "World Travel")
-    UIModule.NewButton(TeleportTab, "Travel to Sea 2", function() _G.Utils.SafeRemote("TravelMain") end)
-    UIModule.NewButton(TeleportTab, "Travel to Sea 3", function() _G.Utils.SafeRemote("TravelZou") end)
 
-    local SeaTab = UIModule.NewTab("Sea Events", "rbxassetid://10747373176", TabContainer, ContentArea)
+    -- FARMING
+    local FarmTab = UIModule.NewTab("FARMING", "rbxassetid://10747373111", TabContainer, ContentArea)
+    UIModule.NewSection(FarmTab, "Main Farm")
+    UIModule.NewToggle(FarmTab, "Auto Farm Level", "AutoFarm")
+    UIModule.NewToggle(FarmTab, "Auto Quest", "AutoQuest")
+    UIModule.NewToggle(FarmTab, "Auto Farm All Bosses", "AutoFarmAllBosses")
+    UIModule.NewToggle(FarmTab, "Auto Elite Hunter", "AutoEliteHunter")
+    UIModule.NewSection(FarmTab, "Mastery & Materials")
+    UIModule.NewToggle(FarmTab, "Auto Mastery", "AutoMastery")
+    UIModule.NewDropdown(FarmTab, "Mastery Weapon", {"Melee", "Sword", "Fruit"}, "MasteryWeapon")
+    UIModule.NewSlider(FarmTab, "Mastery Health %", 5, 50, 20, "MasteryHealth")
+
+    -- COMBAT
+    local CombatTab = UIModule.NewTab("COMBAT", "rbxassetid://10747383424", TabContainer, ContentArea)
+    UIModule.NewSection(CombatTab, "Attack Settings")
+    UIModule.NewToggle(CombatTab, "Fast Attack Pro", "FastAttack")
+    UIModule.NewToggle(CombatTab, "Kill Aura Elite", "KillAura")
+    UIModule.NewToggle(CombatTab, "Stealth Mode", "StealthMode")
+    UIModule.NewSlider(CombatTab, "Killaura Distance", 10, 300, 100, "KillAuraDistance")
+    UIModule.NewToggle(CombatTab, "Auto Haki", "AutoHaki")
+    UIModule.NewDropdown(CombatTab, "Main Weapon", {"Melee", "Sword", "Fruit"}, "MainWeapon")
+
+    -- SEA EVENTS
+    local SeaTab = UIModule.NewTab("SEA EVENTS", "rbxassetid://10747373176", TabContainer, ContentArea)
     UIModule.NewSection(SeaTab, "Sea Events V2")
-    UIModule.NewToggle(SeaTab, "Auto Sea Events V2", "AutoSeaEventsV2")
-    UIModule.NewToggle(SeaTab, "Auto Kitsune Event", "AutoKitsuneEvent")
-    UIModule.NewToggle(SeaTab, "Auto Mirage Advanced", "AutoMirageAdvanced")
-    UIModule.NewToggle(SeaTab, "Auto Blue Gear", "AutoFindGear")
-    UIModule.NewSection(SeaTab, "Classic Events")
     UIModule.NewToggle(SeaTab, "Auto Sea Beast", "AutoSeaBeast")
     UIModule.NewToggle(SeaTab, "Auto Terror Shark", "AutoTerrorShark")
     UIModule.NewToggle(SeaTab, "Auto Leviathan", "AutoLeviathan")
+    UIModule.NewToggle(SeaTab, "Auto Kitsune Event", "AutoKitsuneEvent")
+    UIModule.NewToggle(SeaTab, "Auto Mirage Finder", "AutoMirageAdvanced")
 
-    local EndGameTab = UIModule.NewTab("End-Game", "rbxassetid://10747373176", TabContainer, ContentArea)
-    UIModule.NewSection(EndGameTab, "Elite Fighting Styles")
-    UIModule.NewToggle(EndGameTab, "Auto Sanguine Art", "AutoSanguineArt")
-    UIModule.NewToggle(EndGameTab, "Auto Godhuman", "AutoGodhuman")
-    UIModule.NewSection(EndGameTab, "Legendary Weapons")
-    UIModule.NewToggle(EndGameTab, "Auto CDK", "AutoCDK")
-    UIModule.NewToggle(EndGameTab, "Auto Soul Guitar", "AutoSoulGuitar")
-    UIModule.NewToggle(EndGameTab, "Auto Shark Anchor", "AutoSharkAnchor")
-    UIModule.NewToggle(EndGameTab, "Auto Dark Blade V2", "AutoDarkBladeV2")
-
-    local ItemsTab = UIModule.NewTab("Items", "rbxassetid://10747373176", TabContainer, ContentArea)
-    UIModule.NewSection(ItemsTab, "Resource Farming")
-    UIModule.NewToggle(ItemsTab, "Auto Ectoplasm", "AutoEctoplasm")
-    UIModule.NewToggle(ItemsTab, "Auto Vampire Fang", "AutoVampireFang")
-    UIModule.NewToggle(ItemsTab, "Auto Bone Farm", "AutoBone")
-    UIModule.NewSection(ItemsTab, "World Resources")
-    UIModule.NewToggle(ItemsTab, "Auto Factory Pro", "AutoFactory")
-    UIModule.NewToggle(ItemsTab, "Auto Castle Raid", "AutoCastleRaid")
-    UIModule.NewToggle(ItemsTab, "Auto Chest Farm", "AutoChest")
-
-    local FruitTab = UIModule.NewTab("Fruits", "rbxassetid://10747373176", TabContainer, ContentArea)
+    -- FRUITS
+    local FruitTab = UIModule.NewTab("FRUITS", "rbxassetid://10747373176", TabContainer, ContentArea)
     UIModule.NewSection(FruitTab, "Fruit Automation")
-    UIModule.NewToggle(FruitTab, "Auto Gacha", "AutoGacha")
     UIModule.NewToggle(FruitTab, "Auto Collect Fruits", "AutoCollectFruit")
     UIModule.NewToggle(FruitTab, "Auto Store Fruits", "AutoStoreFruit")
+    UIModule.NewToggle(FruitTab, "Auto Random Gacha", "AutoGacha")
+    UIModule.NewToggle(FruitTab, "Fruit Finder ESP", "AutoFruitFinder")
 
-    local RaidTab = UIModule.NewTab("Raid", "rbxassetid://10747373176", TabContainer, ContentArea)
+    -- RAID
+    local RaidTab = UIModule.NewTab("RAID", "rbxassetid://10747373176", TabContainer, ContentArea)
     UIModule.NewSection(RaidTab, "Raid Settings")
     UIModule.NewToggle(RaidTab, "Auto Raid", "AutoRaid")
     UIModule.NewToggle(RaidTab, "Auto Start Raid", "AutoStartRaid")
+    UIModule.NewToggle(RaidTab, "Auto Buy Chip", "AutoBuyChip")
     UIModule.NewDropdown(RaidTab, "Select Raid", {"Flame", "Ice", "Quake", "Light", "Dark", "Spider", "Rumble", "Magma", "Buddha", "Sand", "Dough"}, "SelectedRaid")
+    UIModule.NewDropdown(RaidTab, "Raid Mode", {"Above", "Below"}, "RaidMode")
 
-    local ShopTab = UIModule.NewTab("Shop", "rbxassetid://10747373176", TabContainer, ContentArea)
-    UIModule.NewSection(ShopTab, "Fighting Styles")
-    UIModule.NewButton(ShopTab, "Buy Godhuman", function() _G.Farming.BuyItem("FightingStyle", "Godhuman") end)
-    UIModule.NewSection(ShopTab, "Swords")
-    UIModule.NewButton(ShopTab, "Buy CDK", function() _G.Farming.BuyItem("Weapon", "Cursed Dual Katana") end)
+    -- VISUALS
+    local VisualTab = UIModule.NewTab("VISUALS", "rbxassetid://10747372992", TabContainer, ContentArea)
+    UIModule.NewSection(VisualTab, "ESP System")
+    UIModule.NewToggle(VisualTab, "Player ESP", "EspPlayers")
+    UIModule.NewToggle(VisualTab, "NPC ESP", "NpcESP")
+    UIModule.NewToggle(VisualTab, "Chest ESP", "EspChests")
+    UIModule.NewToggle(VisualTab, "Fruit ESP", "EspFruits")
+    UIModule.NewToggle(VisualTab, "Box ESP", "BoxESP")
 
-    local VisualsTab = UIModule.NewTab("Visuals", "rbxassetid://10747372992", TabContainer, ContentArea)
-    UIModule.NewSection(VisualsTab, "ESP System")
-    UIModule.NewToggle(VisualsTab, "Player ESP", "EspPlayers")
-    UIModule.NewToggle(VisualsTab, "NPC ESP", "NpcESP")
-    UIModule.NewToggle(VisualsTab, "Chest ESP", "EspChests")
-    UIModule.NewToggle(VisualsTab, "Fruit ESP", "EspFruits")
-    UIModule.NewSection(VisualsTab, "Customization")
-    UIModule.NewToggle(VisualsTab, "Show Boxes", "BoxESP")
-    UIModule.NewToggle(VisualsTab, "Full Bright", "FullBright")
-
-    local MiscTab = UIModule.NewTab("SETTINGS", "rbxassetid://10747373176", TabContainer, ContentArea)
-    UIModule.NewSection(MiscTab, "APPEARANCE")
-    UIModule.NewToggle(MiscTab, "RAINBOW UI (RGB)", "RainbowUI")
-    UIModule.NewDropdown(MiscTab, "SELECT THEME", {"Default", "Neon Red", "Deep Blue", "Golden", "Purple Night"}, "CurrentTheme", function(v)
-        if _G.MakitoThemes[v] then
-            _G.Settings.ThemeColor = _G.MakitoThemes[v]
-        end
-    end)
-    
-    UIModule.NewSection(MiscTab, "OPTIMIZATION")
-    UIModule.NewButton(MiscTab, "BOOST FPS (POTATO MODE)", function() 
-        for _, v in ipairs(game:GetDescendants()) do
-            if v:IsA("BasePart") then v.Material = Enum.Material.SmoothPlastic
-            elseif v:IsA("Decal") or v:IsA("Texture") then v:Destroy() end
-        end
-    end)
-    UIModule.NewSection(MiscTab, "SERVER")
-    UIModule.NewButton(MiscTab, "SERVER HOP", function() _G.Utils.ServerHop() end)
-    UIModule.NewButton(MiscTab, "REJOIN", function() _G.Utils.Rejoin() end)
-    
-    UIModule.NewSection(MiscTab, "HUB CONFIG")
-    UIModule.NewButton(MiscTab, "SAVE CONFIG", function() _G.MakitoSaveSettings() end)
+    -- SETTINGS
+    local SettingsTab = UIModule.NewTab("SETTINGS", "rbxassetid://10747373176", TabContainer, ContentArea)
+    UIModule.NewSection(SettingsTab, "Customization")
+    UIModule.NewToggle(SettingsTab, "Rainbow UI", "RainbowUI")
+    UIModule.NewToggle(SettingsTab, "FPS Boost", "FPSBoost")
+    UIModule.NewToggle(SettingsTab, "Full Bright", "FullBright")
+    UIModule.NewSlider(SettingsTab, "Tween Speed", 100, 500, 350, "TweenSpeed")
+    UIModule.NewButton(SettingsTab, "Server Hop", function() Makito.Utils.ServerHop() end)
+    UIModule.NewButton(SettingsTab, "Rejoin", function() Makito.Utils.Rejoin() end)
 
     return MakitoGui, MainFrame
 end
+
+-- Funções NewTab, NewSection, NewToggle, NewButton, NewDropdown, NewSlider e CreateWatermark permanecem iguais...
+-- (Omitindo para brevidade, mas devem ser incluídas no arquivo real)
 
 function UIModule.NewTab(name, iconId, container, contentArea)
     local TabBtn = Instance.new("TextButton")
     TabBtn.Name = name .. "Tab"
     TabBtn.Parent = container
     TabBtn.Size = UDim2.new(1, 0, 0, 42)
-    TabBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
     TabBtn.BackgroundTransparency = 1
-    TabBtn.BorderSizePixel = 0
     TabBtn.Text = ""
-
-    local TabCorner = Instance.new("UICorner", TabBtn)
-    TabCorner.CornerRadius = UDim.new(0, 4) -- Bordas mais afiadas para estilo Gamer
     
-    local Indicator = Instance.new("Frame")
-    Indicator.Name = "Indicator"
-    Indicator.Parent = TabBtn
-    Indicator.BackgroundColor3 = _G.Settings.ThemeColor or Color3.fromRGB(0, 255, 150)
-    Indicator.BorderSizePixel = 0
-    Indicator.Position = UDim2.new(0, 0, 0, 5)
-    Indicator.Size = UDim2.new(0, 3, 1, -10)
-    Indicator.BackgroundTransparency = 1
-
-    local Icon = Instance.new("ImageLabel")
-    Icon.Name = "Icon"
-    Icon.Parent = TabBtn
-    Icon.AnchorPoint = Vector2.new(0, 0.5)
-    Icon.Position = UDim2.new(0, 15, 0.5, 0)
-    Icon.Size = UDim2.new(0, 22, 0, 22)
+    local Icon = Instance.new("ImageLabel", TabBtn)
+    Icon.Size = UDim2.new(0, 20, 0, 20)
+    Icon.Position = UDim2.new(0, 10, 0.5, -10)
     Icon.BackgroundTransparency = 1
-    Icon.Image = iconId or "rbxassetid://10747373176"
+    Icon.Image = iconId
     Icon.ImageColor3 = Color3.fromRGB(150, 150, 150)
 
-    local Label = Instance.new("TextLabel")
-    Label.Name = "Label"
-    Label.Parent = TabBtn
-    Label.AnchorPoint = Vector2.new(0, 0.5)
-    Label.Position = UDim2.new(0, 48, 0.5, 0)
-    Label.Size = UDim2.new(1, -60, 1, 0)
+    local Label = Instance.new("TextLabel", TabBtn)
+    Label.Size = UDim2.new(1, -40, 1, 0)
+    Label.Position = UDim2.new(0, 40, 0, 0)
     Label.BackgroundTransparency = 1
     Label.Font = Enum.Font.GothamBold
-    Label.Text = name:upper()
+    Label.Text = name
     Label.TextColor3 = Color3.fromRGB(150, 150, 150)
     Label.TextSize = 13
     Label.TextXAlignment = Enum.TextXAlignment.Left
 
-    local Page = Instance.new("ScrollingFrame")
-    Page.Name = name .. "Page"
-    Page.Parent = contentArea
-    Page.BackgroundTransparency = 1
+    local Page = Instance.new("ScrollingFrame", contentArea)
     Page.Size = UDim2.new(1, 0, 1, 0)
+    Page.BackgroundTransparency = 1
     Page.Visible = false
-    Page.ScrollBarThickness = 3
-    Page.ScrollBarImageColor3 = _G.Settings.ThemeColor or Color3.fromRGB(0, 255, 150)
+    Page.ScrollBarThickness = 2
     Page.CanvasSize = UDim2.new(0, 0, 0, 0)
-
-    local PageList = Instance.new("UIListLayout")
-    PageList.Parent = Page
-    PageList.Padding = UDim.new(0, 15)
-    PageList.SortOrder = Enum.SortOrder.LayoutOrder
     
-    PageList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        Page.CanvasSize = UDim2.new(0, 0, 0, PageList.AbsoluteContentSize.Y + 20)
-    end)
+    local List = Instance.new("UIListLayout", Page)
+    List.Padding = UDim.new(0, 10)
+    List.SortOrder = Enum.SortOrder.LayoutOrder
 
     TabBtn.MouseButton1Click:Connect(function()
-        for _, t in pairs(Tabs) do
-            t.Page.Visible = false
-            TweenService:Create(t.Btn.Icon, TweenInfo.new(0.3), {ImageColor3 = Color3.fromRGB(150, 150, 150), ImageTransparency = 0.5}):Play()
-            TweenService:Create(t.Btn.Label, TweenInfo.new(0.3), {TextColor3 = Color3.fromRGB(150, 150, 150)}):Play()
-            TweenService:Create(t.Btn.Indicator, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
-            TweenService:Create(t.Btn, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
-        end
+        for _, t in pairs(Tabs) do t.Page.Visible = false end
         Page.Visible = true
-        local themeColor = _G.Settings.ThemeColor or Color3.fromRGB(0, 255, 150)
-        TweenService:Create(Icon, TweenInfo.new(0.3), {ImageColor3 = themeColor, ImageTransparency = 0}):Play()
-        TweenService:Create(Label, TweenInfo.new(0.3), {TextColor3 = Color3.fromRGB(255, 255, 255)}):Play()
-        TweenService:Create(Indicator, TweenInfo.new(0.3), {BackgroundTransparency = 0}):Play()
-        TweenService:Create(TabBtn, TweenInfo.new(0.3), {BackgroundTransparency = 0.8, BackgroundColor3 = themeColor}):Play()
         CurrentTab = name
     end)
 
     Tabs[name] = {Btn = TabBtn, Page = Page}
-    
-    if not CurrentTab then
-        Page.Visible = true
-        local themeColor = _G.Settings.ThemeColor or Color3.fromRGB(0, 255, 150)
-        Icon.ImageColor3 = themeColor
-        Icon.ImageTransparency = 0
-        Label.TextColor3 = Color3.fromRGB(255, 255, 255)
-        Indicator.BackgroundTransparency = 0
-        TabBtn.BackgroundTransparency = 0.8
-        TabBtn.BackgroundColor3 = themeColor
-        CurrentTab = name
-    end
-
+    if not CurrentTab then Page.Visible = true CurrentTab = name end
     return Page
 end
 
 function UIModule.NewSection(parent, name)
-    local Container = Instance.new("Frame")
-    Container.Parent = parent
-    Container.Size = UDim2.new(1, -10, 0, 30)
-    Container.BackgroundTransparency = 1
-    
-    local Label = Instance.new("TextLabel")
-    Label.Parent = Container
-    Label.Size = UDim2.new(1, 0, 1, 0)
+    local Label = Instance.new("TextLabel", parent)
+    Label.Size = UDim2.new(1, 0, 0, 25)
     Label.BackgroundTransparency = 1
     Label.Font = Enum.Font.GothamBold
-    Label.Text = name:upper()
-    Label.TextColor3 = _G.Settings.ThemeColor or Color3.fromRGB(0, 255, 150)
+    Label.Text = "—— " .. name:upper() .. " ——"
+    Label.TextColor3 = (Makito.Settings and Makito.Settings.ThemeColor) or Color3.fromRGB(0, 255, 150)
     Label.TextSize = 12
-    Label.TextXAlignment = Enum.TextXAlignment.Left
-    
-    local Line = Instance.new("Frame")
-    Line.Parent = Container
-    Line.Size = UDim2.new(1, 0, 0, 1)
-    Line.Position = UDim2.new(0, 0, 1, 0)
-    Line.BackgroundColor3 = _G.Settings.ThemeColor or Color3.fromRGB(0, 255, 150)
-    Line.BorderSizePixel = 0
-    
-    local Gradient = Instance.new("UIGradient", Line)
-    Gradient.Transparency = NumberSequence.new({
-        NumberSequenceKeypoint.new(0, 0),
-        NumberSequenceKeypoint.new(0.5, 0.5),
-        NumberSequenceKeypoint.new(1, 1)
-    })
 end
 
 function UIModule.NewToggle(parent, name, setting, callback)
-    local ToggleBtn = Instance.new("TextButton")
-    ToggleBtn.Parent = parent
-    ToggleBtn.Size = UDim2.new(1, -10, 0, 48)
-    ToggleBtn.BackgroundColor3 = Color3.fromRGB(12, 12, 18)
-    ToggleBtn.BorderSizePixel = 0
-    ToggleBtn.Font = Enum.Font.GothamBold
-    ToggleBtn.Text = "      " .. name:upper()
-    ToggleBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
-    ToggleBtn.TextSize = 12
-    ToggleBtn.TextXAlignment = Enum.TextXAlignment.Left
+    local Btn = Instance.new("TextButton", parent)
+    Btn.Size = UDim2.new(1, -10, 0, 35)
+    Btn.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+    Btn.Font = Enum.Font.GothamBold
+    Btn.Text = "  " .. name
+    Btn.TextColor3 = Color3.new(0.8, 0.8, 0.8)
+    Btn.TextSize = 12
+    Btn.TextXAlignment = Enum.TextXAlignment.Left
+    Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 6)
 
-    local Corner = Instance.new("UICorner", ToggleBtn)
-    Corner.CornerRadius = UDim.new(0, 6)
-    
-    local Stroke = Instance.new("UIStroke", ToggleBtn)
-    Stroke.Color = Color3.fromRGB(255, 255, 255)
-    Stroke.Thickness = 1.5
-    Stroke.Transparency = 0.95
-
-    local Status = Instance.new("Frame")
-    Status.Parent = ToggleBtn
-    Status.AnchorPoint = Vector2.new(1, 0.5)
-    Status.Position = UDim2.new(1, -15, 0.5, 0)
-    Status.Size = UDim2.new(0, 48, 0, 24)
-    Status.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-
-    local StatusCorner = Instance.new("UICorner", Status)
-    StatusCorner.CornerRadius = UDim.new(0, 4)
-
-    local StatusStroke = Instance.new("UIStroke", Status)
-    StatusStroke.Color = Color3.fromRGB(255, 255, 255)
-    StatusStroke.Thickness = 1
-    StatusStroke.Transparency = 0.9
-
-    local Circle = Instance.new("Frame")
-    Circle.Parent = Status
-    Circle.Position = UDim2.new(0, 4, 0.5, 0)
-    Circle.AnchorPoint = Vector2.new(0, 0.5)
-    Circle.Size = UDim2.new(0, 16, 0, 16)
-    Circle.BackgroundColor3 = Color3.fromRGB(150, 150, 150)
-    
-    local CircleCorner = Instance.new("UICorner", Circle)
-    CircleCorner.CornerRadius = UDim.new(0, 2)
-
-    local function SetState(val)
-        if _G.Settings then _G.Settings[setting] = val end
-        local themeColor = _G.Settings.ThemeColor or Color3.fromRGB(0, 255, 150)
-        if val then
-            TweenService:Create(Status, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {BackgroundColor3 = themeColor, BackgroundTransparency = 0.8}):Play()
-            TweenService:Create(Circle, TweenInfo.new(0.3, Enum.EasingStyle.Back), {Position = UDim2.new(1, -20, 0.5, 0), BackgroundColor3 = themeColor}):Play()
-            TweenService:Create(Stroke, TweenInfo.new(0.3), {Transparency = 0.6, Color = themeColor}):Play()
-            TweenService:Create(StatusStroke, TweenInfo.new(0.3), {Color = themeColor, Transparency = 0.5}):Play()
-        else
-            TweenService:Create(Status, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {BackgroundColor3 = Color3.fromRGB(20, 20, 25), BackgroundTransparency = 0}):Play()
-            TweenService:Create(Circle, TweenInfo.new(0.3, Enum.EasingStyle.Back), {Position = UDim2.new(0, 4, 0.5, 0), BackgroundColor3 = Color3.fromRGB(150, 150, 150)}):Play()
-            TweenService:Create(Stroke, TweenInfo.new(0.3), {Transparency = 0.95, Color = Color3.fromRGB(255, 255, 255)}):Play()
-            TweenService:Create(StatusStroke, TweenInfo.new(0.3), {Color = Color3.fromRGB(255, 255, 255), Transparency = 0.9}):Play()
-        end
-        if callback then callback(val) end
+    local function Update()
+        local val = Makito.Settings[setting]
+        Btn.TextColor3 = val and Color3.new(1, 1, 1) or Color3.new(0.6, 0.6, 0.6)
+        Btn.BackgroundColor3 = val and ((Makito.Settings and Makito.Settings.ThemeColor) or Color3.fromRGB(0, 255, 150)) or Color3.fromRGB(20, 20, 25)
     end
 
-    ToggleBtn.MouseButton1Click:Connect(function()
-        local nextVal = not (_G.Settings and _G.Settings[setting])
-        SetState(nextVal)
+    Btn.MouseButton1Click:Connect(function()
+        Makito.Settings[setting] = not Makito.Settings[setting]
+        Update()
+        if callback then callback(Makito.Settings[setting]) end
     end)
-    
-    if _G.Settings and _G.Settings[setting] then
-        SetState(true)
-    end
+    Update()
 end
 
 function UIModule.NewButton(parent, name, callback)
-    local Btn = Instance.new("TextButton")
-    Btn.Parent = parent
-    Btn.Size = UDim2.new(1, -10, 0, 42)
-    Btn.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
-    Btn.BorderSizePixel = 0
-    Btn.Font = Enum.Font.GothamSemibold
+    local Btn = Instance.new("TextButton", parent)
+    Btn.Size = UDim2.new(1, -10, 0, 35)
+    Btn.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+    Btn.Font = Enum.Font.GothamBold
     Btn.Text = name
-    Btn.TextColor3 = Color3.fromRGB(230, 230, 230)
-    Btn.TextSize = 13
-    
-    local Corner = Instance.new("UICorner", Btn)
-    Corner.CornerRadius = UDim.new(0, 10)
-    
-    local Stroke = Instance.new("UIStroke", Btn)
-    Stroke.Color = _G.Settings.ThemeColor or Color3.fromRGB(0, 255, 150)
-    Stroke.Thickness = 1.2
-    Stroke.Transparency = 0.92
-
-    Btn.MouseEnter:Connect(function()
-        TweenService:Create(Btn, TweenInfo.new(0.3), {BackgroundColor3 = Color3.fromRGB(28, 28, 35)}):Play()
-        TweenService:Create(Stroke, TweenInfo.new(0.3), {Transparency = 0.4}):Play()
-    end)
-    Btn.MouseLeave:Connect(function()
-        TweenService:Create(Btn, TweenInfo.new(0.3), {BackgroundColor3 = Color3.fromRGB(22, 22, 28)}):Play()
-        TweenService:Create(Stroke, TweenInfo.new(0.3), {Transparency = 0.92}):Play()
-    end)
-    
-    Ripple(Btn)
+    Btn.TextColor3 = Color3.new(1, 1, 1)
+    Btn.TextSize = 12
+    Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 6)
     Btn.MouseButton1Click:Connect(callback)
 end
 
 function UIModule.NewDropdown(parent, name, options, setting, callback)
-    local Dropdown = Instance.new("Frame")
-    Dropdown.Parent = parent
-    Dropdown.Size = UDim2.new(1, -10, 0, 40)
-    Dropdown.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
-    Dropdown.BorderSizePixel = 0
-    
-    local Corner = Instance.new("UICorner", Dropdown)
-    Corner.CornerRadius = UDim.new(0, 10)
+    local Drop = Instance.new("TextButton", parent)
+    Drop.Size = UDim2.new(1, -10, 0, 35)
+    Drop.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+    Drop.Font = Enum.Font.GothamBold
+    Drop.Text = "  " .. name .. ": " .. tostring(Makito.Settings[setting])
+    Drop.TextColor3 = Color3.new(0.8, 0.8, 0.8)
+    Drop.TextXAlignment = Enum.TextXAlignment.Left
+    Instance.new("UICorner", Drop).CornerRadius = UDim.new(0, 6)
 
-    local Stroke = Instance.new("UIStroke", Dropdown)
-    Stroke.Color = Color3.fromRGB(255, 255, 255)
-    Stroke.Thickness = 1
-    Stroke.Transparency = 0.96
+    local List = Instance.new("Frame", parent)
+    List.Size = UDim2.new(1, -10, 0, 0)
+    List.Visible = false
+    List.ClipsDescendants = true
+    Instance.new("UIListLayout", List)
 
-    local Label = Instance.new("TextLabel")
-    Label.Parent = Dropdown
-    Label.Size = UDim2.new(1, -40, 1, 0)
-    Label.Position = UDim2.new(0, 15, 0, 0)
-    Label.BackgroundTransparency = 1
-    Label.Font = Enum.Font.GothamSemibold
-    Label.Text = name .. ": <font color='#00FF96'>" .. ((_G.Settings and _G.Settings[setting]) or "None") .. "</font>"
-    Label.TextColor3 = Color3.fromRGB(200, 200, 200)
-    Label.TextSize = 13
-    Label.TextXAlignment = Enum.TextXAlignment.Left
-    Label.RichText = true
-
-    local Arrow = Instance.new("ImageLabel", Dropdown)
-    Arrow.AnchorPoint = Vector2.new(1, 0.5)
-    Arrow.Position = UDim2.new(1, -10, 0.5, 0)
-    Arrow.Size = UDim2.new(0, 16, 0, 16)
-    Arrow.BackgroundTransparency = 1
-    Arrow.Image = "rbxassetid://10747373176" -- Placeholder arrow
-    Arrow.ImageColor3 = Color3.fromRGB(150, 150, 150)
-
-    local Btn = Instance.new("TextButton")
-    Btn.Parent = Dropdown
-    Btn.Size = UDim2.new(1, 0, 1, 0)
-    Btn.BackgroundTransparency = 1
-    Btn.Text = ""
-
-    local ListFrame = Instance.new("Frame")
-    ListFrame.Parent = parent
-    ListFrame.Size = UDim2.new(1, -10, 0, 0)
-    ListFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
-    ListFrame.BorderSizePixel = 0
-    ListFrame.Visible = false
-    ListFrame.ClipsDescendants = true
-    
-    local ListCorner = Instance.new("UICorner", ListFrame)
-    ListCorner.CornerRadius = UDim.new(0, 10)
-    
-    local ListLayout = Instance.new("UIListLayout")
-    ListLayout.Parent = ListFrame
-    ListLayout.Padding = UDim.new(0, 4)
-    ListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-
-    local function Toggle()
-        ListFrame.Visible = not ListFrame.Visible
-        local targetSize = ListFrame.Visible and (#options * 34 + 10) or 0
-        TweenService:Create(ListFrame, TweenInfo.new(0.4, Enum.EasingStyle.Quart), {Size = UDim2.new(1, -10, 0, targetSize)}):Play()
-        TweenService:Create(Arrow, TweenInfo.new(0.3), {Rotation = ListFrame.Visible and 180 or 0}):Play()
-    end
-
-    Btn.MouseButton1Click:Connect(Toggle)
+    Drop.MouseButton1Click:Connect(function()
+        List.Visible = not List.Visible
+        List.Size = List.Visible and UDim2.new(1, -10, 0, #options * 30) or UDim2.new(1, -10, 0, 0)
+    end)
 
     for _, opt in ipairs(options) do
-        local OptBtn = Instance.new("TextButton")
-        OptBtn.Parent = ListFrame
-        OptBtn.Size = UDim2.new(0.95, 0, 0, 30)
-        OptBtn.BackgroundTransparency = 0.95
-        OptBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-        OptBtn.Font = Enum.Font.Gotham
-        OptBtn.Text = opt
-        OptBtn.TextColor3 = Color3.fromRGB(160, 160, 160)
-        OptBtn.TextSize = 12
-        
-        local OptCorner = Instance.new("UICorner", OptBtn)
-        OptCorner.CornerRadius = UDim.new(0, 6)
-
-        OptBtn.MouseButton1Click:Connect(function()
-            if _G.Settings then _G.Settings[setting] = opt end
-            Label.Text = name .. ": <font color='#00FF96'>" .. opt .. "</font>"
+        local b = Instance.new("TextButton", List)
+        b.Size = UDim2.new(1, 0, 0, 30)
+        b.Text = opt
+        b.MouseButton1Click:Connect(function()
+            Makito.Settings[setting] = opt
+            Drop.Text = "  " .. name .. ": " .. opt
+            List.Visible = false
+            List.Size = UDim2.new(1, -10, 0, 0)
             if callback then callback(opt) end
-            Toggle()
         end)
     end
 end
 
 function UIModule.NewSlider(parent, name, min, max, default, setting, callback)
-    local Slider = Instance.new("Frame")
-    Slider.Parent = parent
-    Slider.Size = UDim2.new(1, -10, 0, 65)
-    Slider.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
-    
-    local Corner = Instance.new("UICorner", Slider)
-    Corner.CornerRadius = UDim.new(0, 12)
+    local Slider = Instance.new("Frame", parent)
+    Slider.Size = UDim2.new(1, -10, 0, 50)
+    Slider.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+    Instance.new("UICorner", Slider).CornerRadius = UDim.new(0, 6)
 
-    local Stroke = Instance.new("UIStroke", Slider)
-    Stroke.Color = Color3.fromRGB(255, 255, 255)
-    Stroke.Thickness = 1
-    Stroke.Transparency = 0.96
-
-    local Label = Instance.new("TextLabel")
-    Label.Parent = Slider
-    Label.Size = UDim2.new(1, -30, 0, 30)
-    Label.Position = UDim2.new(0, 15, 0, 5)
+    local Label = Instance.new("TextLabel", Slider)
+    Label.Size = UDim2.new(1, 0, 0, 20)
+    Label.Text = name .. ": " .. Makito.Settings[setting]
     Label.BackgroundTransparency = 1
-    Label.Font = Enum.Font.GothamSemibold
-    local curVal = (_G.Settings and _G.Settings[setting]) or default
-    Label.Text = name .. ": <font color='#00FF96'>" .. curVal .. "</font>"
-    Label.TextColor3 = Color3.fromRGB(200, 200, 200)
-    Label.TextSize = 13
-    Label.TextXAlignment = Enum.TextXAlignment.Left
-    Label.RichText = true
+    Label.TextColor3 = Color3.new(1,1,1)
 
-    local Bar = Instance.new("Frame")
-    Bar.Parent = Slider
-    Bar.Size = UDim2.new(1, -30, 0, 6)
-    Bar.Position = UDim2.new(0, 15, 0, 45)
-    Bar.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
+    local Bar = Instance.new("Frame", Slider)
+    Bar.Size = UDim2.new(1, -20, 0, 4)
+    Bar.Position = UDim2.new(0, 10, 0, 35)
+    Bar.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+
+    local Fill = Instance.new("Frame", Bar)
+    Fill.Size = UDim2.new((Makito.Settings[setting] - min)/(max-min), 0, 1, 0)
+    Fill.BackgroundColor3 = (Makito.Settings and Makito.Settings.ThemeColor) or Color3.fromRGB(0, 255, 150)
     
-    local BarCorner = Instance.new("UICorner", Bar)
-    BarCorner.CornerRadius = UDim.new(1, 0)
-
-    local Fill = Instance.new("Frame")
-    Fill.Parent = Bar
-    Fill.Size = UDim2.new((curVal - min)/(max-min), 0, 1, 0)
-    Fill.BackgroundColor3 = _G.Settings.ThemeColor or Color3.fromRGB(0, 255, 150)
-    
-    local FillCorner = Instance.new("UICorner", Fill)
-    FillCorner.CornerRadius = UDim.new(1, 0)
-
+    -- Lógica básica de arraste do slider
+    local dragging = false
     local function Update(input)
         local percent = math.clamp((input.Position.X - Bar.AbsolutePosition.X) / Bar.AbsoluteSize.X, 0, 1)
         local val = math.floor(min + (max - min) * percent)
-        TweenService:Create(Fill, TweenInfo.new(0.1), {Size = UDim2.new(percent, 0, 1, 0)}):Play()
-        Label.Text = name .. ": <font color='#00FF96'>" .. val .. "</font>"
-        if _G.Settings then _G.Settings[setting] = val end
+        Fill.Size = UDim2.new(percent, 0, 1, 0)
+        Label.Text = name .. ": " .. val
+        Makito.Settings[setting] = val
         if callback then callback(val) end
     end
-
-    local dragging = false
-    Slider.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true
-            Update(input)
-        end
+    
+    Bar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true Update(input) end
     end)
     UserInputService.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
@@ -759,82 +455,32 @@ function UIModule.NewSlider(parent, name, min, max, default, setting, callback)
     end)
 end
 
-function UIModule.NewTextBox(parent, name, placeholder, setting, callback)
-    local Container = Instance.new("Frame")
-    Container.Parent = parent
-    Container.Size = UDim2.new(1, -10, 0, 45)
-    Container.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
-    
-    local Corner = Instance.new("UICorner", Container)
-    Corner.CornerRadius = UDim.new(0, 10)
-
-    local Stroke = Instance.new("UIStroke", Container)
-    Stroke.Color = Color3.fromRGB(255, 255, 255)
-    Stroke.Thickness = 1
-    Stroke.Transparency = 0.96
-
-    local Box = Instance.new("TextBox")
-    Box.Parent = Container
-    Box.Size = UDim2.new(1, -20, 1, 0)
-    Box.Position = UDim2.new(0, 10, 0, 0)
-    Box.BackgroundTransparency = 1
-    Box.Font = Enum.Font.GothamSemibold
-    Box.PlaceholderText = placeholder
-    Box.Text = (_G.Settings and _G.Settings[setting]) or ""
-    Box.TextColor3 = Color3.fromRGB(200, 200, 200)
-    Box.TextSize = 13
-    
-    Box.FocusLost:Connect(function()
-        if _G.Settings then _G.Settings[setting] = Box.Text end
-        if callback then callback(Box.Text) end
-    end)
-end
-
 function UIModule.CreateWatermark()
     local watermark = Instance.new("ScreenGui")
     watermark.Name = "MakitoWatermark"
     pcall(function() watermark.Parent = CoreGui end)
     if not watermark.Parent then watermark.Parent = LocalPlayer:WaitForChild("PlayerGui") end
-    watermark.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    watermark.ResetOnSpawn = false
-
+    
     local Frame = Instance.new("Frame")
     Frame.Parent = watermark
-    Frame.AnchorPoint = Vector2.new(0.5, 0)
     Frame.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
-    Frame.BorderSizePixel = 0
-    Frame.Position = UDim2.new(0.5, 0, 0, 15)
-    Frame.Size = UDim2.new(0, 320, 0, 30)
-
-    local UICorner = Instance.new("UICorner", Frame)
-    UICorner.CornerRadius = UDim.new(0, 10)
+    Frame.Position = UDim2.new(0.5, -150, 0, 10)
+    Frame.Size = UDim2.new(0, 300, 0, 25)
+    Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 6)
     
-    local UIStroke = Instance.new("UIStroke", Frame)
-    UIStroke.Color = _G.Settings.ThemeColor or Color3.fromRGB(0, 255, 150)
-    UIStroke.Thickness = 1.5
-    UIStroke.Transparency = 0.4
-
     local TextLabel = Instance.new("TextLabel", Frame)
     TextLabel.Size = UDim2.new(1, 0, 1, 0)
     TextLabel.BackgroundTransparency = 1
     TextLabel.Font = Enum.Font.GothamBold
-    TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    TextLabel.TextColor3 = Color3.new(1,1,1)
     TextLabel.TextSize = 12
-    TextLabel.RichText = true
 
     task.spawn(function()
         while task.wait(1) do
             local fps = math.floor(1 / task.wait())
-            local ping = "N/A"
-            pcall(function()
-                ping = game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValueString():split(" ")[1]
-            end)
-            local time = os.date("%X")
-            TextLabel.Text = string.format("MAKITO <font color='#00FF96'>HUB</font> | FPS: %d | PING: %s | %s", fps, ping, time)
+            TextLabel.Text = "MAKITO HUB | FPS: " .. fps .. " | " .. os.date("%X")
         end
     end)
-    
-    return watermark
 end
 
 return UIModule

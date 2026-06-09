@@ -1,26 +1,49 @@
--- MAKITO HUB PRO - V9.9 (UI + ESP + DEBUG)
--- 0. CONFIGURAÇÕES PRIVADAS (HARDCODED - FALLBACK)
-local MAIN_WEBHOOK = ""
+--[[
+    MAKITO HUB PRO - V10.2 (ULTRA COHESION & PERFORMANCE)
+    World Class Blox Fruits Scripting Framework
+    
+    Maintainer: LuaMasterX (June 2026)
+    Risk Level: Medium (Standard Usage) / High (Rage Mode)
+]]
+
+--!strict
+
+-- 0. GLOBAL INITIALIZATION
+local Makito = {}
+getgenv().Makito = Makito
+
+Makito.Version = "10.2"
+Makito.Running = true
+Makito.IsTalkingToNPC = false
+
+-- SERVICES
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local HttpService = game:GetService("HttpService")
+local LogService = game:GetService("LogService")
+local LocalPlayer = Players.LocalPlayer
+
+-- CONFIGURAÇÕES PRIVADAS
 local ERROR_WEBHOOK = ""
 
--- 0. FUNÇÃO DE APITO (DEBUG LOGS)
-_G.MakitoDebug = function(step, detail)
-    pcall(function()
-        local webhook = (_G.Settings and _G.Settings.ErrorWebhookURL) or ERROR_WEBHOOK
+-- 1. DIAGNÓSTICO E LOGGING
+Makito.Debug = function(step: string, detail: string)
+    task.spawn(function()
+        local webhook = (Makito.Settings and Makito.Settings.ErrorWebhookURL) or ERROR_WEBHOOK
         if not webhook or webhook == "" then return end
         
         local requestFunc = syn and syn.request or http_request or request
         if requestFunc then
-            requestFunc({
+            pcall(requestFunc, {
                 Url = webhook,
                 Method = "POST",
                 Headers = {["Content-Type"] = "application/json"},
-                Body = game:GetService("HttpService"):JSONEncode({
+                Body = HttpService:JSONEncode({
                     ["embeds"] = {{
-                        ["title"] = "📡 MAKITO HUB - DIAGNÓSTICO: ETAPA " .. step,
+                        ["title"] = "📡 MAKITO HUB - DIAGNÓSTICO: " .. step,
                         ["description"] = "📝 **Detalhe:** " .. detail,
-                        ["color"] = 0xFFFF00,
-                        ["footer"] = {["text"] = "User: " .. game:GetService("Players").LocalPlayer.Name .. " | " .. os.date("%X")}
+                        ["color"] = 0x00FF00,
+                        ["footer"] = {["text"] = "User: " .. LocalPlayer.Name .. " | " .. os.date("%X")}
                     }}
                 })
             })
@@ -28,469 +51,156 @@ _G.MakitoDebug = function(step, detail)
     end)
 end
 
--- 0. ERROR HANDLER GLOBAL (FILTRADO PARA MAKITO)
-local LogService = game:GetService("LogService")
-local HttpService = game:GetService("HttpService")
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-
-local function ShowErrorPanel(errorMsg)
-    -- Criar aviso detalhado na tela para Mobile
+-- 2. ERROR HANDLER
+local function ShowErrorPanel(errorMsg: string)
+    if game:GetService("CoreGui"):FindFirstChild("MakitoErrorScreen") then return end
+    
     local sg = Instance.new("ScreenGui", game:GetService("CoreGui"))
     sg.Name = "MakitoErrorScreen"
     
     local frame = Instance.new("ScrollingFrame", sg)
-    frame.Size = UDim2.new(0.8, 0, 0.8, 0)
-    frame.Position = UDim2.new(0.1, 0, 0.1, 0)
-    frame.BackgroundColor3 = Color3.new(0,0,0)
-    frame.BorderSizePixel = 2
+    frame.Size = UDim2.new(0.8, 0, 0.6, 0)
+    frame.Position = UDim2.new(0.1, 0, 0.2, 0)
+    frame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+    frame.BorderSizePixel = 0
     frame.CanvasSize = UDim2.new(0, 0, 2, 0)
+    
+    local corner = Instance.new("UICorner", frame)
+    corner.CornerRadius = UDim.new(0, 8)
     
     local txt = Instance.new("TextLabel", frame)
     txt.Size = UDim2.new(1, -20, 1, 0)
     txt.Position = UDim2.new(0, 10, 0, 10)
     txt.BackgroundTransparency = 1
-    txt.TextColor3 = Color3.new(1,0.2,0.2)
-    txt.Text = errorMsg .. "\n\n💡 Verifique se os arquivos estão na pasta 'workspace' do seu executor.\nConsole (F9) para logs técnicos."
-    txt.TextSize = 14
+    txt.TextColor3 = Color3.fromRGB(255, 80, 80)
+    txt.Text = "🛑 ERRO CRÍTICO DETECTADO\n\n" .. errorMsg .. "\n\n💡 Verifique o console (F9) ou reporte ao suporte."
+    txt.TextSize = 16
     txt.Font = Enum.Font.Code
     txt.TextWrapped = true
     txt.TextYAlignment = Enum.TextYAlignment.Top
     txt.TextXAlignment = Enum.TextXAlignment.Left
     
     local closeBtn = Instance.new("TextButton", sg)
-    closeBtn.Size = UDim2.new(0, 40, 0, 40)
-    closeBtn.Position = UDim2.new(0.9, -10, 0.1, 10)
+    closeBtn.Size = UDim2.new(0, 30, 0, 30)
+    closeBtn.Position = UDim2.new(0.9, -40, 0.2, 10)
     closeBtn.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
     closeBtn.Text = "X"
-    closeBtn.Font = Enum.Font.GothamBold
-    closeBtn.TextSize = 20
     closeBtn.TextColor3 = Color3.new(1, 1, 1)
+    Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 6)
     
-    local closeCorner = Instance.new("UICorner", closeBtn)
-    closeCorner.CornerRadius = UDim.new(0, 8)
-    
-    closeBtn.MouseButton1Click:Connect(function()
-        sg:Destroy()
-    end)
-
-    local copyBtn = Instance.new("TextButton", sg)
-    copyBtn.Size = UDim2.new(0, 200, 0, 40)
-    copyBtn.Position = UDim2.new(0.5, -100, 0.9, -20)
-    copyBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 150)
-    copyBtn.Text = "COPIAR ERRO (CLIPBOARD)"
-    copyBtn.Font = Enum.Font.GothamBold
-    copyBtn.TextSize = 14
-    copyBtn.TextColor3 = Color3.new(0, 0, 0)
-    
-    local btnCorner = Instance.new("UICorner", copyBtn)
-    btnCorner.CornerRadius = UDim.new(0, 8)
-    
-    copyBtn.MouseButton1Click:Connect(function()
-        if setclipboard then
-            setclipboard(errorMsg)
-            copyBtn.Text = "COPIADO COM SUCESSO!"
-            task.wait(2)
-            copyBtn.Text = "COPIAR ERRO (CLIPBOARD)"
-        else
-            copyBtn.Text = "EXECUTOR SEM SUPORTE"
-        end
-    end)
+    closeBtn.MouseButton1Click:Connect(function() sg:Destroy() end)
 end
 
-if _G.MakitoLogConn then _G.MakitoLogConn:Disconnect() end
-_G.MakitoLogConn = LogService.MessageOut:Connect(function(message, messageType)
+if Makito.LogConn then Makito.LogConn:Disconnect() end
+Makito.LogConn = LogService.MessageOut:Connect(function(message, messageType)
     if messageType == Enum.MessageType.MessageError then
         local msg = message:lower()
-        -- Filtro para evitar spam de erros do Roblox/Outros scripts
-        if msg:find("makito") or msg:find("modules") or msg:find("main") or msg:find("nil") or msg:find("cframe") then
-            -- Mostra o painel visual para o usuário
-            if not game:GetService("CoreGui"):FindFirstChild("MakitoErrorScreen") then
-                ShowErrorPanel("🛑 ERRO DE RUNTIME DETECTADO:\n" .. message)
-            end
-
-            local webhook = (_G.Settings and _G.Settings.ErrorWebhookURL) or ERROR_WEBHOOK
-            if not webhook or webhook == "" then return end
-            
-            pcall(function()
-                local requestFunc = syn and syn.request or http_request or request
-                if requestFunc then
-                    local pLevel = "N/A"
-                    pcall(function() pLevel = tostring(LocalPlayer.Data.Level.Value) end)
-                    
-                    requestFunc({
-                        Url = webhook,
-                        Method = "POST",
-                        Headers = {["Content-Type"] = "application/json"},
-                        Body = HttpService:JSONEncode({
-                            ["embeds"] = {{
-                                ["title"] = "🚨 MAKITO HUB - ERRO TÉCNICO",
-                                ["description"] = "```lua\n" .. message .. "\n```",
-                                ["color"] = 0xFF0000,
-                                ["fields"] = {
-                                    {["name"] = "👤 Player", ["value"] = LocalPlayer.Name, ["inline"] = true},
-                                    {["name"] = "📈 Level", ["value"] = pLevel, ["inline"] = true}
-                                }
-                            }}
-                        })
-                    })
-                end
-            end)
+        if msg:find("makito") or msg:find("nil") or msg:find("cframe") then
+            ShowErrorPanel(message)
+            Makito.Debug("RUNTIME_ERROR", message)
         end
     end
 end)
 
--- 1. DETECÇÃO DE MAR E CARREGAMENTO
+-- 3. DETECÇÃO DE AMBIENTE
 if not game:IsLoaded() then game.Loaded:Wait() end
 
 local SEA_PLACE_IDS = {
-    [2753915549] = 1,
-    [4442272183] = 2,
-    [4442272121] = 2,
-    [7449423635] = 3,
+    [2753915549] = 1, [4442272183] = 2, [4442272121] = 2, [7449423635] = 3
 }
+Makito.Sea = SEA_PLACE_IDS[game.PlaceId] or 1
 
-local function GetSeaFromPlaceId(placeId)
-    return SEA_PLACE_IDS[placeId] or 1
+local function WaitForData()
+    local timeout = tick() + 15
+    while tick() < timeout do
+        if LocalPlayer:FindFirstChild("Data") then return true end
+        task.wait(0.5)
+    end
+    return false
 end
 
-_G.MakitoSea = GetSeaFromPlaceId(game.PlaceId)
-
--- ESPERA DADOS COM TIMEOUT (ANTI-STUCK)
-local dataLoaded = false
-task.spawn(function()
-    local timer = 0
-    while timer < 10 do
-        if LocalPlayer:FindFirstChild("Data") then
-            dataLoaded = true
-            break
-        end
-        timer = timer + 1
-        task.wait(1)
-    end
-    if not dataLoaded then
-        _G.MakitoDebug("INIT", "AVISO: Dados (Level) não carregaram em 10s. O Farm pode não iniciar.")
-    end
-end)
-
-_G.MakitoHubRunning = true
-
-local moduleErrors = {}
-local loadReport = {}
-
-local LOADER_PATHS = {
-    "modules/Loader.lua",
-    "script/modules/Loader.lua",
-    "workspace/script/modules/Loader.lua",
-}
-
-local function ReadFirstExisting(paths)
-    for _, path in ipairs(paths) do
-        local ok, content = pcall(function()
-            if isfile and isfile(path) then
-                return readfile(path)
-            end
-        end)
-        if ok and content and content ~= "" then
-            return content, path
-        end
-    end
-    return nil
+if not WaitForData() then
+    warn("⚠️ [MAKITO] Dados do jogador não carregaram. Funcionalidades podem falhar.")
 end
 
-local function BootstrapLoader()
-    local content, path = ReadFirstExisting(LOADER_PATHS)
-    if not content then
-        local url = "https://raw.githubusercontent.com/bl4ckgoldstudios-creator/MAKITO-HUB/refs/heads/main/script/modules/Loader.lua"
-        local ok, remote = pcall(function() return game:HttpGet(url) end)
-        if ok and remote and remote ~= "" then
-            content = remote
-            path = url
-        end
+-- 4. CARREGAMENTO DE MÓDULOS
+local function SafeLoad(name: string, path: string)
+    local ok, content = pcall(readfile, path)
+    if not ok or not content then return nil end
+    
+    local fn, err = loadstring(content, "Makito_" .. name)
+    if not fn then 
+        warn("❌ Erro de sintaxe em " .. name .. ": " .. tostring(err))
+        return nil 
     end
-
-    if not content then
-        warn("[MAKITO] Loader.lua nao encontrado. Usando carregador interno simplificado.")
+    
+    local success, result = pcall(fn)
+    if not success then
+        warn("❌ Erro de runtime em " .. name .. ": " .. tostring(result))
         return nil
     end
-
-    local fn, err = loadstring(content, "Makito_Loader")
-    if not fn then
-        warn("[MAKITO] Erro ao compilar Loader.lua: " .. tostring(err))
-        return nil
-    end
-
-    local ok, result = pcall(fn)
-    if ok and type(result) == "table" then
-        print("[MAKITO] Loader inicializado via " .. tostring(path))
+    
+    -- Se for Settings, injeta os valores no Makito.Settings
+    if name == "Settings" then
+        Makito.Settings = result.Values
+        Makito.Themes = result.Themes
         return result
     end
-
-    warn("[MAKITO] Erro ao executar Loader.lua: " .. tostring(result))
-    return nil
-end
-
-local Loader = BootstrapLoader()
-
-local function LoadModuleFallback(name)
-    local paths = {
-        "modules/" .. name .. ".lua",
-        "script/modules/" .. name .. ".lua",
-        "workspace/script/modules/" .. name .. ".lua",
-    }
-    local github = "https://raw.githubusercontent.com/bl4ckgoldstudios-creator/MAKITO-HUB/refs/heads/main/script/modules/" .. name .. ".lua"
-
-    for _, path in ipairs(paths) do
-        local ok, content = pcall(function()
-            if isfile and isfile(path) then return readfile(path) end
-        end)
-        if ok and content then
-            local fn, err = loadstring(content, "Makito_" .. name)
-            if fn then
-                local runOk, result = pcall(fn)
-                if runOk and type(result) == "table" then
-                    loadReport[name] = { success = true, source = path, attempts = {} }
-                    return result
-                end
-                moduleErrors[name] = tostring(result)
-            else
-                moduleErrors[name] = tostring(err)
-            end
-        end
-    end
-
-    local httpOk, content = pcall(function() return game:HttpGet(github) end)
-    if httpOk and content and content ~= "" then
-        local fn, err = loadstring(content, "Makito_" .. name)
-        if fn then
-            local runOk, result = pcall(fn)
-            if runOk and type(result) == "table" then
-                loadReport[name] = { success = true, source = github, attempts = {} }
-                return result
-            end
-        end
-    end
-
-    moduleErrors[name] = moduleErrors[name] or "Modulo nao encontrado"
-    return nil
-end
-
-local function LoadModule(name)
-    if Loader and Loader.Load then
-        local module, report = Loader.Load(name, loadReport)
-        if not module then
-            moduleErrors[name] = loadReport[name] and loadReport[name].error or "Falha desconhecida"
-            warn("[MAKITO] Falha ao carregar " .. name .. ": " .. tostring(moduleErrors[name]))
-        else
-            print("[MAKITO] Modulo carregado: " .. name .. " (" .. tostring(loadReport[name].source) .. ")")
-        end
-        return module
-    end
-
-    return LoadModuleFallback(name)
-end
-
-local Settings = LoadModule("Settings")
-local Data = LoadModule("Data")
-local Utils = LoadModule("Utils")
-local Combat = LoadModule("Combat")
-local Farming = LoadModule("Farming")
-local UI = LoadModule("UI")
-
-if not (Settings and Data and Utils and Combat and Farming and UI) then
-    local missingDetails = ""
-    for mod, err in pairs(moduleErrors) do
-        missingDetails = missingDetails .. "\n• [" .. mod .. "]: " .. err .. "\n"
-    end
     
-    local errorMsg = "🛑 FALHA CRÍTICA AO CARREGAR MAKITO HUB\n" .. missingDetails
-    warn(errorMsg)
-    
-    ShowErrorPanel(errorMsg)
-    
-    return
+    return result
 end
 
-_G.Settings = Settings.Values
-Settings.Load()
-_G.MakitoSaveSettings = Settings.Save
-_G.MakitoThemes = Settings.Themes
-_G.MakitoLoadReport = loadReport
-_G.MakitoCapabilities = Loader and Loader.GetCapabilities and Loader.GetCapabilities() or {}
-_G.MakitoDiscoveredFiles = Loader and Loader.DiscoverWorkspaceFiles and Loader.DiscoverWorkspaceFiles() or {}
-if Loader and Loader.FormatReport then
-    _G.MakitoDebugText = Loader.FormatReport(loadReport, _G.MakitoCapabilities, _G.MakitoDiscoveredFiles)
-    _G.LoaderFormat = Loader.FormatReport
-    print(_G.MakitoDebugText)
-end
-if Data.ValidationIssues and #Data.ValidationIssues > 0 then
-    warn("[MAKITO] Data.lua: " .. #Data.ValidationIssues .. " avisos de validacao")
-end
--- MAKITO HUB - LOADER COMPATIBILITY FIX
-local function SafeLoad(name, module)
-    local success, result = pcall(function()
-        return module
-    end)
-    if success then
-        return result
+-- CARREGAMENTO SEQUENCIAL (ORDRM IMPORTA)
+local modules = {"Settings", "Data", "Utils", "Combat", "Farming", "UI"}
+for _, name in ipairs(modules) do
+    local path = "modules/" .. name .. ".lua"
+    local module = SafeLoad(name, path)
+    if module then
+        Makito[name] = module
+        print("✅ Módulo carregado: " .. name)
     else
-        warn("🚨 [MAKITO HUB] Falha ao carregar modulo: " .. name .. " | Erro: " .. tostring(result))
-        return nil
+        warn("⚠️ Falha ao carregar módulo: " .. name)
     end
 end
 
--- INICIALIZACAO DE MODULOS COM FALLBACK
-_G.Data = SafeLoad("Data", Data)
-_G.Utils = SafeLoad("Utils", Utils)
-_G.Combat = SafeLoad("Combat", Combat)
-_G.Farming = SafeLoad("Farming", Farming)
-_G.Settings = SafeLoad("Settings", _G.Settings)
-
--- Verifica se os modulos basicos carregaram
-if not _G.Data or not _G.Utils or not _G.Settings then
-    return error("🚨 [MAKITO HUB] Erro critico: Modulos basicos nao encontrados. Verifique sua conexao.")
-end
-
-_G.MakitoHubRunning = true
-_G.MakitoStatus = { Text = "Carregado! Pressione RightControl para abrir o menu." }
-
--- 2. ESCALONADOR DE TAREFAS
-local function StartLoops()
-    if _G.Settings.AntiAFK and _G.Utils and _G.Utils.AntiAFK then _G.Utils.AntiAFK() end
-
+-- 5. INICIALIZAÇÃO E LOOP GLOBAL
+if Makito.Utils then
+    Makito.Utils.AntiAFK()
+    Makito.Utils.SecurityBypass()
+    
+    -- Loop Global de Automação (Coesão Total)
     task.spawn(function()
-        while _G.MakitoHubRunning do
-            local status, err = pcall(function()
-                if _G.Settings.SecurityMode then _G.Utils.SecurityBypass() end
-                if _G.Settings.AutoKickMod or _G.Settings.AntiModerator then _G.Utils.CheckModerator() end
-                if _G.Settings.FastAttack or _G.Settings.KillAura then
-                    _G.Combat.StartCombatLoop()
+        while Makito.Running do
+            local success, err = pcall(function()
+                -- 1. Atualização de Cache e Status
+                Makito.Utils.UpdateInstanceCache()
+                Makito.Utils.AutoBuildStats()
+                
+                -- 2. Orquestração de Farming e Eventos
+                if Makito.Farming and Makito.Farming.UpdateAutomation then
+                    Makito.Farming.UpdateAutomation()
+                end
+                
+                -- 3. Lógica de Combate Reativa
+                if Makito.Settings and (Makito.Settings.FastAttack or Makito.Settings.KillAura) then
+                    Makito.Combat.StartCombatLoop()
                 else
-                    _G.Combat.StopCombatLoop()
-                end
-                
-                if _G.Combat then
-                    _G.Combat.AimBotLogic()
-                    _G.Combat.AutoComboLogic()
-                    _G.Combat.AutoPvPLogic()
-                end
-                
-                if _G.Utils then
-                    _G.Utils.AutomationLogic()
-                    _G.Utils.ExtremePerformance()
-                    _G.Utils.DevilFruitNotifier()
-                    _G.Utils.AutoBuildStats()
-                    _G.Utils.UpdateGlobalStatus()
-                    _G.Utils.AutoHakiShop()
+                    Makito.Combat.StopCombatLoop()
                 end
             end)
-            if not status then warn("⚠️ [MAKITO HUB] Erro no Loop de Combate/Utilidades: " .. tostring(err)) end
-            task.wait(0.1)
-        end
-    end)
-
-    task.spawn(function()
-        while _G.MakitoHubRunning do
-            local status, err = pcall(function()
-                if not _G.Farming then return end
-                
-                if _G.Farming then
-                    -- FARM SUPREMO E MOVIMENTAÇÃO
-                    _G.Farming.SupremeAutoFarm()
-                    _G.Farming.AutoFarmNearestLogic()
-                    _G.Farming.AutoFarmBossesGlobal()
-                    _G.Farming.ChestFarmLogic()
-                    
-                    -- EVENTOS E MAR
-                    _G.Farming.SeaEventLogic()
-                    _G.Farming.SeaEventsV2()
-                    _G.Farming.KitsuneEventLogic()
-                    _G.Farming.AutoMirageAdvanced()
-                    
-                    -- PROGRESSÃO E ITENS ELITE
-                    _G.Farming.EndGameLogic()
-                    _G.Farming.ProgressionLogic()
-                    _G.Farming.AutoAwakeningLogic()
-                    _G.Farming.SanguineArtLogic()
-                    
-                    -- UTILIDADES DE FARM
-                    _G.Farming.FruitLogic()
-                    _G.Farming.ShopLogic()
-                    _G.Farming.AutoStatsLogic()
-                    _G.Farming.AutoBerryFarm()
-                    _G.Farming.AutoEctoplasmLogic()
-                    _G.Farming.AutoVampireFangLogic()
-                    _G.Farming.AutoDarkBladeV2()
-                    _G.Farming.AutoCastleRaid()
-                    _G.Farming.AutoFactoryPro()
-                    
-                    -- EVENTOS ESPECIAIS E ARENAS
-                    _G.Farming.DungeonV2Logic()
-                    _G.Farming.PvPArenaLogic()
-                    _G.Farming.ChristmasEventLogic()
-                    _G.Farming.SnipeLogic()
-                end
-                
-                if _G.Combat then
-                    _G.Combat.AutoBountyLogic()
-                    _G.Combat.ESPLogic()
-                end
-                
-                -- LOG PERIODICO DE INVENTARIO
-                if tick() % 300 < 1 then _G.Utils.LogInventory() end
-            end)
-            if not status then warn("⚠️ [MAKITO HUB] Erro no Loop de Farming/ESP: " .. tostring(err)) end
+            
+            if not success then
+                warn("⚠️ [MAKITO LOOP ERROR]: " .. tostring(err))
+            end
             task.wait(0.5)
         end
     end)
-
-    task.spawn(function()
-        local lastWebhook = 0
-        while _G.MakitoHubRunning do
-            pcall(function()
-                local now = tick()
-                if now - lastWebhook >= 60 then
-                    lastWebhook = now
-                    local data = LocalPlayer:FindFirstChild("Data")
-                    if data then
-                        local currentFruit = "Nenhuma"
-                        pcall(function()
-                            if not LocalPlayer.Character then return end
-                            for _, v in ipairs(LocalPlayer.Character:GetChildren()) do
-                                if v:IsA("Tool") and (v.ToolTip == "Blox Fruit" or v.ToolTip == "Demon Fruit") then currentFruit = v.Name break end
-                            end
-                        end)
-
-                        local formattedText = string.format(
-                            "**--- PLAYER STATS ---**\n👤 **User:** %s\n📈 **Level:** %d\n💰 **Beli:** %s\n🍎 **Fruit:** %s\n🌊 **Sea:** %d\n\n**--- MODULE STATUS ---**\n🚜 **Auto Farm:** %s\n⚡ **Fast Attack:** %s\n📝 **Status:** %s",
-                            LocalPlayer.Name,
-                            data:FindFirstChild("Level") and data.Level.Value or 0,
-                            _G.Utils.FormatNumber(data:FindFirstChild("Beli") and data.Beli.Value or 0),
-                            currentFruit,
-                            _G.MakitoSea,
-                            _G.Settings.AutoFarm and "✅ ON" or "❌ OFF", _G.Settings.FastAttack and "✅ ON" or "❌ OFF", _G.MakitoStatus.Text
-                        )
-                        
-                        local webhook = (_G.Settings and _G.Settings.MainWebhookURL) or MAIN_WEBHOOK
-                        local requestFunc = syn and syn.request or http_request or request
-                        if requestFunc and webhook ~= "" then
-                            requestFunc({
-                                Url = webhook,
-                                Method = "POST",
-                                Headers = {["Content-Type"] = "application/json"},
-                                Body = HttpService:JSONEncode({["embeds"] = {{["title"] = "MAKITO HUB - DATA SYNC", ["description"] = formattedText, ["color"] = 0x00FF96}}})
-                            })
-                        end
-                    end
-                end
-            end)
-            task.wait(2)
-        end
-    end)
+    
+    -- Inicializa UI e Watermark
+    if Makito.UI then
+        Makito.UI.CreateHub()
+        Makito.UI.CreateWatermark()
+    end
 end
 
-StartLoops()
-UI.CreateHub()
-UI.CreateWatermark()
-_G.Utils.Notify("MAKITO HUB V9.8 ATIVADO!", 5)
-print("[MAKITO] Hub v9.8 iniciado | Sea " .. tostring(_G.MakitoSea) .. " | Mobile: " .. tostring(game:GetService("UserInputService").TouchEnabled))
+print("🚀 [MAKITO HUB PRO] V" .. Makito.Version .. " Inicializado com sucesso!")
