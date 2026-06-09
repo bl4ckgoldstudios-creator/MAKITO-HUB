@@ -235,7 +235,7 @@ function UtilsModule.GetWorldStatus()
         end
 
         if Makito.Sea == 3 then
-            local counter = UtilsModule.SafeRemote("GetCakeCounter")
+            local counter = UtilsModule.GetCakeCounter()
             if counter then
                 status.CakeCounter = tostring(counter)
                 if counter == "0" or counter == 0 then
@@ -350,11 +350,17 @@ function UtilsModule.AntiAFK()
 end
 
 function UtilsModule.Notify(text: string, duration: number?)
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "MAKITO HUB",
-        Text = text,
-        Duration = duration or 5
-    })
+    pcall(function()
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "MAKITO HUB",
+            Text = text,
+            Duration = duration or 5
+        })
+    end)
+end
+
+function UtilsModule.GetCakeCounter()
+    return UtilsModule.SafeRemote("GetCakeCounter")
 end
 
 return UtilsModule
