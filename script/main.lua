@@ -1,9 +1,11 @@
 --[[
-    MAKITO HUB PRO - V10.2 (ULTRA COHESION & PERFORMANCE)
-    World Class Blox Fruits Scripting Framework
+    MAKITO HUB PRO - V11.0 (FULL PRODUCTION READY)
+    World Class Blox Fruits Scripting Framework with Security & Auto-Update
     
     Maintainer: LuaMasterX (June 2026)
-    Risk Level: Medium (Standard Usage) / High (Rage Mode)
+    Risk Level: Low (Standard) / High (Rage Mode)
+    
+    ✅ FULL FEATURES: Auto Farm, Auto Boss, Auto Raid, Sea Events, Security, Auto-Update
 ]]
 
 --!strict
@@ -12,7 +14,7 @@
 local Makito = {}
 getgenv().Makito = Makito
 
-Makito.Version = "10.2"
+Makito.Version = "11.0"
 Makito.Running = true
 Makito.IsTalkingToNPC = false
 
@@ -123,70 +125,166 @@ if not WaitForData() then
     warn("⚠️ [MAKITO] Dados do jogador não carregaram. Funcionalidades podem falhar.")
 end
 
--- 4. CARREGAMENTO DE MÓDULOS
-local function SafeLoad(name: string, path: string)
-    local possiblePaths = {
-        path,
-        "MakitoHub/" .. path,
-        "script/" .. path,
-        "./" .. path
+-- 4. CARREGAMENTO DE MÓDULOS (USANDO LOADER MODULAR)
+local Loader = nil
+local report = {}
+local caps = {}
+
+-- Carrega o Loader primeiro (o Loader é auto-contido)
+local function LoadLoaderModule()
+    local loaderPossiblePaths = {
+        "modules/Loader.lua",
+        "MakitoHub/modules/Loader.lua",
+        "script/modules/Loader.lua",
+        "./modules/Loader.lua"
     }
     
-    local content = nil
-    for _, p in ipairs(possiblePaths) do
-        local ok, res = pcall(readfile, p)
-        if ok and res then
-            content = res
-            break
+    for _, path in ipairs(loaderPossiblePaths) do
+        local ok, content = pcall(readfile, path)
+        if ok and content then
+            local fn, err = loadstring(content, "Makito_Loader")
+            if fn then
+                local success, mod = pcall(fn)
+                if success and type(mod) == "table" then
+                    return mod
+                else
+                    warn("❌ Erro no Loader: " .. tostring(err))
+                end
+            end
         end
     end
+    
+    return nil
+end
 
-    if not content then 
-        warn("⚠️ [MAKITO] Arquivo não encontrado: " .. path)
-        return nil 
+Loader = LoadLoaderModule()
+
+if Loader then
+    caps = Loader.GetCapabilities()
+    print("📋 [MAKITO] Executor detectado: " .. caps.executor)
+    
+    -- Carrega os módulos principais usando o Loader (incluindo os novos)
+    local modulesToLoad = {"Settings", "Data", "Utils", "Combat", "Farming", "UI", "Security", "Updater"}
+    for _, name in ipairs(modulesToLoad) do
+        local module, _ = Loader.Load(name, report)
+        
+        if module then
+            if name == "Settings" then
+                Makito.Settings = module.Values
+                Makito.SettingsModule = module
+            else
+                Makito[name] = module
+            end
+            print("✅ Módulo carregado: " .. name)
+        else
+            warn("⚠️ Falha ao carregar módulo: " .. name)
+        end
     end
     
-    local fn, err = loadstring(content, "Makito_" .. name)
-    if not fn then 
-        warn("❌ Erro de sintaxe em " .. name .. ": " .. tostring(err))
-        return nil 
-    end
+    -- Imprime o relatório de carregamento detalhado
+    local discovered = Loader.DiscoverWorkspaceFiles()
+    print(Loader.FormatReport(report, caps, discovered))
+else
+    warn("⚠️ [MAKITO] Loader não encontrado. Usando carregamento de fallback básico.")
     
-    local success, result = pcall(fn)
-    if not success then
-        warn("❌ Erro de runtime em " .. name .. ": " .. tostring(result))
-        return nil
-    end
-    
-    -- Se for Settings, injeta os valores no Makito.Settings de forma correta
-    if name == "Settings" then
-        Makito.Settings = result.Values
-        Makito.SettingsModule = result
+    -- Fallback caso Loader não exista
+    local function SafeLoad(name: string, path: string)
+        local possiblePaths = {
+            path,
+            "MakitoHub/" .. path,
+            "script/" .. path,
+            "./" .. path
+        }
+        
+        local content = nil
+        for _, p in ipairs(possiblePaths) do
+            local ok, res = pcall(readfile, p)
+            if ok and res then
+                content = res
+                break
+            end
+        end
+
+        if not content then 
+            warn("⚠️ [MAKITO] Arquivo não encontrado: " .. path)
+            return nil 
+        end
+        
+        local fn, err = loadstring(content, "Makito_" .. name)
+        if not fn then 
+            warn("❌ Erro de sintaxe em " .. name .. ": " .. tostring(err))
+            return nil 
+        end
+        
+        local success, result = pcall(fn)
+        if not success then
+            warn("❌ Erro de runtime em " .. name .. ": " .. tostring(result))
+            return nil
+        end
+        
+        if name == "Settings" then
+            Makito.Settings = result.Values
+            Makito.SettingsModule = result
+            return result
+        end
+        
         return result
     end
-    
-    return result
-end
 
--- CARREGAMENTO SEQUENCIAL (ORDEM IMPORTA)
-local modules = {"Settings", "Data", "Utils", "Combat", "Farming", "UI"}
-for _, name in ipairs(modules) do
-    local path = "modules/" .. name .. ".lua"
-    local module = SafeLoad(name, path)
-    if module then
-        if name ~= "Settings" then
-            Makito[name] = module
+    local modules = {"Settings", "Data", "Utils", "Combat", "Farming", "UI", "Security", "Updater"}
+    for _, name in ipairs(modules) do
+        local path = "modules/" .. name .. ".lua"
+        local module = SafeLoad(name, path)
+        if module then
+            if name ~= "Settings" then
+                Makito[name] = module
+            end
+            print("✅ Módulo carregado (fallback): " .. name)
+        else
+            warn("⚠️ Falha ao carregar módulo (fallback): " .. name)
         end
-        print("✅ Módulo carregado: " .. name)
-    else
-        warn("⚠️ Falha ao carregar módulo: " .. name)
     end
 end
+
+-- 4.1 - KEYBIND HANDLER (NEW)
+local UserInputService = game:GetService("UserInputService")
+UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
+    if gameProcessedEvent then return end
+    
+    if Makito.Settings and Makito.Settings.Keybinds then
+        local keyName = input.KeyCode.Name
+        
+        if keyName == Makito.Settings.Keybinds.ToggleHub and Makito.UI then
+            Makito.UI.ToggleHub()
+        elseif keyName == Makito.Settings.Keybinds.ToggleKillAura and Makito.Settings then
+            Makito.Settings.KillAura = not Makito.Settings.KillAura
+            print("Kill Aura:", Makito.Settings.KillAura)
+        elseif keyName == Makito.Settings.Keybinds.ToggleAutoFarm and Makito.Settings then
+            Makito.Settings.AutoFarm = not Makito.Settings.AutoFarm
+            print("Auto Farm:", Makito.Settings.AutoFarm)
+        end
+    end
+end)
 
 -- 5. INICIALIZAÇÃO E LOOP GLOBAL
 if Makito.Utils then
     Makito.Utils.AntiAFK()
     Makito.Utils.SecurityBypass()
+    
+    -- Inicializa módulos de Segurança e Atualizações (NEW)
+    if Makito.Security then
+        Makito.Security.Initialize()
+    end
+    if Makito.Updater then
+        Makito.Updater.Initialize()
+    end
+    
+    -- Auto-save configs on exit (NEW)
+    game:BindToClose(function()
+        if Makito.SettingsModule and Makito.SettingsModule.Save then
+            Makito.SettingsModule.Save()
+        end
+    end)
     
     -- Loop Global de Automação (Coesão Total)
     task.spawn(function()

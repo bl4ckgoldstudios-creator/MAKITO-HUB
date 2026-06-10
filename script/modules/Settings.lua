@@ -1,8 +1,12 @@
 --!strict
 local SettingsModule = {}
+local HttpService = game:GetService("HttpService")
 
--- Valores padrão do Hub (V10.3 - ALL FEATURES)
-SettingsModule.Values = {
+-- Caminho do arquivo de configuração persistente
+local CONFIG_PATH = "makito_config.json"
+
+-- Valores padrão do Hub (V11.0 - FULL PRO)
+local DEFAULT_VALUES = {
     -- Combate
     FastAttack = false, 
     FastAttackSpeed = 0.05, 
@@ -88,7 +92,26 @@ SettingsModule.Values = {
     AutoWebhook = false,
     AutoRollRace = false,
     TargetRace = "Human",
+    
+    -- Segurança & Atualizações (NEW)
+    StealthSecurity = true,
+    AutoUpdateEnabled = true,
+    EncryptedLogs = true,
+    
+    -- Atalhos de Teclado (NEW)
+    Keybinds = {
+        ToggleHub = "RightControl",
+        ToggleKillAura = "K",
+        ToggleAutoFarm = "F",
+        ToggleESP = "E",
+    },
+    
+    -- Resolução & Layout (NEW)
+    UIScale = 1.0,
+    UIPosition = {X = 0.1, Y = 0.1},
 }
+
+SettingsModule.Values = {}
 
 SettingsModule.Themes = {
     ["Default"] = Color3.fromRGB(0, 255, 150),
@@ -98,4 +121,72 @@ SettingsModule.Themes = {
     ["Purple Night"] = Color3.fromRGB(150, 0, 255)
 }
 
+-- Serializa valores para JSON (converte Color3 para strings)
+local function SerializeForSave(data)
+    local result = {}
+    for key, value in pairs(data) do
+        if type(value) == "Color3" then
+            result[key] = string.format("RGB(%d,%d,%d)", value.R*255, value.G*255, value.B*255)
+        elseif type(value) ~= "function" then
+            result[key] = value
+        end
+    end
+    return result
+end
+
+-- Deserializa valores do JSON
+local function DeserializeFromSave(data)
+    local result = {}
+    for key, value in pairs(data) do
+        if type(value) == "string" and value:sub(1, 4) == "RGB(" then
+            -- Parse Color3 from "RGB(r,g,b)"
+            local r, g, b = value:match("RGB%((%d+),(%d+),(%d+)%)")
+            if r and g and b then
+                result[key] = Color3.fromRGB(tonumber(r), tonumber(g), tonumber(b))
+            end
+        else
+            result[key] = value
+        end
+    end
+    return result
+end
+
+function SettingsModule.Save()
+    local success, err = pcall(function()
+        local toSave = SerializeForSave(SettingsModule.Values)
+        writefile(CONFIG_PATH, HttpService:JSONEncode(toSave))
+        print("✅ [MAKITO] Configurações salvas!")
+    end)
+    
+    if not success then
+        warn("❌ [MAKITO] Falha ao salvar configurações:", err)
+    end
+end
+
+function SettingsModule.Load()
+    local success, content = pcall(readfile, CONFIG_PATH)
+    
+    if success and content then
+        local ok, data = pcall(HttpService.JSONDecode, HttpService, content)
+        if ok then
+            -- Mescla os dados carregados com o padrão
+            SettingsModule.Values = {}
+            for key, defaultValue in pairs(DEFAULT_VALUES) do
+                SettingsModule.Values[key] = data[key] ~= nil and DeserializeFromSave(data)[key] or defaultValue
+            end
+            print("✅ [MAKITO] Configurações carregadas!")
+            return true
+        end
+    end
+    
+    -- Se falhar, usa os valores padrão
+    SettingsModule.Values = table.clone(DEFAULT_VALUES)
+    print("ℹ️ [MAKITO] Usando configurações padrão")
+    return false
+end
+
+-- Inicializa o módulo
+SettingsModule.Load()
+
 return SettingsModule
+
