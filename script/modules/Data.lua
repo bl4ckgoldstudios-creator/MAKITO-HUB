@@ -184,12 +184,102 @@ DataModule.MaterialData = {
     ["Mystic Droplet"] = {Enemy = "Sea Soldier", Pos = CFrame.new(-3056, 235, -10142)}
 }
 
+DataModule.BossData = {
+    -- Sea 1 Bosses
+    {Name = "Gorilla King", Spawn = CFrame.new(-1204, 51, -452), Sea = 1},
+    {Name = "Bobby", Spawn = CFrame.new(-1140, 15, 4150), Sea = 1},
+    {Name = "Yeti", Spawn = CFrame.new(1280, 150, -1340), Sea = 1},
+    {Name = "Warden", Spawn = CFrame.new(5400, 15, 650), Sea = 1},
+    {Name = "Chief Warden", Spawn = CFrame.new(5400, 15, 650), Sea = 1},
+    {Name = "Swan", Spawn = CFrame.new(5400, 15, 650), Sea = 1},
+    {Name = "Vice Admiral", Spawn = CFrame.new(-4810, 23, 4335), Sea = 1},
+    {Name = "Magma Admiral", Spawn = CFrame.new(-5400, 50, 8600), Sea = 1},
+    {Name = "Fishman Lord", Spawn = CFrame.new(61000, 15, 1500), Sea = 1},
+    {Name = "Thunder God", Spawn = CFrame.new(-7800, 5550, -400), Sea = 1},
+    {Name = "Cyborg", Spawn = CFrame.new(5500, 50, 4100), Sea = 1},
+    
+    -- Sea 2 Bosses
+    {Name = "Rengoku", Spawn = CFrame.new(6200, 26, -6500), Sea = 2},
+    {Name = "Jeremy", Spawn = CFrame.new(-2367, 72, -3054), Sea = 2},
+    {Name = "Don Swan", Spawn = CFrame.new(2288, 15, 808), Sea = 2},
+    {Name = "Tremor Sword Master", Spawn = CFrame.new(-400, 70, -12000), Sea = 2},
+    
+    -- Sea 3 Bosses
+    {Name = "Deandre", Spawn = CFrame.new(-8053, 10, 5233), Sea = 3},
+    {Name = "Gravito", Spawn = CFrame.new(5259, 604, 346), Sea = 3},
+    {Name = "Captain Elephant", Spawn = CFrame.new(-13233, 532, -7594), Sea = 3},
+    {Name = "Ancient Soul", Spawn = CFrame.new(-21100, -790, -21100), Sea = 3},
+    {Name = "Serpent Hunter", Spawn = CFrame.new(-16300, 12, 500), Sea = 3},
+    
+    -- Special World Bosses
+    {Name = "rip_indra", Spawn = CFrame.new(-1850, 7, -2980), Sea = 1, Special = true},
+    {Name = "Dough King", Spawn = CFrame.new(-1147, 14, -11514), Sea = 3, Special = true},
+    {Name = "Cake Prince", Spawn = CFrame.new(-1147, 14, -11514), Sea = 3, Special = true},
+}
+
+DataModule.ItemPuzzles = {
+    ["Tushita"] = {
+        Torches = {
+            CFrame.new(-12053, 332, -7750),
+            CFrame.new(-12220, 420, -7560),
+            CFrame.new(-12140, 315, -7920),
+            CFrame.new(-12350, 430, -7800),
+            CFrame.new(-12420, 380, -7620),
+        },
+        Entrance = CFrame.new(-12463, 332, -7548),
+    },
+    ["Yama"] = {
+        Entrance = CFrame.new(5259, 604, 346), -- Hydra Island Waterfall
+        Sword = CFrame.new(5650, 400, 300),
+    },
+    ["Saber"] = {
+        Buttons = {
+            CFrame.new(-1612, 37, 149), -- Jungle
+            CFrame.new(-1500, 37, 200),
+            CFrame.new(-1550, 37, 50),
+            CFrame.new(-1400, 37, 100),
+            CFrame.new(-1450, 37, 150),
+        },
+    },
+    ["ObservationV2"] = {
+        HungryMan = CFrame.new(-12463, 375, -7523),
+        Fruits = {
+            Apple = CFrame.new(-13233, 532, -7594),
+            Banana = CFrame.new(-13500, 532, -7800),
+            Pineapple = CFrame.new(-13000, 532, -7400),
+        }
+    }
+}
+
 function DataModule.IsBoss(name: string)
-    local bosses = {"rip_indra", "Dough King", "Cake Prince", "Bobby", "Yeti", "Vice Admiral", "Warden", "Chief Warden", "Swan", "Magma Admiral", "Fishman Lord", "Wysper", "Thunder God", "Cyborg"}
-    for _, boss in ipairs(bosses) do
-        if name:find(boss) then return true end
+    for _, boss in ipairs(DataModule.BossData) do
+        if name:find(boss.Name) then return true end
     end
     return false
+end
+
+function DataModule.GetAliveBosses()
+    local alive = {}
+    local enemiesFolder = workspace:FindFirstChild("Enemies") or workspace
+    
+    for _, boss in ipairs(DataModule.BossData) do
+        for _, obj in ipairs(enemiesFolder:GetChildren()) do
+            if obj.Name:find(boss.Name) then
+                if obj:FindFirstChild("Humanoid") and obj.Humanoid.Health > 0 then
+                    table.insert(alive, boss.Name)
+                    break
+                end
+            end
+        end
+    end
+    return alive
+end
+
+function DataModule.GetBossByName(name: string)
+    for _, boss in ipairs(DataModule.BossData) do
+        if boss.Name == name then return boss end
+    end
+    return nil
 end
 
 function DataModule.GetSea()

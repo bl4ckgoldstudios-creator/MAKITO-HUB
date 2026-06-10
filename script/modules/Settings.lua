@@ -36,6 +36,9 @@ local DEFAULT_VALUES = {
     AutoBartiloQuest = false,
     AutoCitizenQuest = false,
     AutoBuyHakiColors = false,
+    
+    -- Boss Farm (NEW)
+    SelectedBosses = {}, -- Tabela para armazenar quais bosses o usuário quer farmar
 
     -- Mastery & Materials
     AutoMastery = false,
@@ -51,6 +54,13 @@ local DEFAULT_VALUES = {
     AutoSoulGuitar = false,
     AutoGodhuman = false,
     AutoSanguineArt = false,
+    AutoSharkAnchor = false,
+    AutoTushita = false,
+    AutoYama = false,
+    AutoRainbowHaki = false,
+    AutoObservationV2 = false,
+    AutoSaber = false,
+    AutoDarkCoat = false,
 
     -- Sea Events (Update 29)
     AutoSeaEventsV2 = false,

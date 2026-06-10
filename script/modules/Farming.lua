@@ -181,6 +181,13 @@ function FarmingModule.UpdateAutomation()
         if Makito.Settings.AutoSoulGuitar then FarmingModule.AutoSoulGuitarLogic() end
         if Makito.Settings.AutoGodhuman then FarmingModule.AutoGodhumanLogic() end
         if Makito.Settings.AutoSanguineArt then FarmingModule.SanguineArtLogic() end
+        if Makito.Settings.AutoSharkAnchor then FarmingModule.AutoSharkAnchorLogic() end
+        if Makito.Settings.AutoTushita then FarmingModule.AutoTushitaLogic() end
+        if Makito.Settings.AutoYama then FarmingModule.AutoYamaLogic() end
+        if Makito.Settings.AutoRainbowHaki then FarmingModule.AutoRainbowHakiLogic() end
+        if Makito.Settings.AutoObservationV2 then FarmingModule.AutoObservationV2Logic() end
+        if Makito.Settings.AutoSaber then FarmingModule.AutoSaberLogic() end
+        if Makito.Settings.AutoDarkCoat then FarmingModule.AutoDarkCoatLogic() end
         
         -- Raid
         if Makito.Settings.AutoRaid then FarmingModule.RaidLogic() end
@@ -188,12 +195,49 @@ function FarmingModule.UpdateAutomation()
 end
 
 function FarmingModule.AutoFarmAllBosses()
+    if not Makito.Settings or not Makito.Data then return end
+    
     local enemies = workspace:FindFirstChild("Enemies") or workspace
-    for _, v in ipairs(enemies:GetChildren()) do
-        if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and (v.Name:find("Boss") or Makito.Data.IsBoss(v.Name)) then
-            Makito.Utils.TweenTo(v.HumanoidRootPart.CFrame * CFrame.new(0, 15, 0))
-            FarmingModule.EquipWeapon(Makito.Settings.MainWeapon)
-            Makito.Combat.StartCombatLoop()
+    
+    -- Lista de bosses para farmar
+    local bossesToFarm
+    
+    if Makito.Settings.AutoFarmAllBosses then
+        -- Farmar todos os bosses
+        bossesToFarm = {}
+        for _, boss in ipairs(Makito.Data.BossData) do
+            table.insert(bossesToFarm, boss.Name)
+        end
+    elseif Makito.Settings.SelectedBosses and #Makito.Settings.SelectedBosses > 0 then
+        -- Farmar apenas os bosses selecionados
+        bossesToFarm = Makito.Settings.SelectedBosses
+    else
+        return
+    end
+    
+    -- Procurar por bosses vivos
+    for _, bossName in ipairs(bossesToFarm) do
+        local bossData = Makito.Data.GetBossByName(bossName)
+        if bossData and bossData.Sea == Makito.Sea then
+            for _, obj in ipairs(enemies:GetChildren()) do
+                if obj.Name:find(bossName) then
+                    if obj:FindFirstChild("Humanoid") and obj.Humanoid.Health > 0 then
+                        -- Encontrou o boss!
+                        Makito.Utils.TweenTo(obj.HumanoidRootPart.CFrame * CFrame.new(0, 15, 0))
+                        FarmingModule.EquipWeapon(Makito.Settings.MainWeapon)
+                        Makito.Combat.StartCombatLoop()
+                        return
+                    end
+                end
+            end
+        end
+    end
+    
+    -- Se nenhum boss vivo for encontrado, vai para o spawn de um boss selecionado
+    for _, bossName in ipairs(bossesToFarm) do
+        local bossData = Makito.Data.GetBossByName(bossName)
+        if bossData and bossData.Sea == Makito.Sea then
+            Makito.Utils.TweenTo(bossData.Spawn * CFrame.new(0, 15, 0))
             return
         end
     end
@@ -542,6 +586,96 @@ function FarmingModule.SanguineArtLogic()
     if not Makito.Utils.HasItem("Leviathan Heart") then return end
     Makito.Utils.TweenTo(CFrame.new(-15200, 400, -11500))
     Makito.Utils.SafeRemote("SanguineArt", "Learn")
+end
+
+function FarmingModule.AutoSharkAnchorLogic()
+    if Makito.Sea ~= 3 then return end
+    if Makito.Utils.HasItem("Shark Anchor") then return end
+    
+    local terrorShark = Makito.Utils.GetNearestEnemy("Terror Shark")
+    if terrorShark then
+        Makito.Utils.TweenTo(terrorShark.HumanoidRootPart.CFrame * CFrame.new(0, 40, 0))
+        Makito.Combat.StartCombatLoop()
+    else
+        Makito.Utils.TweenTo(CFrame.new(-16234, 12, 467)) -- Tiki Outpost
+    end
+end
+
+function FarmingModule.AutoTushitaLogic()
+    if Makito.Sea ~= 3 then return end
+    if Makito.Utils.HasItem("Tushita") then return end
+    
+    local data = Makito.Data.ItemPuzzles["Tushita"]
+    -- Simplificado: Teleporta para as tochas se Indra estiver vivo
+    local indra = Makito.Utils.GetNearestEnemy("rip_indra")
+    if indra then
+        for _, torch in ipairs(data.Torches) do
+            Makito.Utils.TweenTo(torch)
+            task.wait(1)
+        end
+    end
+end
+
+function FarmingModule.AutoYamaLogic()
+    if Makito.Sea ~= 3 then return end
+    if Makito.Utils.HasItem("Yama") then return end
+    
+    local eliteKills = LocalPlayer.Data.EliteHunterKills.Value
+    if eliteKills >= 30 then
+        local data = Makito.Data.ItemPuzzles["Yama"]
+        Makito.Utils.TweenTo(data.Sword)
+        -- Lógica de puxar a espada
+    else
+        FarmingModule.AutoEliteHunter()
+    end
+end
+
+function FarmingModule.AutoRainbowHakiLogic()
+    if Makito.Sea ~= 3 then return end
+    local bosses = {"Stone", "Island Empress", "Kilo Admiral", "Captain Elephant", "Beautiful Pirate"}
+    for _, boss in ipairs(bosses) do
+        local enemy = Makito.Utils.GetNearestEnemy(boss)
+        if enemy then
+            Makito.Utils.TweenTo(enemy.HumanoidRootPart.CFrame * CFrame.new(0, 15, 0))
+            Makito.Combat.StartCombatLoop()
+            return
+        end
+    end
+end
+
+function FarmingModule.AutoObservationV2Logic()
+    if Makito.Sea ~= 3 then return end
+    local data = Makito.Data.ItemPuzzles["ObservationV2"]
+    Makito.Utils.TweenTo(data.HungryMan)
+    -- Lógica de falar com o NPC e entregar frutas
+end
+
+function FarmingModule.AutoSaberLogic()
+    if Makito.Sea ~= 1 then return end
+    if Makito.Utils.HasItem("Saber") then return end
+    
+    local data = Makito.Data.ItemPuzzles["Saber"]
+    for _, button in ipairs(data.Buttons) do
+        Makito.Utils.TweenTo(button)
+        task.wait(0.5)
+    end
+    -- Boss Saber Expert
+    local boss = Makito.Utils.GetNearestEnemy("Saber Expert")
+    if boss then
+        Makito.Utils.TweenTo(boss.HumanoidRootPart.CFrame * CFrame.new(0, 12, 0))
+        Makito.Combat.StartCombatLoop()
+    end
+end
+
+function FarmingModule.AutoDarkCoatLogic()
+    if Makito.Sea ~= 2 then return end
+    local darkbeard = Makito.Utils.GetNearestEnemy("Darkbeard")
+    if darkbeard then
+        Makito.Utils.TweenTo(darkbeard.HumanoidRootPart.CFrame * CFrame.new(0, 30, 0))
+        Makito.Combat.StartCombatLoop()
+    else
+        Makito.Utils.TweenTo(CFrame.new(-382, 73, 291)) -- Cafe/Dark Arena region
+    end
 end
 
 return FarmingModule

@@ -214,7 +214,6 @@ function UIModule.CreateHub()
     UIModule.NewToggle(FarmTab, "Auto Farm Level", "AutoFarm")
     UIModule.NewToggle(FarmTab, "Auto Quest", "AutoQuest")
     UIModule.NewToggle(FarmTab, "Auto Next Sea", "AutoNextSea")
-    UIModule.NewToggle(FarmTab, "Auto Farm All Bosses", "AutoFarmAllBosses")
     UIModule.NewToggle(FarmTab, "Auto Elite Hunter", "AutoEliteHunter")
     UIModule.NewToggle(FarmTab, "Auto Bone Farm (S3)", "AutoBoneFarm")
     UIModule.NewToggle(FarmTab, "Auto Factory (S2)", "AutoFarmFactory")
@@ -222,14 +221,86 @@ function UIModule.CreateHub()
     UIModule.NewToggle(FarmTab, "Auto Bartilo Quest (S2)", "AutoBartiloQuest")
     UIModule.NewToggle(FarmTab, "Auto Citizen Quest (S3)", "AutoCitizenQuest")
     UIModule.NewToggle(FarmTab, "Auto Buy Haki Colors", "AutoBuyHakiColors")
-    UIModule.NewSection(FarmTab, "Mastery & Materials")
-    UIModule.NewToggle(FarmTab, "Auto Farm Materials", "AutoFarmMaterials")
-    local materials = {}
-    for k, _ in pairs(Makito.Data.MaterialData) do table.insert(materials, k) end
-    UIModule.NewDropdown(FarmTab, "Select Material", materials, "SelectedMaterial")
-    UIModule.NewToggle(FarmTab, "Auto Mastery", "AutoMastery")
-    UIModule.NewDropdown(FarmTab, "Mastery Weapon", {"Melee", "Sword", "Fruit"}, "MasteryWeapon")
-    UIModule.NewSlider(FarmTab, "Mastery Health %", 5, 50, 20, "MasteryHealth")
+    
+    UIModule.NewSection(FarmTab, "Boss Farm")
+    UIModule.NewToggle(FarmTab, "Auto Farm All Bosses", "AutoFarmAllBosses")
+    
+    -- Boss Selection
+    UIModule.NewSection(FarmTab, "Select Bosses to Farm")
+    local BossSelectionFrame = Instance.new("Frame", FarmTab)
+    BossSelectionFrame.Size = UDim2.new(1, -10, 0, 200)
+    BossSelectionFrame.BackgroundColor3 = Color3.fromRGB(15,15,20)
+    Instance.new("UICorner", BossSelectionFrame).CornerRadius = UDim.new(0, 6)
+    
+    local BossScroll = Instance.new("ScrollingFrame", BossSelectionFrame)
+    BossScroll.Size = UDim2.new(1, 0, 1, 0)
+    BossScroll.BackgroundTransparency = 1
+    BossScroll.ScrollBarThickness = 2
+    local BossListLayout = Instance.new("UIListLayout", BossScroll)
+    BossListLayout.Padding = UDim.new(0, 5)
+    
+    -- Preencher a lista de bosses
+    task.spawn(function()
+        if Makito and Makito.Data then
+            for _, bossData in ipairs(Makito.Data.BossData) do
+                local BossToggle = Instance.new("TextButton", BossScroll)
+                BossToggle.Size = UDim2.new(1, -10, 0, 25)
+                BossToggle.Position = UDim2.new(0, 5, 0, 0)
+                BossToggle.BackgroundColor3 = Color3.fromRGB(25,25,30)
+                BossToggle.Text = "  " .. bossData.Name .. " (S" .. bossData.Sea .. ")"
+                BossToggle.TextColor3 = Color3.new(0.8,0.8,0.8)
+                BossToggle.TextSize = 11
+                BossToggle.TextXAlignment = Enum.TextXAlignment.Left
+                Instance.new("UICorner", BossToggle).CornerRadius = UDim.new(0, 4)
+                
+                -- Função para atualizar o estado do toggle
+                local function UpdateBossToggle()
+                    local isSelected = false
+                    if Makito.Settings and Makito.Settings.SelectedBosses then
+                        for _, name in ipairs(Makito.Settings.SelectedBosses) do
+                            if name == bossData.Name then
+                                isSelected = true
+                                break
+                            end
+                        end
+                    end
+                    BossToggle.TextColor3 = isSelected and Color3.new(1,1,1) or Color3.new(0.6,0.6,0.6)
+                    BossToggle.BackgroundColor3 = isSelected and ((Makito.Settings and Makito.Settings.ThemeColor) or Color3.fromRGB(0,255,150)) or Color3.fromRGB(25,25,30)
+                end
+                
+                BossToggle.MouseButton1Click:Connect(function()
+                    if not Makito.Settings then return end
+                    if not Makito.Settings.SelectedBosses then Makito.Settings.SelectedBosses = {} end
+                    
+                    -- Verifica se o boss já está selecionado
+                    local foundIndex = nil
+                    for i, name in ipairs(Makito.Settings.SelectedBosses) do
+                        if name == bossData.Name then
+                            foundIndex = i
+                            break
+                        end
+                    end
+                    
+                    if foundIndex then
+                        -- Remove da seleção
+                        table.remove(Makito.Settings.SelectedBosses, foundIndex)
+                    else
+                        -- Adiciona à seleção
+                        table.insert(Makito.Settings.SelectedBosses, bossData.Name)
+                    end
+                    
+                    UpdateBossToggle()
+                    
+                    -- Desativa o "Auto Farm All Bosses" se selecionarmos individualmente
+                    if Makito.Settings.SelectedBosses and #Makito.Settings.SelectedBosses > 0 then
+                        Makito.Settings.AutoFarmAllBosses = false
+                    end
+                end)
+                
+                UpdateBossToggle()
+            end
+        end
+    end)
 
     -- COMBAT
     local CombatTab = UIModule.NewTab("COMBAT", "rbxassetid://10747383424", TabContainer, ContentArea)
@@ -257,6 +328,22 @@ function UIModule.CreateHub()
     UIModule.NewToggle(FruitTab, "Auto Store Fruits", "AutoStoreFruit")
     UIModule.NewToggle(FruitTab, "Auto Random Gacha", "AutoGacha")
     UIModule.NewToggle(FruitTab, "Fruit Finder ESP", "AutoFruitFinder")
+
+    -- AUTO ITEMS (NEW)
+    local ItemsTab = UIModule.NewTab("AUTO ITEMS", "rbxassetid://10747373176", TabContainer, ContentArea)
+    UIModule.NewSection(ItemsTab, "Powerful Items")
+    UIModule.NewToggle(ItemsTab, "Auto Cursed Dual Katana", "AutoCDK")
+    UIModule.NewToggle(ItemsTab, "Auto Soul Guitar", "AutoSoulGuitar")
+    UIModule.NewToggle(ItemsTab, "Auto Godhuman", "AutoGodhuman")
+    UIModule.NewToggle(ItemsTab, "Auto Sanguine Art", "AutoSanguineArt")
+    UIModule.NewToggle(ItemsTab, "Auto Shark Anchor", "AutoSharkAnchor")
+    UIModule.NewSection(ItemsTab, "Swords & Haki")
+    UIModule.NewToggle(ItemsTab, "Auto Tushita", "AutoTushita")
+    UIModule.NewToggle(ItemsTab, "Auto Yama", "AutoYama")
+    UIModule.NewToggle(ItemsTab, "Auto Saber", "AutoSaber")
+    UIModule.NewToggle(ItemsTab, "Auto Rainbow Haki", "AutoRainbowHaki")
+    UIModule.NewToggle(ItemsTab, "Auto Observation V2", "AutoObservationV2")
+    UIModule.NewToggle(ItemsTab, "Auto Dark Coat", "AutoDarkCoat")
 
     -- RAID
     local RaidTab = UIModule.NewTab("RAID", "rbxassetid://10747373176", TabContainer, ContentArea)
