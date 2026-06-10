@@ -1,7 +1,5 @@
 local LoaderModule = {}
-
 LoaderModule.GITHUB_BASE = "https://raw.githubusercontent.com/bl4ckgoldstudios-creator/MAKITO-HUB/refs/heads/main/script/modules/"
-
 function LoaderModule.GetCapabilities()
     local caps = {
         loadstring = loadstring ~= nil,
@@ -11,17 +9,14 @@ function LoaderModule.GetCapabilities()
         httpget = pcall(function() return game.HttpGet end) and game.HttpGet ~= nil,
         makefolder = makefolder ~= nil,
     }
-
     if identifyexecutor then
         local ok, name = pcall(identifyexecutor)
         caps.executor = ok and name or "Unknown"
     else
         caps.executor = "Unknown"
     end
-
     return caps
 end
-
 function LoaderModule.GetSearchPaths(name)
     local folder = (getgenv and getgenv().MAKITO_SCRIPT_FOLDER) or "script"
     return {
@@ -35,7 +30,6 @@ function LoaderModule.GetSearchPaths(name)
         name .. ".lua",
     }
 end
-
 function LoaderModule.TryLoadCode(code, sourceName)
     if not code or code == "" then
         return nil, "Codigo vazio"
@@ -43,28 +37,22 @@ function LoaderModule.TryLoadCode(code, sourceName)
     if not loadstring then
         return nil, "loadstring indisponivel"
     end
-
     local fn, syntaxErr = loadstring(code, "Makito_" .. (sourceName or "Module"))
     if not fn then
         return nil, "Sintaxe: " .. tostring(syntaxErr)
     end
-
     local ok, result = pcall(fn)
     if not ok then
         return nil, "Runtime: " .. tostring(result)
     end
-
     if type(result) ~= "table" then
         return nil, "Modulo nao retornou uma tabela"
     end
-
     return result
 end
-
 function LoaderModule.Load(name, report)
     report = report or {}
     report[name] = report[name] or { attempts = {}, success = false, source = nil, error = nil }
-
     local function logAttempt(source, ok, detail)
         table.insert(report[name].attempts, {
             source = source,
@@ -73,7 +61,6 @@ function LoaderModule.Load(name, report)
             time = os.date("%X"),
         })
     end
-
     for _, path in ipairs(LoaderModule.GetSearchPaths(name)) do
         local exists = false
         pcall(function()
@@ -81,7 +68,6 @@ function LoaderModule.Load(name, report)
                 exists = true
             end
         end)
-
         if exists then
             local readOk, content = pcall(readfile, path)
             if readOk and content then
@@ -99,12 +85,10 @@ function LoaderModule.Load(name, report)
             end
         end
     end
-
     local url = LoaderModule.GITHUB_BASE .. name .. ".lua"
     local httpOk, content = pcall(function()
         return game:HttpGet(url)
     end)
-
     if httpOk and content and content ~= "" then
         local module, err = LoaderModule.TryLoadCode(content, "GitHub:" .. name)
         if module then
@@ -121,16 +105,13 @@ function LoaderModule.Load(name, report)
             report[name].error = "Nenhum arquivo local encontrado e GitHub indisponivel"
         end
     end
-
     return nil, report
 end
-
 function LoaderModule.DiscoverWorkspaceFiles()
     local found = {}
     if not listfiles then
         return found
     end
-
     local roots = { "script", "workspace/script", "workspace", "MakitoHub" }
     for _, root in ipairs(roots) do
         pcall(function()
@@ -145,10 +126,8 @@ function LoaderModule.DiscoverWorkspaceFiles()
             end
         end)
     end
-
     return found
 end
-
 function LoaderModule.FormatReport(report, caps, discovered)
     local lines = {
         "=== MAKITO HUB - DIAGNOSTICO ===",
@@ -161,7 +140,6 @@ function LoaderModule.FormatReport(report, caps, discovered)
         "",
         "=== MODULOS ===",
     }
-
     for _, name in ipairs({ "Settings", "Data", "Utils", "Combat", "Farming", "UI" }) do
         local info = report[name]
         if info then
@@ -172,7 +150,6 @@ function LoaderModule.FormatReport(report, caps, discovered)
             end
         end
     end
-
     if discovered and #discovered > 0 then
         lines[#lines + 1] = ""
         lines[#lines + 1] = "=== ARQUIVOS ENCONTRADOS ==="
@@ -183,8 +160,6 @@ function LoaderModule.FormatReport(report, caps, discovered)
             lines[#lines + 1] = "  ... +" .. (#discovered - 20) .. " arquivos"
         end
     end
-
     return table.concat(lines, "\n")
 end
-
 return LoaderModule

@@ -1,10 +1,8 @@
 --!strict
 local SettingsModule = {}
 local HttpService = game:GetService("HttpService")
-
 -- Caminho do arquivo de configuração persistente
 local CONFIG_PATH = "makito_config.json"
-
 -- Valores padrão do Hub (V11.0 - FULL PRO)
 local DEFAULT_VALUES = {
     -- Combate
@@ -19,7 +17,6 @@ local DEFAULT_VALUES = {
     Aimbot = false,
     AutoPvP = false,
     AutoCounter = false,
-
     -- Farm Geral
     AutoFarm = false, 
     AutoQuest = true, 
@@ -39,14 +36,12 @@ local DEFAULT_VALUES = {
     
     -- Boss Farm (NEW)
     SelectedBosses = {}, -- Tabela para armazenar quais bosses o usuário quer farmar
-
     -- Mastery & Materials
     AutoMastery = false,
     MasteryWeapon = "Sword",
     MasteryHealth = 20,
     AutoFarmMaterials = false,
     SelectedMaterial = "Dragon Scale",
-
     -- Sea 3 & End-Game
     AutoAncientSoul = false,
     AutoEliteGuardian = false,
@@ -61,7 +56,6 @@ local DEFAULT_VALUES = {
     AutoObservationV2 = false,
     AutoSaber = false,
     AutoDarkCoat = false,
-
     -- Sea Events (Update 29)
     AutoSeaEventsV2 = false,
     AutoKitsuneEvent = false,
@@ -70,21 +64,18 @@ local DEFAULT_VALUES = {
     AutoSeaBeast = false,
     AutoTerrorShark = false,
     AutoLeviathan = false,
-
     -- Frutas
     AutoFruitFinder = false,
     AutoStoreFruit = false,
     AutoCollectFruit = false,
     AutoGacha = false,
     AutoFruitSniper = false,
-
-    -- Raids
+    -- Raid
     AutoRaid = false,
     AutoStartRaid = false,
     AutoBuyChip = false,
     SelectedRaid = "Flame",
     RaidMode = "Above",
-
     -- Utilidades
     AutoStats = false, 
     SelectedStat = "Melee", 
@@ -120,9 +111,7 @@ local DEFAULT_VALUES = {
     UIScale = 1.0,
     UIPosition = {X = 0.1, Y = 0.1},
 }
-
 SettingsModule.Values = {}
-
 SettingsModule.Themes = {
     ["Default"] = Color3.fromRGB(0, 255, 150),
     ["Neon Red"] = Color3.fromRGB(255, 0, 50),
@@ -130,7 +119,6 @@ SettingsModule.Themes = {
     ["Golden"] = Color3.fromRGB(255, 200, 0),
     ["Purple Night"] = Color3.fromRGB(150, 0, 255)
 }
-
 -- Serializa valores para JSON (converte Color3 para strings)
 local function SerializeForSave(data)
     local result = {}
@@ -143,7 +131,6 @@ local function SerializeForSave(data)
     end
     return result
 end
-
 -- Deserializa valores do JSON
 local function DeserializeFromSave(data)
     local result = {}
@@ -160,7 +147,6 @@ local function DeserializeFromSave(data)
     end
     return result
 end
-
 function SettingsModule.Save()
     local success, err = pcall(function()
         local toSave = SerializeForSave(SettingsModule.Values)
@@ -172,7 +158,6 @@ function SettingsModule.Save()
         warn("❌ [MAKITO] Falha ao salvar configurações:", err)
     end
 end
-
 function SettingsModule.Load()
     local success, content = pcall(readfile, CONFIG_PATH)
     
@@ -194,9 +179,6 @@ function SettingsModule.Load()
     print("ℹ️ [MAKITO] Usando configurações padrão")
     return false
 end
-
 -- Inicializa o módulo
 SettingsModule.Load()
-
 return SettingsModule
-

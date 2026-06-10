@@ -1,3 +1,4 @@
+
 --!strict
 local FarmingModule = {}
 
@@ -153,7 +154,9 @@ function FarmingModule.UpdateAutomation()
         if Makito.Settings.AutoFishing then FarmingModule.FishingLogic() end
         
         -- Bosses e Elite
-        if Makito.Settings.AutoFarmAllBosses then FarmingModule.AutoFarmAllBosses() end
+        if Makito.Settings.AutoFarmAllBosses or (Makito.Settings.SelectedBosses and #Makito.Settings.SelectedBosses > 0) then
+            FarmingModule.AutoFarmAllBosses()
+        end
         if Makito.Settings.AutoEliteHunter then FarmingModule.AutoEliteHunter() end
         
         if Makito.Settings.AutoBoneFarm then FarmingModule.AutoBoneFarm() end

@@ -7,27 +7,21 @@
     
     ✅ FULL FEATURES: Auto Farm, Auto Boss, Auto Raid, Sea Events, Security, Auto-Update
 ]]
-
 --!strict
-
 -- 0. GLOBAL INITIALIZATION
 local Makito = {}
 getgenv().Makito = Makito
-
 Makito.Version = "11.0"
 Makito.Running = true
 Makito.IsTalkingToNPC = false
-
 -- SERVICES
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
 local LogService = game:GetService("LogService")
 local LocalPlayer = Players.LocalPlayer
-
 -- CONFIGURAÇÕES PRIVADAS
 local ERROR_WEBHOOK = ""
-
 -- 1. DIAGNÓSTICO E LOGGING
 Makito.Debug = function(step: string, detail: string)
     task.spawn(function()
@@ -52,7 +46,6 @@ Makito.Debug = function(step: string, detail: string)
         end
     end)
 end
-
 -- 2. ERROR HANDLER
 local function ShowErrorPanel(errorMsg: string)
     if game:GetService("CoreGui"):FindFirstChild("MakitoErrorScreen") then return end
@@ -92,7 +85,6 @@ local function ShowErrorPanel(errorMsg: string)
     
     closeBtn.MouseButton1Click:Connect(function() sg:Destroy() end)
 end
-
 if Makito.LogConn then Makito.LogConn:Disconnect() end
 Makito.LogConn = LogService.MessageOut:Connect(function(message, messageType)
     if messageType == Enum.MessageType.MessageError then
@@ -103,15 +95,12 @@ Makito.LogConn = LogService.MessageOut:Connect(function(message, messageType)
         end
     end
 end)
-
 -- 3. DETECÇÃO DE AMBIENTE
 if not game:IsLoaded() then game.Loaded:Wait() end
-
 local SEA_PLACE_IDS = {
     [2753915549] = 1, [4442272183] = 2, [4442272121] = 2, [7449423635] = 3
 }
 Makito.Sea = SEA_PLACE_IDS[game.PlaceId] or 1
-
 local function WaitForData()
     local timeout = tick() + 15
     while tick() < timeout do
@@ -120,16 +109,13 @@ local function WaitForData()
     end
     return false
 end
-
 if not WaitForData() then
     warn("⚠️ [MAKITO] Dados do jogador não carregaram. Funcionalidades podem falhar.")
 end
-
 -- 4. CARREGAMENTO DE MÓDULOS (USANDO LOADER MODULAR)
 local Loader = nil
 local report = {}
 local caps = {}
-
 -- Carrega o Loader primeiro (o Loader é auto-contido)
 local function LoadLoaderModule()
     local loaderPossiblePaths = {
@@ -156,9 +142,7 @@ local function LoadLoaderModule()
     
     return nil
 end
-
 Loader = LoadLoaderModule()
-
 if Loader then
     caps = Loader.GetCapabilities()
     print("📋 [MAKITO] Executor detectado: " .. caps.executor)
@@ -204,7 +188,6 @@ else
                 break
             end
         end
-
         if not content then 
             warn("⚠️ [MAKITO] Arquivo não encontrado: " .. path)
             return nil 
@@ -230,7 +213,6 @@ else
         
         return result
     end
-
     local modules = {"Settings", "Data", "Utils", "Combat", "Farming", "UI", "Security", "Updater"}
     for _, name in ipairs(modules) do
         local path = "modules/" .. name .. ".lua"
@@ -245,7 +227,6 @@ else
         end
     end
 end
-
 -- 4.1 - KEYBIND HANDLER (NEW)
 local UserInputService = game:GetService("UserInputService")
 UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
@@ -265,7 +246,6 @@ UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
         end
     end
 end)
-
 -- 5. INICIALIZAÇÃO E LOOP GLOBAL
 if Makito.Utils then
     Makito.Utils.AntiAFK()
@@ -306,13 +286,12 @@ if Makito.Utils then
                 else
                     Makito.Combat.StopCombatLoop()
                 end
-
                 -- 4. Webhook Stats (A cada 10 minutos)
                 if Makito.Settings and Makito.Settings.AutoWebhook then
                     if not _G.LastWebhook or tick() - _G.LastWebhook > 600 then
                         _G.LastWebhook = tick()
                         Makito.Debug("STATS_UPDATE", string.format(
-                            "Level: %d | Beli: %d | Fragments: %d",
+                            "Level: %d | Beli: %d | Frags: %d",
                             LocalPlayer.Data.Level.Value, LocalPlayer.Data.Beli.Value, LocalPlayer.Data.Fragments.Value
                         ))
                     end
@@ -332,5 +311,4 @@ if Makito.Utils then
         Makito.UI.CreateWatermark()
     end
 end
-
 print("🚀 [MAKITO HUB PRO] V" .. Makito.Version .. " Inicializado com sucesso!")
