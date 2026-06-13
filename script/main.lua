@@ -112,12 +112,28 @@ end
 if not WaitForData() then
     warn("⚠️ [MAKITO] Dados do jogador não carregaram. Funcionalidades podem falhar.")
 end
--- 4. CARREGAMENTO DE MÓDULOS (USANDO LOADER MODULAR)
+-- 4. CARREGAMENTO DE MÓDULOS (USANDO LOADER MODULAR OU GITHUB)
+local GITHUB_RAW_URL = "https://raw.githubusercontent.com/bl4ckgoldstudios-creator/MAKITO-HUB/refs/heads/main/script"
 local Loader = nil
 local report = {}
 local caps = {}
+
+-- Função para baixar do GitHub
+local function GetGitHubFile(path)
+    local url = GITHUB_RAW_URL .. "/" .. path
+    local success, content = pcall(function()
+        return game:HttpGet(url)
+    end)
+    if success and content then
+        return content
+    else
+        return nil
+    end
+end
+
 -- Carrega o Loader primeiro (o Loader é auto-contido)
 local function LoadLoaderModule()
+    -- Tenta carregar localmente primeiro
     local loaderPossiblePaths = {
         "modules/Loader.lua",
         "MakitoHub/modules/Loader.lua",
@@ -136,6 +152,36 @@ local function LoadLoaderModule()
                 else
                     warn("❌ Erro no Loader: " .. tostring(err))
                 end
+            end
+        end
+    end
+    
+    -- Se não encontrar localmente, tenta GitHub
+    warn("⚠️ Loader não encontrado localmente, tentando GitHub...")
+    local githubContent = GetGitHubFile("modules/Loader.lua")
+    if githubContent then
+        local fn, err = loadstring(githubContent, "Makito_Loader_GitHub")
+        if fn then
+            local success, mod = pcall(fn)
+            if success and type(mod) == "table" then
+                -- Modifica o Loader para usar GitHub
+                local originalLoad = mod.Load
+                mod.Load = function(name, reportTable)
+                    local content = GetGitHubFile("modules/" .. name .. ".lua")
+                    if not content then
+                        return nil, "Arquivo não encontrado no GitHub"
+                    end
+                    local loadFn, loadErr = loadstring(content, "Makito_" .. name)
+                    if not loadFn then
+                        return nil, loadErr
+                    end
+                    local ok, result = pcall(loadFn)
+                    if not ok then
+                        return nil, result
+                    end
+                    return result, nil
+                end
+                return mod
             end
         end
     end
@@ -173,6 +219,7 @@ else
     
     -- Fallback caso Loader não exista
     local function SafeLoad(name: string, path: string)
+        -- Tenta carregar localmente primeiro
         local possiblePaths = {
             path,
             "MakitoHub/" .. path,
@@ -188,8 +235,15 @@ else
                 break
             end
         end
+        
+        -- Se não encontrar localmente, tenta GitHub
+        if not content then
+            warn("⚠️ [MAKITO] Arquivo não encontrado localmente: " .. path .. ", tentando GitHub...")
+            content = GetGitHubFile(path)
+        end
+        
         if not content then 
-            warn("⚠️ [MAKITO] Arquivo não encontrado: " .. path)
+            warn("⚠️ [MAKITO] Arquivo não encontrado (nem localmente, nem GitHub): " .. path)
             return nil 
         end
         
