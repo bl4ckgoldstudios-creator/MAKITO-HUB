@@ -11,6 +11,78 @@ local LocalPlayer = Players.LocalPlayer
 -- INTERNAL STATE
 local Makito = getgenv().Makito
 local combatLoop: RBXScriptConnection? = nil
+local CombatFramework = nil
+local CombatFrameworkR = nil
+
+-- ==================================================
+-- FUNÇÕES FAST ATTACK (DO EXEMPLO)
+-- ==================================================
+local function getAllBladeHits(Sizes)
+	local Hits = {}
+	local Enemies = workspace:FindFirstChild("Enemies") and workspace.Enemies:GetChildren() or {}
+	for i = 1, #Enemies do
+		local v = Enemies[i]
+		local Human = v:FindFirstChildOfClass("Humanoid")
+		if Human and Human.RootPart and Human.Health > 0 and LocalPlayer:DistanceFromCharacter(Human.RootPart.Position) < Sizes + 5 then
+			table.insert(Hits, Human.RootPart)
+		end
+	end
+	return Hits
+end
+
+local function CurrentWeapon()
+	if not CombatFrameworkR then return end
+	local ac = CombatFrameworkR.activeController
+	if not ac then return LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Tool") and LocalPlayer.Character:FindFirstChildOfClass("Tool").Name end
+	local ret = ac.blades[1]
+	if not ret then return LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Tool") and LocalPlayer.Character:FindFirstChildOfClass("Tool").Name end
+	pcall(function()
+		while ret.Parent ~= LocalPlayer.Character do
+			ret = ret.Parent
+		end
+	end)
+	if not ret then return LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Tool") and LocalPlayer.Character:FindFirstChildOfClass("Tool").Name end
+	return ret
+end
+
+local cooldownfastattack = tick()
+function CombatModule.AttackFunction()
+	if not CombatFrameworkR then return end
+	local ac = CombatFrameworkR.activeController
+	if ac and ac.equipped then
+		for indexincrement = 1, 1 do
+			local bladehit = getAllBladeHits(60)
+			if #bladehit > 0 then
+				local AcAttack8 = debug.getupvalue(ac.attack, 5)
+				local AcAttack9 = debug.getupvalue(ac.attack, 6)
+				local AcAttack7 = debug.getupvalue(ac.attack, 4)
+				local AcAttack10 = debug.getupvalue(ac.attack, 7)
+				local NumberAc12 = (AcAttack8 * 798405 + AcAttack7 * 727595) % AcAttack9
+				local NumberAc13 = AcAttack7 * 798405
+				(function()
+					NumberAc12 = (NumberAc12 * AcAttack9 + NumberAc13) % 1099511627776
+					AcAttack8 = math.floor(NumberAc12 / AcAttack9)
+					AcAttack7 = NumberAc12 - AcAttack8 * AcAttack9
+				end)()
+				AcAttack10 = AcAttack10 + 1
+				debug.setupvalue(ac.attack, 5, AcAttack8)
+				debug.setupvalue(ac.attack, 6, AcAttack9)
+				debug.setupvalue(ac.attack, 4, AcAttack7)
+				debug.setupvalue(ac.attack, 7, AcAttack10)
+				if ac.animator and ac.animator.anims and ac.animator.anims.basic then
+					for k, v in pairs(ac.animator.anims.basic) do
+						v:Play(0.01, 0.01, 0.01)
+					end
+				end
+				if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Tool") and ac.blades and ac.blades[1] then
+					ReplicatedStorage.RigControllerEvent:FireServer("weaponChange", tostring(CurrentWeapon()))
+					ReplicatedStorage.Remotes.Validator:FireServer(math.floor(NumberAc12 / 1099511627776 * 16777215), AcAttack10)
+					ReplicatedStorage.RigControllerEvent:FireServer("hit", bladehit, 2, "")
+				end
+			end
+		end
+	end
+end
 
 -- ==================================================
 -- FUNÇÕES UTILITÁRIAS (DO EXEMPLO)
@@ -258,17 +330,20 @@ function CombatModule.StopCombatLoop()
 end
 
 -- ==================================================
--- FAST ATTACK
+-- FAST ATTACK (ATUALIZADO)
 -- ==================================================
 function CombatModule.FastAttack()
-    -- Implementar Fast Attack
+    if tick() - cooldownfastattack >= 0.001 then
+        CombatModule.AttackFunction()
+        cooldownfastattack = tick()
+    end
 end
 
 -- ==================================================
--- KILL AURA
+-- KILL AURA (ATUALIZADO)
 -- ==================================================
 function CombatModule.KillAura()
-    -- Implementar Kill Aura
+    CombatModule.AttackFunction()
 end
 
 -- ==================================================
@@ -276,6 +351,13 @@ end
 -- ==================================================
 function CombatModule.Initialize()
     CombatModule.StartNamecallHook()
+    
+    -- Carregar CombatFramework (do exemplo)
+    pcall(function()
+        CombatFramework = require(LocalPlayer.PlayerScripts:WaitForChild("CombatFramework", 5))
+        CombatFrameworkR = getupvalues(CombatFramework)[2]
+    end)
+    
     print("✅ [MAKITO] Combat Module inicializado!")
 end
 

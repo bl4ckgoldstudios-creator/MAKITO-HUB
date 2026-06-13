@@ -1,307 +1,338 @@
---!strict
+-- Módulo de Dados - Contém todas as informações de bosses, materiais e worlds
 local DataModule = {}
 
--- INTERNAL STATE
-local Makito = getgenv().Makito
+-- Services
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
 
--- FILTRO DE MAR
-local function GetSea()
-    local placeId = game.PlaceId
-    if placeId == 2753915549 then return 1
-    elseif placeId == 4442272183 or placeId == 4442272121 then return 2
-    elseif placeId == 7449423635 then return 3
-    end
-    return 1
-end
-
-local CurrentSea = (Makito and Makito.Sea) or GetSea()
-
-local FullSeaData = {
-    [1] = {
-        {Name = "Starter Island (Pirate)", Pos = CFrame.new(1059, 15, 1550)},
-        {Name = "Starter Island (Marine)", Pos = CFrame.new(-2566, 7, 2975)},
-        {Name = "Jungle", Pos = CFrame.new(-1612, 37, 149)},
-        {Name = "Pirate Village", Pos = CFrame.new(-1181, 4, 3850)},
-        {Name = "Desert", Pos = CFrame.new(1094, 6, 4195)},
-        {Name = "Middle Town", Pos = CFrame.new(-690, 15, 1583)},
-        {Name = "Frozen Village", Pos = CFrame.new(1147, 6, -1157)},
-        {Name = "Marinefort", Pos = CFrame.new(-5032, 23, 4323)},
-        {Name = "Skylands", Pos = CFrame.new(-4842, 718, -2621)},
-        {Name = "Prison", Pos = CFrame.new(4875, 5, 749)},
-        {Name = "Magma Village", Pos = CFrame.new(-5313, 12, 8515)},
-        {Name = "Underwater City", Pos = CFrame.new(61122, 18, 1565)},
-        {Name = "Colosseum", Pos = CFrame.new(-1580, 7, -2980)},
-        {Name = "Fountain City", Pos = CFrame.new(5259, 38, 4050)}
-    },
-    [2] = {
-        {Name = "Kingdom of Rose", Pos = CFrame.new(-425, 72, 1836)},
-        {Name = "Ushi Island", Pos = CFrame.new(-2367, 72, -3054)},
-        {Name = "Green Bit", Pos = CFrame.new(-2367, 72, -3054)},
-        {Name = "Graveyard", Pos = CFrame.new(-5497, 47, -795)},
-        {Name = "Snow Mountain", Pos = CFrame.new(609, 401, -5372)},
-        {Name = "Hot and Cold", Pos = CFrame.new(-541, 70, -12133)},
-        {Name = "Cursed Ship", Pos = CFrame.new(1037, 125, 32911)},
-        {Name = "Ice Castle", Pos = CFrame.new(6061, 26, -6370)},
-        {Name = "Forgotten Island", Pos = CFrame.new(-3056, 235, -10142)},
-        {Name = "Cafe", Pos = CFrame.new(-382, 73, 291)},
-        {Name = "Bartilo", Pos = CFrame.new(-2840, 10, 5318)},
-        {Name = "Don Swan's Room", Pos = CFrame.new(2288, 15, 808)}
-    },
-    [3] = {
-        {Name = "Port Town", Pos = CFrame.new(-8053, 10, 5233)},
-        {Name = "Hydra Island", Pos = CFrame.new(5259, 604, 346)},
-        {Name = "Floating Turtle", Pos = CFrame.new(-13233, 532, -7594)},
-        {Name = "Castle on the Sea", Pos = CFrame.new(-5400, 15, 1000)},
-        {Name = "Haunted Castle", Pos = CFrame.new(-9515, 164, -5785)},
-        {Name = "Sea of Treats", Pos = CFrame.new(-1147, 14, -11514)},
-        {Name = "Tiki Outpost", Pos = CFrame.new(-16234, 12, 467)},
-        {Name = "Submerged Outpost", Pos = CFrame.new(-18500, -550, -18500)},
-        {Name = "Dragon Palace", Pos = CFrame.new(-21000, -800, -21000)},
-        {Name = "Submerged Island", Pos = CFrame.new(-19500, -500, -18000)},
-        {Name = "Mansion", Pos = CFrame.new(-12463, 332, -7548)},
-        {Name = "Peanut Land", Pos = CFrame.new(-20631, 50, -9050)},
-        {Name = "Candy Island", Pos = CFrame.new(-1151, 14, -11514)},
-        {Name = "Cake Land", Pos = CFrame.new(-1147, 14, -11514)},
-        {Name = "Beautiful Pirate Domain", Pos = CFrame.new(5319, 23, -93)}
-    }
-}
-
-local FullQuestData = {
-    [1] = {
-        {Min = 0, Name = "BanditQuest1", NPC = "Bandit Recruiter", ID = 1, Enemy = "Bandit", Pos = CFrame.new(1059, 15, 1550), Spawn = CFrame.new(1145, 17, 1634)},
-        {Min = 10, Name = "MonkeyQuest1", NPC = "Monkey Quest Giver", ID = 1, Enemy = "Monkey", Pos = CFrame.new(-1598, 37, 153), Spawn = CFrame.new(-1612, 37, 149)},
-        {Min = 15, Name = "MonkeyQuest1", NPC = "Monkey Quest Giver", ID = 2, Enemy = "Gorilla", Pos = CFrame.new(-1598, 37, 153), Spawn = CFrame.new(-1204, 51, -452)},
-        {Min = 20, Name = "MonkeyQuest1", NPC = "Monkey Quest Giver", ID = 3, Enemy = "Gorilla King", Pos = CFrame.new(-1598, 37, 153), Spawn = CFrame.new(-1204, 51, -452)},
-        {Min = 30, Name = "PirateQuest1", NPC = "Pirate Quest Giver", ID = 1, Enemy = "Pirate", Pos = CFrame.new(-1140, 4, 3827), Spawn = CFrame.new(-1222, 25, 3911)},
-        {Min = 40, Name = "PirateQuest1", NPC = "Pirate Quest Giver", ID = 2, Enemy = "Brute", Pos = CFrame.new(-1140, 4, 3827), Spawn = CFrame.new(-1362, 15, 4310)},
-        {Min = 55, Name = "PirateQuest1", NPC = "Pirate Quest Giver", ID = 3, Enemy = "Bobby", Pos = CFrame.new(-1140, 4, 3827), Spawn = CFrame.new(-1140, 15, 4150)},
-        {Min = 60, Name = "DesertBanditQuest1", NPC = "Desert Quest Giver", ID = 1, Enemy = "Desert Bandit", Pos = CFrame.new(894, 6, 4388), Spawn = CFrame.new(995, 6, 4425)},
-        {Min = 75, Name = "DesertBanditQuest1", NPC = "Desert Quest Giver", ID = 2, Enemy = "Desert Officer", Pos = CFrame.new(894, 6, 4388), Spawn = CFrame.new(1540, 15, 4440)},
-        {Min = 90, Name = "SnowBanditQuest1", NPC = "Snow Quest Giver", ID = 1, Enemy = "Snow Bandit", Pos = CFrame.new(1389, 105, -1298), Spawn = CFrame.new(1280, 150, -1340)},
-        {Min = 100, Name = "SnowBanditQuest1", NPC = "Snow Quest Giver", ID = 2, Enemy = "Snowman", Pos = CFrame.new(1389, 105, -1298), Spawn = CFrame.new(1280, 150, -1340)},
-        {Min = 105, Name = "SnowBanditQuest1", NPC = "Snow Quest Giver", ID = 3, Enemy = "Yeti", Pos = CFrame.new(1389, 105, -1298), Spawn = CFrame.new(1280, 150, -1340)},
-        {Min = 120, Name = "MarineQuest2", NPC = "Marine Quest Giver", ID = 1, Enemy = "Chief Petty Officer", Pos = CFrame.new(-5039, 27, 4324), Spawn = CFrame.new(-4810, 23, 4335)},
-        {Min = 130, Name = "MarineQuest2", NPC = "Marine Quest Giver", ID = 2, Enemy = "Vice Admiral", Pos = CFrame.new(-5039, 27, 4324), Spawn = CFrame.new(-4807, 23, 4335)},
-        {Min = 150, Name = "SkyQuest", NPC = "Sky Quest Giver", ID = 1, Enemy = "Sky Bandit", Pos = CFrame.new(-4842, 718, -2621), Spawn = CFrame.new(-4950, 750, -2850)},
-        {Min = 175, Name = "SkyQuest", NPC = "Sky Quest Giver", ID = 2, Enemy = "Dark Steward", Pos = CFrame.new(-4842, 718, -2621), Spawn = CFrame.new(-4950, 750, -2850)},
-        {Min = 190, Name = "PrisonQuest1", NPC = "Prison Quest Giver", ID = 1, Enemy = "Prisoner", Pos = CFrame.new(4875, 5, 749), Spawn = CFrame.new(5400, 15, 650)},
-        {Min = 210, Name = "PrisonQuest1", NPC = "Prison Quest Giver", ID = 2, Enemy = "Dangerous Prisoner", Pos = CFrame.new(4875, 5, 749), Spawn = CFrame.new(5400, 15, 650)},
-        {Min = 225, Name = "PrisonQuest1", NPC = "Prison Quest Giver", ID = 3, Enemy = "Warden", Pos = CFrame.new(4875, 5, 749), Spawn = CFrame.new(5400, 15, 650)},
-        {Min = 230, Name = "PrisonQuest1", NPC = "Prison Quest Giver", ID = 4, Enemy = "Chief Warden", Pos = CFrame.new(4875, 5, 749), Spawn = CFrame.new(5400, 15, 650)},
-        {Min = 240, Name = "PrisonQuest1", NPC = "Prison Quest Giver", ID = 5, Enemy = "Swan", Pos = CFrame.new(4875, 5, 749), Spawn = CFrame.new(5400, 15, 650)},
-        {Min = 250, Name = "ColosseumQuest1", NPC = "Colosseum Quest Giver", ID = 1, Enemy = "Toga Warrior", Pos = CFrame.new(-1580, 7, -2980), Spawn = CFrame.new(-1800, 50, -2700)},
-        {Min = 275, Name = "ColosseumQuest1", NPC = "Colosseum Quest Giver", ID = 2, Enemy = "Gladiator", Pos = CFrame.new(-1580, 7, -2980), Spawn = CFrame.new(-1800, 50, -2700)},
-        {Min = 300, Name = "MagmaQuest", NPC = "Magma Quest Giver", ID = 1, Enemy = "Military Soldier", Pos = CFrame.new(-5313, 12, 8515), Spawn = CFrame.new(-5400, 50, 8600)},
-        {Min = 325, Name = "MagmaQuest", NPC = "Magma Quest Giver", ID = 2, Enemy = "Military Spy", Pos = CFrame.new(-5313, 12, 8515), Spawn = CFrame.new(-5400, 50, 8600)},
-        {Min = 350, Name = "MagmaQuest", NPC = "Magma Quest Giver", ID = 3, Enemy = "Magma Admiral", Pos = CFrame.new(-5313, 12, 8515), Spawn = CFrame.new(-5400, 50, 8600)},
-        {Min = 375, Name = "FishmanQuest", NPC = "Underwater Quest Giver", ID = 1, Enemy = "Fishman Warrior", Pos = CFrame.new(61122, 18, 1565), Spawn = CFrame.new(61000, 15, 1500)},
-        {Min = 400, Name = "FishmanQuest", NPC = "Underwater Quest Giver", ID = 2, Enemy = "Fishman Commando", Pos = CFrame.new(61122, 18, 1565), Spawn = CFrame.new(61000, 15, 1500)},
-        {Min = 425, Name = "FishmanQuest", NPC = "Underwater Quest Giver", ID = 3, Enemy = "Fishman Lord", Pos = CFrame.new(61122, 18, 1565), Spawn = CFrame.new(61000, 15, 1500)},
-        {Min = 450, Name = "SkyQuest2", NPC = "Sky Quest Giver", ID = 1, Enemy = "God's Guard", Pos = CFrame.new(-4721, 845, -1954), Spawn = CFrame.new(-4600, 850, -1900)},
-        {Min = 475, Name = "SkyQuest2", NPC = "Sky Quest Giver", ID = 2, Enemy = "Shaman", Pos = CFrame.new(-4721, 845, -1954), Spawn = CFrame.new(-4600, 850, -1900)},
-        {Min = 500, Name = "SkyQuest2", NPC = "Sky Quest Giver", ID = 3, Enemy = "Wysper", Pos = CFrame.new(-4721, 845, -1954), Spawn = CFrame.new(-4600, 850, -1900)},
-        {Min = 525, Name = "SkyQuest3", NPC = "Sky Quest Giver", ID = 1, Enemy = "Royal Squad", Pos = CFrame.new(-7906, 5545, -383), Spawn = CFrame.new(-7800, 5550, -400)},
-        {Min = 550, Name = "SkyQuest3", NPC = "Sky Quest Giver", ID = 2, Enemy = "Royal Soldier", Pos = CFrame.new(-7906, 5545, -383), Spawn = CFrame.new(-7800, 5550, -400)},
-        {Min = 575, Name = "SkyQuest3", NPC = "Sky Quest Giver", ID = 3, Enemy = "Thunder God", Pos = CFrame.new(-7906, 5545, -383), Spawn = CFrame.new(-7800, 5550, -400)},
-        {Min = 625, Name = "FountainQuest", NPC = "Fountain Quest Giver", ID = 1, Enemy = "Galley Pirate", Pos = CFrame.new(5259, 38, 4050), Spawn = CFrame.new(5500, 50, 4100)},
-        {Min = 650, Name = "FountainQuest", NPC = "Fountain Quest Giver", ID = 2, Enemy = "Galley Captain", Pos = CFrame.new(5259, 38, 4050), Spawn = CFrame.new(5500, 50, 4100)},
-        {Min = 675, Name = "FountainQuest", NPC = "Fountain Quest Giver", ID = 3, Enemy = "Cyborg", Pos = CFrame.new(5259, 38, 4050), Spawn = CFrame.new(5500, 50, 4100)}
-    },
-    [2] = {
-        {Min = 700, Name = "Area1Quest", NPC = "Quest Giver", ID = 1, Enemy = "Raider", Pos = CFrame.new(-425, 72, 1836), Spawn = CFrame.new(-500, 72, 1900)},
-        {Min = 725, Name = "Area1Quest", NPC = "Quest Giver", ID = 2, Enemy = "Mercenary", Pos = CFrame.new(-425, 72, 1836), Spawn = CFrame.new(-500, 72, 1900)},
-        {Min = 750, Name = "Area2Quest", NPC = "Quest Giver", ID = 1, Enemy = "Swan Pirate", Pos = CFrame.new(-425, 72, 1836), Spawn = CFrame.new(-650, 72, 2100)},
-        {Min = 775, Name = "Area2Quest", NPC = "Quest Giver", ID = 2, Enemy = "Factory Staff", Pos = CFrame.new(-425, 72, 1836), Spawn = CFrame.new(400, 72, 2500)},
-        {Min = 800, Name = "MarineQuest3", NPC = "Quest Giver", ID = 1, Enemy = "Marine Lieutenant", Pos = CFrame.new(-425, 72, 1836), Spawn = CFrame.new(-2440, 19, 3065)},
-        {Min = 875, Name = "ZombieQuest", NPC = "Quest Giver", ID = 1, Enemy = "Zombie", Pos = CFrame.new(-5497, 47, -795), Spawn = CFrame.new(-5600, 47, -900)},
-        {Min = 900, Name = "ZombieQuest", NPC = "Quest Giver", ID = 2, Enemy = "Vampire", Pos = CFrame.new(-5497, 47, -795), Spawn = CFrame.new(-5600, 47, -900)},
-        {Min = 925, Name = "SnowMountainQuest", NPC = "Quest Giver", ID = 1, Enemy = "Snow Trooper", Pos = CFrame.new(609, 401, -5372), Spawn = CFrame.new(700, 401, -5500)},
-        {Min = 950, Name = "SnowMountainQuest", NPC = "Quest Giver", ID = 2, Enemy = "Winter Warrior", Pos = CFrame.new(609, 401, -5372), Spawn = CFrame.new(700, 401, -5500)},
-        {Min = 1000, Name = "IceCastleQuest", NPC = "Quest Giver", ID = 1, Enemy = "Reborn Skeleton", Pos = CFrame.new(6061, 26, -6370), Spawn = CFrame.new(6200, 26, -6500)},
-        {Min = 1050, Name = "IceCastleQuest", NPC = "Quest Giver", ID = 2, Enemy = "Rengoku", Pos = CFrame.new(6061, 26, -6370), Spawn = CFrame.new(6200, 26, -6500)},
-        {Min = 1100, Name = "FireSideQuest", NPC = "Quest Giver", ID = 1, Enemy = "Magma Ninja", Pos = CFrame.new(-541, 70, -12133), Spawn = CFrame.new(-600, 70, -12200)},
-        {Min = 1125, Name = "FireSideQuest", NPC = "Quest Giver", ID = 2, Enemy = "Lava Pirate", Pos = CFrame.new(-541, 70, -12133), Spawn = CFrame.new(-600, 70, -12200)},
-        {Min = 1150, Name = "ColdSideQuest", NPC = "Quest Giver", ID = 1, Enemy = "Lab Subordinate", Pos = CFrame.new(-541, 70, -12133), Spawn = CFrame.new(-400, 70, -12000)},
-        {Min = 1175, Name = "ColdSideQuest", NPC = "Quest Giver", ID = 2, Enemy = "Horned Warrior", Pos = CFrame.new(-541, 70, -12133), Spawn = CFrame.new(-400, 70, -12000)},
-        {Min = 1200, Name = "Area2Quest", NPC = "Quest Giver", ID = 3, Enemy = "Military Spy", Pos = CFrame.new(-425, 72, 1836), Spawn = CFrame.new(-650, 72, 2100)},
-        {Min = 1250, Name = "ShipQuest1", NPC = "Quest Giver", ID = 1, Enemy = "Ship Deckhand", Pos = CFrame.new(1037, 125, 32911), Spawn = CFrame.new(1100, 125, 32950)},
-        {Min = 1275, Name = "ShipQuest1", NPC = "Quest Giver", ID = 2, Enemy = "Ship Engineer", Pos = CFrame.new(1037, 125, 32911), Spawn = CFrame.new(1100, 125, 32950)},
-        {Min = 1300, Name = "ShipQuest2", NPC = "Quest Giver", ID = 1, Enemy = "Ship Steward", Pos = CFrame.new(1037, 125, 32911), Spawn = CFrame.new(1100, 125, 32950)},
-        {Min = 1325, Name = "ShipQuest2", NPC = "Quest Giver", ID = 2, Enemy = "Ship Officer", Pos = CFrame.new(1037, 125, 32911), Spawn = CFrame.new(1100, 125, 32950)},
-        {Min = 1350, Name = "ShipQuest2", NPC = "Quest Giver", ID = 3, Enemy = "Ship Captain", Pos = CFrame.new(1037, 125, 32911), Spawn = CFrame.new(1100, 125, 32950)},
-        {Min = 1375, Name = "ShipQuest3", NPC = "Quest Giver", ID = 1, Enemy = "Core", Pos = CFrame.new(1037, 125, 32911), Spawn = CFrame.new(1100, 125, 32950)},
-        {Min = 1425, Name = "OrderQuest", NPC = "Quest Giver", ID = 1, Enemy = "Dangerous Agent", Pos = CFrame.new(-425, 72, 1836), Spawn = CFrame.new(-500, 72, 1900)},
-        {Min = 1450, Name = "OrderQuest", NPC = "Quest Giver", ID = 2, Enemy = "Vice Admiral", Pos = CFrame.new(-425, 72, 1836), Spawn = CFrame.new(-2440, 19, 3065)}
-    },
-    [3] = {
-        {Min = 1500, Name = "PortTownQuest", NPC = "Quest Giver", ID = 1, Enemy = "Pirate Millionaire", Pos = CFrame.new(-8053, 10, 5233)},
-        {Min = 1525, Name = "PortTownQuest", NPC = "Quest Giver", ID = 2, Enemy = "Pistol Billionaire", Pos = CFrame.new(-8053, 10, 5233)},
-        {Min = 1575, Name = "HydraIslandQuest", NPC = "Quest Giver", ID = 1, Enemy = "Dragon Crew Warrior", Pos = CFrame.new(5259, 604, 346)},
-        {Min = 1600, Name = "HydraIslandQuest", NPC = "Quest Giver", ID = 2, Enemy = "Dragon Crew Archer", Pos = CFrame.new(5259, 604, 346)},
-        {Min = 1625, Name = "HydraIslandQuest", NPC = "Quest Giver", ID = 3, Enemy = "Female Island Pirate", Pos = CFrame.new(5259, 604, 346)},
-        {Min = 1700, Name = "TurtleQuest", NPC = "Quest Giver", ID = 1, Enemy = "Fishman Raider", Pos = CFrame.new(-13233, 532, -7594)},
-        {Min = 1725, Name = "TurtleQuest", NPC = "Quest Giver", ID = 2, Enemy = "Fishman Captain", Pos = CFrame.new(-13233, 532, -7594)},
-        {Min = 1775, Name = "TurtleQuest", NPC = "Quest Giver", ID = 3, Enemy = "Forest Pirate", Pos = CFrame.new(-13233, 532, -7594)},
-        {Min = 1800, Name = "TurtleQuest", NPC = "Quest Giver", ID = 4, Enemy = "Mythical Pirate", Pos = CFrame.new(-13233, 532, -7594)},
-        {Min = 1900, Name = "HauntedCastleQuest", NPC = "Quest Giver", ID = 1, Enemy = "Reborn Skeleton", Pos = CFrame.new(-9515, 164, -5785)},
-        {Min = 1925, Name = "HauntedCastleQuest", NPC = "Quest Giver", ID = 2, Enemy = "Living Zombie", Pos = CFrame.new(-9515, 164, -5785)},
-        {Min = 1975, Name = "HauntedCastleQuest", NPC = "Quest Giver", ID = 3, Enemy = "Demonic Soul", Pos = CFrame.new(-9515, 164, -5785)},
-        {Min = 2000, Name = "HauntedCastleQuest", NPC = "Quest Giver", ID = 4, Enemy = "Posessed Mummy", Pos = CFrame.new(-9515, 164, -5785)},
-        {Min = 2100, Name = "IceCreamQuest", NPC = "Quest Giver", ID = 1, Enemy = "Cookie Crafter", Pos = CFrame.new(-1147, 14, -11514)},
-        {Min = 2125, Name = "IceCreamQuest", NPC = "Quest Giver", ID = 2, Enemy = "Cake Guard", Pos = CFrame.new(-1147, 14, -11514)},
-        {Min = 2200, Name = "CakeQuest", NPC = "Quest Giver", ID = 1, Enemy = "Baking Staff", Pos = CFrame.new(-1147, 14, -11514)},
-        {Min = 2275, Name = "ChocolateQuest", NPC = "Quest Giver", ID = 1, Enemy = "Cocoa Warrior", Pos = CFrame.new(-1147, 14, -11514)},
-        {Min = 2300, Name = "ChocolateQuest", NPC = "Quest Giver", ID = 2, Enemy = "Chocolate Bar Battler", Pos = CFrame.new(-1147, 14, -11514)},
-        {Min = 2325, Name = "CandyQuest", NPC = "Quest Giver", ID = 1, Enemy = "Candy Rebel", Pos = CFrame.new(-1151, 14, -11514), Spawn = CFrame.new(-1100, 14, -11600)},
-        {Min = 2350, Name = "CandyQuest", NPC = "Quest Giver", ID = 2, Enemy = "Sweet Thief", Pos = CFrame.new(-1151, 14, -11514), Spawn = CFrame.new(-1100, 14, -11600)},
-        {Min = 2400, Name = "PeanutQuest", NPC = "Quest Giver", ID = 1, Enemy = "Peanut Scout", Pos = CFrame.new(-20631, 50, -9050), Spawn = CFrame.new(-20700, 50, -9100)},
-        {Min = 2425, Name = "PeanutQuest", NPC = "Quest Giver", ID = 2, Enemy = "Peanut President", Pos = CFrame.new(-20631, 50, -9050), Spawn = CFrame.new(-20700, 50, -9100)},
-        {Min = 2450, Name = "TikiQuest1", NPC = "Quest Giver", ID = 1, Enemy = "Sun-kissed Warrior", Pos = CFrame.new(-16234, 12, 467), Spawn = CFrame.new(-16300, 12, 500)},
-        {Min = 2500, Name = "TikiQuest1", NPC = "Quest Giver", ID = 2, Enemy = "Isle Outlaw", Pos = CFrame.new(-16234, 12, 467), Spawn = CFrame.new(-16300, 12, 500)},
-        {Min = 2550, Name = "TikiQuest2", NPC = "Quest Giver", ID = 1, Enemy = "Isle Champion", Pos = CFrame.new(-16234, 12, 467), Spawn = CFrame.new(-16300, 12, 500)},
-        {Min = 2575, Name = "TikiQuest2", NPC = "Quest Giver", ID = 2, Enemy = "Serpent Hunter", Pos = CFrame.new(-16234, 12, 467), Spawn = CFrame.new(-16300, 12, 500)},
-        {Min = 2600, Name = "SubmergedQuest1", NPC = "Submerged Quest Giver", ID = 1, Enemy = "Ancient Guardian", Pos = CFrame.new(-18500, -540, -18500), Spawn = CFrame.new(-18600, -540, -18600)},
-        {Min = 2650, Name = "SubmergedQuest1", NPC = "Submerged Quest Giver", ID = 2, Enemy = "Abyssal Warrior", Pos = CFrame.new(-18500, -540, -18500), Spawn = CFrame.new(-18700, -540, -18700)},
-        {Min = 2725, Name = "DragonPalaceQuest", NPC = "Palace Quest Giver", ID = 1, Enemy = "Tiki Overlord", Pos = CFrame.new(-21000, -790, -21000), Spawn = CFrame.new(-21100, -790, -21100)},
-        {Min = 2775, Name = "DragonPalaceQuest", NPC = "Palace Quest Giver", ID = 2, Enemy = "Ancient Soul", Pos = CFrame.new(-21000, -790, -21000), Spawn = CFrame.new(-21200, -790, -21200)},
-        {Min = 2825, Name = "DragonPalaceQuest", NPC = "Palace Quest Giver", ID = 3, Enemy = "Guardian of the Deep", Pos = CFrame.new(-21000, -790, -21000), Spawn = CFrame.new(-21300, -790, -21300)}
-    }
-}
-
-DataModule.SeaData = FullSeaData
-DataModule.QuestData = FullQuestData
-DataModule.CurrentSea = CurrentSea
-
-DataModule.MaterialData = {
-    ["Dragon Scale"] = {Enemy = "Dragon Crew Warrior", Pos = CFrame.new(5259, 604, 346)},
-    ["Fish Tail"] = {Enemy = "Fishman Warrior", Pos = CFrame.new(61122, 18, 1565)},
-    ["Conjured Cocoa"] = {Enemy = "Cocoa Warrior", Pos = CFrame.new(-1147, 14, -11514)},
-    ["Bones"] = {Enemy = "Reborn Skeleton", Pos = CFrame.new(-9515, 164, -5785)},
-    ["Scrap Metal"] = {Enemy = "Pirate", Pos = CFrame.new(-1222, 25, 3911)},
-    ["Leather"] = {Enemy = "Bandit", Pos = CFrame.new(1145, 17, 1634)},
-    ["Magma Ore"] = {Enemy = "Military Soldier", Pos = CFrame.new(-5400, 50, 8600)},
-    ["Vampire Fang"] = {Enemy = "Vampire", Pos = CFrame.new(-5600, 47, -900)},
-    ["Mystic Droplet"] = {Enemy = "Sea Soldier", Pos = CFrame.new(-3056, 235, -10142)}
-}
-
+-- Dados de Boss por World
 DataModule.BossData = {
-    -- Sea 1 Bosses
-    {Name = "Gorilla King", Spawn = CFrame.new(-1204, 51, -452), Sea = 1},
-    {Name = "Bobby", Spawn = CFrame.new(-1140, 15, 4150), Sea = 1},
-    {Name = "Yeti", Spawn = CFrame.new(1280, 150, -1340), Sea = 1},
-    {Name = "Warden", Spawn = CFrame.new(5400, 15, 650), Sea = 1},
-    {Name = "Chief Warden", Spawn = CFrame.new(5400, 15, 650), Sea = 1},
-    {Name = "Swan", Spawn = CFrame.new(5400, 15, 650), Sea = 1},
-    {Name = "Vice Admiral", Spawn = CFrame.new(-4810, 23, 4335), Sea = 1},
-    {Name = "Magma Admiral", Spawn = CFrame.new(-5400, 50, 8600), Sea = 1},
-    {Name = "Fishman Lord", Spawn = CFrame.new(61000, 15, 1500), Sea = 1},
-    {Name = "Thunder God", Spawn = CFrame.new(-7800, 5550, -400), Sea = 1},
-    {Name = "Cyborg", Spawn = CFrame.new(5500, 50, 4100), Sea = 1},
-    
-    -- Sea 2 Bosses
-    {Name = "Rengoku", Spawn = CFrame.new(6200, 26, -6500), Sea = 2},
-    {Name = "Jeremy", Spawn = CFrame.new(-2367, 72, -3054), Sea = 2},
-    {Name = "Don Swan", Spawn = CFrame.new(2288, 15, 808), Sea = 2},
-    {Name = "Tremor Sword Master", Spawn = CFrame.new(-400, 70, -12000), Sea = 2},
-    
-    -- Sea 3 Bosses
-    {Name = "Deandre", Spawn = CFrame.new(-8053, 10, 5233), Sea = 3},
-    {Name = "Gravito", Spawn = CFrame.new(5259, 604, 346), Sea = 3},
-    {Name = "Captain Elephant", Spawn = CFrame.new(-13233, 532, -7594), Sea = 3},
-    {Name = "Ancient Soul", Spawn = CFrame.new(-21100, -790, -21100), Sea = 3},
-    {Name = "Serpent Hunter", Spawn = CFrame.new(-16300, 12, 500), Sea = 3},
-    
-    -- Special World Bosses
-    {Name = "rip_indra", Spawn = CFrame.new(-1850, 7, -2980), Sea = 1, Special = true},
-    {Name = "Dough King", Spawn = CFrame.new(-1147, 14, -11514), Sea = 3, Special = true},
-    {Name = "Cake Prince", Spawn = CFrame.new(-1147, 14, -11514), Sea = 3, Special = true},
-}
-
-DataModule.ItemPuzzles = {
-    ["Tushita"] = {
-        Torches = {
-            CFrame.new(-12053, 332, -7750),
-            CFrame.new(-12220, 420, -7560),
-            CFrame.new(-12140, 315, -7920),
-            CFrame.new(-12350, 430, -7800),
-            CFrame.new(-12420, 380, -7620),
-        },
-        Entrance = CFrame.new(-12463, 332, -7548),
+    [1] = {  -- World 1
+        "The Gorilla King", "Bobby", "The Saw", "Yeti", "Mob Leader",
+        "Vice Admiral", "Saber Expert", "Warden", "Chief Warden", "Swan",
+        "Magma Admiral", "Fishman Lord", "Wysper", "Thunder God", "Cyborg",
+        "Ice Admiral", "Greybeard"
     },
-    ["Yama"] = {
-        Entrance = CFrame.new(5259, 604, 346), -- Hydra Island Waterfall
-        Sword = CFrame.new(5650, 400, 300),
+    [2] = {  -- World 2
+        "Diamond", "Jeremy", "Fajita", "Don Swan", "Smoke Admiral",
+        "Awakened Ice Admiral", "Tide Keeper", "Darkbeard", "Cursed Captain", "Order"
     },
-    ["Saber"] = {
-        Buttons = {
-            CFrame.new(-1612, 37, 149), -- Jungle
-            CFrame.new(-1500, 37, 200),
-            CFrame.new(-1550, 37, 50),
-            CFrame.new(-1400, 37, 100),
-            CFrame.new(-1450, 37, 150),
-        },
-    },
-    ["ObservationV2"] = {
-        HungryMan = CFrame.new(-12463, 375, -7523),
-        Fruits = {
-            Apple = CFrame.new(-13233, 532, -7594),
-            Banana = CFrame.new(-13500, 532, -7800),
-            Pineapple = CFrame.new(-13000, 532, -7400),
-        }
+    [3] = {  -- World 3
+        "Stone", "Hydra Leader", "Kilo Admiral", "Captain Elephant",
+        "Beautiful Pirate", "Cake Queen", "Longma", "Soul Reaper"
     }
 }
 
-function DataModule.IsBoss(name: string)
-    for _, boss in ipairs(DataModule.BossData) do
-        if name:find(boss.Name) then return true end
-    end
-    return false
-end
+-- Dados de Materiais por World
+DataModule.MaterialData = {
+    [1] = {"Leather", "Scrap Metal", "Angel Wings", "Magma Ore", "Fish Tail"},
+    [2] = {"Leather", "Scrap Metal", "Radioactive Material", "Ectoplasm", "Mystic Droplet", "Magma Ore", "Vampire Fang"},
+    [3] = {"Scrap Metal", "Demonic Wisp", "Conjured Cocoa", "Dragon Scale", "Gunpowder", "Fish Tail", "Mini Tusks"}
+}
 
-function DataModule.GetAliveBosses()
-    local alive = {}
-    local enemiesFolder = workspace:FindFirstChild("Enemies") or workspace
-    
-    for _, boss in ipairs(DataModule.BossData) do
-        for _, obj in ipairs(enemiesFolder:GetChildren()) do
-            if obj.Name:find(boss.Name) then
-                if obj:FindFirstChild("Humanoid") and obj.Humanoid.Health > 0 then
-                    table.insert(alive, boss.Name)
-                    break
-                end
-            end
-        end
-    end
-    return alive
-end
-
-function DataModule.GetBossByName(name: string)
-    for _, boss in ipairs(DataModule.BossData) do
-        if boss.Name == name then return boss end
-    end
-    return nil
-end
-
-function DataModule.GetSea()
-    return (Makito and Makito.Sea) or GetSea()
-end
-
-function DataModule.GetIslands(sea)
-    sea = sea or DataModule.GetSea()
-    return DataModule.SeaData[sea] or {}
-end
-
-function DataModule.GetQuests(sea)
-    sea = sea or DataModule.GetSea()
-    return DataModule.QuestData[sea] or {}
-end
-
-function DataModule.GetIslandByName(name, sea)
-    if not name or name == "" or name == "None" then return nil end
-    for _, island in ipairs(DataModule.GetIslands(sea)) do
-        if island.Name == name then return island end
-    end
-    return nil
-end
+-- Dados de Quests completos (do exemplo)
+DataModule.QuestData = {
+    [1] = {  -- World 1
+        {Min = 1, Max = 9, Name = "BanditQuest1", Enemy = "Bandit", LevelQuest = 1,
+         CFrameQuest = CFrame.new(1059.37195, 15.4495068, 1550.4231, 0.939700544, -0, -0.341998369, 0, 1, -0, 0.341998369, 0, 0.939700544),
+         CFrameMon = CFrame.new(1045.962646484375, 27.00250816345215, 1560.8203125)},
+        {Min = 10, Max = 14, Name = "JungleQuest", Enemy = "Monkey", LevelQuest = 1,
+         CFrameQuest = CFrame.new(-1598.08911, 35.5501175, 153.377838, 0, 0, 1, 0, 1, -0, -1, 0, 0),
+         CFrameMon = CFrame.new(-1448.51806640625, 67.85301208496094, 11.46579647064209)},
+        {Min = 15, Max = 29, Name = "JungleQuest", Enemy = "Gorilla", LevelQuest = 2,
+         CFrameQuest = CFrame.new(-1598.08911, 35.5501175, 153.377838, 0, 0, 1, 0, 1, -0, -1, 0, 0),
+         CFrameMon = CFrame.new(-1129.8836669921875, 40.46354675292969, -525.4237060546875)},
+        {Min = 30, Max = 39, Name = "BuggyQuest1", Enemy = "Pirate", LevelQuest = 1,
+         CFrameQuest = CFrame.new(-1141.07483, 4.10001802, 3831.5498, 0.965929627, -0, -0.258804798, 0, 1, -0, 0.258804798, 0, 0.965929627),
+         CFrameMon = CFrame.new(-1103.513427734375, 13.752052307128906, 3896.091064453125)},
+        {Min = 40, Max = 59, Name = "BuggyQuest1", Enemy = "Brute", LevelQuest = 2,
+         CFrameQuest = CFrame.new(-1141.07483, 4.10001802, 3831.5498, 0.965929627, -0, -0.258804798, 0, 1, -0, 0.258804798, 0, 0.965929627),
+         CFrameMon = CFrame.new(-1140.083740234375, 14.809885025024414, 4322.92138671875)},
+        {Min = 60, Max = 74, Name = "DesertQuest", Enemy = "Desert Bandit", LevelQuest = 1,
+         CFrameQuest = CFrame.new(894.488647, 5.14000702, 4392.43359, 0.819155693, -0, -0.573571265, 0, 1, -0, 0.573571265, 0, 0.819155693),
+         CFrameMon = CFrame.new(924.7998046875, 6.44867467880249, 4481.5859375)},
+        {Min = 75, Max = 89, Name = "DesertQuest", Enemy = "Desert Officer", LevelQuest = 2,
+         CFrameQuest = CFrame.new(894.488647, 5.14000702, 4392.43359, 0.819155693, -0, -0.573571265, 0, 1, -0, 0.573571265, 0, 0.819155693),
+         CFrameMon = CFrame.new(1608.2822265625, 8.614224433898926, 4371.00732421875)},
+        {Min = 90, Max = 99, Name = "SnowQuest", Enemy = "Snow Bandit", LevelQuest = 1,
+         CFrameQuest = CFrame.new(1389.74451, 88.1519318, -1298.90796, -0.342042685, 0, 0.939684391, 0, 1, 0, -0.939684391, 0, -0.342042685),
+         CFrameMon = CFrame.new(1354.347900390625, 87.27277374267578, -1393.946533203125)},
+        {Min = 100, Max = 119, Name = "SnowQuest", Enemy = "Snowman", LevelQuest = 2,
+         CFrameQuest = CFrame.new(1389.74451, 88.1519318, -1298.90796, -0.342042685, 0, 0.939684391, 0, 1, 0, -0.939684391, 0, -0.342042685),
+         CFrameMon = CFrame.new(1201.6412353515625, 144.57958984375, -1550.0670166015625)},
+        {Min = 120, Max = 149, Name = "MarineQuest2", Enemy = "Chief Petty Officer", LevelQuest = 1,
+         CFrameQuest = CFrame.new(-5039.58643, 27.3500385, 4324.68018, 0, 0, -1, 0, 1, 0, 1, 0, 0),
+         CFrameMon = CFrame.new(-4881.23095703125, 22.65204429626465, 4273.75244140625)},
+        {Min = 150, Max = 174, Name = "SkyQuest", Enemy = "Sky Bandit", LevelQuest = 1,
+         CFrameQuest = CFrame.new(-4839.53027, 716.368591, -2619.44165, 0.866007268, 0, 0.500031412, 0, 1, 0, -0.500031412, 0, 0.866007268),
+         CFrameMon = CFrame.new(-4953.20703125, 295.74420166015625, -2899.22900390625)},
+        {Min = 175, Max = 189, Name = "SkyQuest", Enemy = "Dark Master", LevelQuest = 2,
+         CFrameQuest = CFrame.new(-4839.53027, 716.368591, -2619.44165, 0.866007268, 0, 0.500031412, 0, 1, 0, -0.500031412, 0, 0.866007268),
+         CFrameMon = CFrame.new(-5259.8447265625, 391.3976745605469, -2229.035400390625)},
+        {Min = 190, Max = 209, Name = "PrisonerQuest", Enemy = "Prisoner", LevelQuest = 1,
+         CFrameQuest = CFrame.new(5308.93115, 1.65517521, 475.120514, -0.0894274712, -5.00292918e-09, -0.995993316, 1.60817859e-09, 1, -5.16744869e-09, 0.995993316, -2.06384709e-09, -0.0894274712),
+         CFrameMon = CFrame.new(5098.9736328125, -0.3204058110713959, 474.2373352050781)},
+        {Min = 210, Max = 249, Name = "PrisonerQuest", Enemy = "Dangerous Prisoner", LevelQuest = 2,
+         CFrameQuest = CFrame.new(5308.93115, 1.65517521, 475.120514, -0.0894274712, -5.00292918e-09, -0.995993316, 1.60817859e-09, 1, -5.16744869e-09, 0.995993316, -2.06384709e-09, -0.0894274712),
+         CFrameMon = CFrame.new(5654.5634765625, 15.633401870727539, 866.2991943359375)},
+        {Min = 250, Max = 274, Name = "ColosseumQuest", Enemy = "Toga Warrior", LevelQuest = 1,
+         CFrameQuest = CFrame.new(-1580.04663, 6.35000277, -2986.47534, -0.515037298, 0, -0.857167721, 0, 1, 0, 0.857167721, 0, -0.515037298),
+         CFrameMon = CFrame.new(-1820.21484375, 51.68385696411133, -2740.6650390625)},
+        {Min = 275, Max = 299, Name = "ColosseumQuest", Enemy = "Gladiator", LevelQuest = 2,
+         CFrameQuest = CFrame.new(-1580.04663, 6.35000277, -2986.47534, -0.515037298, 0, -0.857167721, 0, 1, 0, 0.857167721, 0, -0.515037298),
+         CFrameMon = CFrame.new(-1292.838134765625, 56.380882263183594, -3339.031494140625)},
+        {Min = 300, Max = 324, Name = "MagmaQuest", Enemy = "Military Soldier", LevelQuest = 1,
+         CFrameQuest = CFrame.new(-5313.37012, 10.9500084, 8515.29395, -0.499959469, 0, 0.866048813, 0, 1, 0, -0.866048813, 0, -0.499959469),
+         CFrameMon = CFrame.new(-5411.16455078125, 11.081554412841797, 8454.29296875)},
+        {Min = 325, Max = 374, Name = "MagmaQuest", Enemy = "Military Spy", LevelQuest = 2,
+         CFrameQuest = CFrame.new(-5313.37012, 10.9500084, 8515.29395, -0.499959469, 0, 0.866048813, 0, 1, 0, -0.866048813, 0, -0.499959469),
+         CFrameMon = CFrame.new(-5802.8681640625, 86.26241302490234, 8828.859375)},
+        {Min = 375, Max = 399, Name = "FishmanQuest", Enemy = "Fishman Warrior", LevelQuest = 1,
+         CFrameQuest = CFrame.new(61122.65234375, 18.497442245483, 1569.3997802734),
+         CFrameMon = CFrame.new(60878.30078125, 18.482830047607422, 1543.7574462890625),
+         RequestEntrancePos = Vector3.new(61163.8515625, 11.6796875, 1819.7841796875)},
+        {Min = 400, Max = 449, Name = "FishmanQuest", Enemy = "Fishman Commando", LevelQuest = 2,
+         CFrameQuest = CFrame.new(61122.65234375, 18.497442245483, 1569.3997802734),
+         CFrameMon = CFrame.new(61922.6328125, 18.482830047607422, 1493.934326171875),
+         RequestEntrancePos = Vector3.new(61163.8515625, 11.6796875, 1819.7841796875)},
+        {Min = 450, Max = 474, Name = "SkyExp1Quest", Enemy = "God's Guard", LevelQuest = 1,
+         CFrameQuest = CFrame.new(-4721.88867, 843.874695, -1949.96643, 0.996191859, -0, -0.0871884301, 0, 1, -0, 0.0871884301, 0, 0.996191859),
+         CFrameMon = CFrame.new(-4710.04296875, 845.2769775390625, -1927.3079833984375),
+         RequestEntrancePos = Vector3.new(-4607.82275, 872.54248, -1667.55688)},
+        {Min = 475, Max = 524, Name = "SkyExp1Quest", Enemy = "Shanda", LevelQuest = 2,
+         CFrameQuest = CFrame.new(-7859.09814, 5544.19043, -381.476196, -0.422592998, 0, 0.906319618, 0, 1, 0, -0.906319618, 0, -0.422592998),
+         CFrameMon = CFrame.new(-7678.48974609375, 5566.40380859375, -497.2156066894531),
+         RequestEntrancePos = Vector3.new(-7894.6176757813, 5547.1416015625, -380.29119873047)},
+        {Min = 525, Max = 549, Name = "SkyExp2Quest", Enemy = "Royal Squad", LevelQuest = 1,
+         CFrameQuest = CFrame.new(-7906.81592, 5634.6626, -1411.99194, 0, 0, -1, 0, 1, 0, 1, 0, 0),
+         CFrameMon = CFrame.new(-7624.25244140625, 5658.13330078125, -1467.354248046875)},
+        {Min = 550, Max = 624, Name = "SkyExp2Quest", Enemy = "Royal Soldier", LevelQuest = 2,
+         CFrameQuest = CFrame.new(-7906.81592, 5634.6626, -1411.99194, 0, 0, -1, 0, 1, 0, 1, 0, 0),
+         CFrameMon = CFrame.new(-7836.75341796875, 5645.6640625, -1790.6236572265625)},
+        {Min = 625, Max = 649, Name = "FountainQuest", Enemy = "Galley Pirate", LevelQuest = 1,
+         CFrameQuest = CFrame.new(5259.81982, 37.3500175, 4050.0293, 0.087131381, 0, 0.996196866, 0, 1, 0, -0.996196866, 0, 0.087131381),
+         CFrameMon = CFrame.new(5551.02197265625, 78.90135192871094, 3930.412841796875)},
+        {Min = 650, Name = "FountainQuest", Enemy = "Galley Captain", LevelQuest = 2,
+         CFrameQuest = CFrame.new(5259.81982, 37.3500175, 4050.0293, 0.087131381, 0, 0.996196866, 0, 1, 0, -0.996196866, 0, 0.087131381),
+         CFrameMon = CFrame.new(5441.95166015625, 42.50205993652344, 4950.09375)},
+    },
+    [2] = {  -- World 2
+        {Min = 700, Max = 724, Name = "Area1Quest", Enemy = "Raider", LevelQuest = 1,
+         CFrameQuest = CFrame.new(-429.543518, 71.7699966, 1836.18188, -0.22495985, 0, -0.974368095, 0, 1, 0, 0.974368095, 0, -0.22495985),
+         CFrameMon = CFrame.new(-728.3267211914062, 52.779319763183594, 2345.7705078125)},
+        {Min = 725, Max = 774, Name = "Area1Quest", Enemy = "Mercenary", LevelQuest = 2,
+         CFrameQuest = CFrame.new(-429.543518, 71.7699966, 1836.18188, -0.22495985, 0, -0.974368095, 0, 1, 0, 0.974368095, 0, -0.22495985),
+         CFrameMon = CFrame.new(-1004.3244018554688, 80.15886688232422, 1424.619384765625)},
+        {Min = 775, Max = 799, Name = "Area2Quest", Enemy = "Swan Pirate", LevelQuest = 1,
+         CFrameQuest = CFrame.new(638.438608, 71.769989, 918.282898, 0.139203906, 0, 0.99026376, 0, 1, 0, -0.99026376, 0, 0.139203906),
+         CFrameMon = CFrame.new(1068.664306640625, 137.61428833007812, 1322.1060791015625)},
+        {Min = 800, Max = 874, Name = "Area2Quest", Enemy = "Factory Staff", LevelQuest = 2,
+         CFrameQuest = CFrame.new(638.438608, 71.769989, 918.282898, 0.139203906, 0, 0.99026376, 0, 1, 0, -0.99026376, 0, 0.139203906),
+         CFrameMon = CFrame.new(73.07867431640625, 81.86344146728516, -27.470672607421875)},
+        {Min = 875, Max = 899, Name = "MarineQuest3", Enemy = "Marine Lieutenant", LevelQuest = 1,
+         CFrameQuest = CFrame.new(-2440.79639, 71.7140732, -3216.06812, 0.866007268, 0, 0.500031412, 0, 1, 0, -0.500031412, 0, 0.866007268),
+         CFrameMon = CFrame.new(-2821.372314453125, 75.89727783203125, -3070.089111328125)},
+        {Min = 900, Max = 949, Name = "MarineQuest3", Enemy = "Marine Captain", LevelQuest = 2,
+         CFrameQuest = CFrame.new(-2440.79639, 71.7140732, -3216.06812, 0.866007268, 0, 0.500031412, 0, 1, 0, -0.500031412, 0, 0.866007268),
+         CFrameMon = CFrame.new(-1861.2310791015625, 80.17658233642578, -3254.697509765625)},
+        {Min = 950, Max = 974, Name = "ZombieQuest", Enemy = "Zombie", LevelQuest = 1,
+         CFrameQuest = CFrame.new(-5497.06152, 47.5923004, -795.237061, -0.29242146, 0, -0.95628953, 0, 1, 0, 0.95628953, 0, -0.29242146),
+         CFrameMon = CFrame.new(-5657.77685546875, 78.96973419189453, -928.68701171875)},
+        {Min = 975, Max = 999, Name = "ZombieQuest", Enemy = "Vampire", LevelQuest = 2,
+         CFrameQuest = CFrame.new(-5497.06152, 47.5923004, -795.237061, -0.29242146, 0, -0.95628953, 0, 1, 0, 0.95628953, 0, -0.29242146),
+         CFrameMon = CFrame.new(-6037.66796875, 32.18463897705078, -1340.6597900390625)},
+        {Min = 1000, Max = 1049, Name = "SnowMountainQuest", Enemy = "Snow Trooper", LevelQuest = 1,
+         CFrameQuest = CFrame.new(609.858826, 400.119904, -5372.25928, -0.374604106, 0, 0.92718488, 0, 1, 0, -0.92718488, 0, -0.374604106),
+         CFrameMon = CFrame.new(549.1473388671875, 427.3870544433594, -5563.69873046875)},
+        {Min = 1050, Max = 1099, Name = "SnowMountainQuest", Enemy = "Winter Warrior", LevelQuest = 2,
+         CFrameQuest = CFrame.new(609.858826, 400.119904, -5372.25928, -0.374604106, 0, 0.92718488, 0, 1, 0, -0.92718488, 0, -0.374604106),
+         CFrameMon = CFrame.new(1142.7451171875, 475.6398010253906, -5199.41650390625)},
+        {Min = 1100, Max = 1124, Name = "IceSideQuest", Enemy = "Lab Subordinate", LevelQuest = 1,
+         CFrameQuest = CFrame.new(-6064.06885, 15.2422857, -4902.97852, 0.453972578, -0, -0.891015649, 0, 1, -0, 0.891015649, 0, 0.453972578),
+         CFrameMon = CFrame.new(-5707.4716796875, 15.951709747314453, -4513.39208984375)},
+        {Min = 1125, Max = 1174, Name = "IceSideQuest", Enemy = "Horned Warrior", LevelQuest = 2,
+         CFrameQuest = CFrame.new(-6064.06885, 15.2422857, -4902.97852, 0.453972578, -0, -0.891015649, 0, 1, -0, 0.891015649, 0, 0.453972578),
+         CFrameMon = CFrame.new(-6341.36669921875, 15.951770782470703, -5723.162109375)},
+        {Min = 1175, Max = 1199, Name = "FireSideQuest", Enemy = "Magma Ninja", LevelQuest = 1,
+         CFrameQuest = CFrame.new(-5428.03174, 15.0622921, -5299.43457, -0.882952213, 0, 0.469463557, 0, 1, 0, -0.469463557, 0, -0.882952213),
+         CFrameMon = CFrame.new(-5449.6728515625, 76.65874481201172, -5808.20068359375)},
+        {Min = 1200, Max = 1249, Name = "FireSideQuest", Enemy = "Lava Pirate", LevelQuest = 2,
+         CFrameQuest = CFrame.new(-5428.03174, 15.0622921, -5299.43457, -0.882952213, 0, 0.469463557, 0, 1, 0, -0.469463557, 0, -0.882952213),
+         CFrameMon = CFrame.new(-5213.33154296875, 49.73788070678711, -4701.451171875)},
+        {Min = 1250, Max = 1274, Name = "ShipQuest1", Enemy = "Ship Deckhand", LevelQuest = 1,
+         CFrameQuest = CFrame.new(1037.80127, 125.092171, 32911.6016),
+         CFrameMon = CFrame.new(1212.0111083984375, 150.79205322265625, 33059.24609375),
+         RequestEntrancePos = Vector3.new(923.21252441406, 126.9760055542, 32852.83203125)},
+        {Min = 1275, Max = 1299, Name = "ShipQuest1", Enemy = "Ship Engineer", LevelQuest = 2,
+         CFrameQuest = CFrame.new(1037.80127, 125.092171, 32911.6016),
+         CFrameMon = CFrame.new(919.4786376953125, 43.54401397705078, 32779.96875),
+         RequestEntrancePos = Vector3.new(923.21252441406, 126.9760055542, 32852.83203125)},
+        {Min = 1300, Max = 1324, Name = "ShipQuest2", Enemy = "Ship Steward", LevelQuest = 1,
+         CFrameQuest = CFrame.new(968.80957, 125.092171, 33244.125),
+         CFrameMon = CFrame.new(919.4385375976562, 129.55599975585938, 33436.03515625),
+         RequestEntrancePos = Vector3.new(923.21252441406, 126.9760055542, 32852.83203125)},
+        {Min = 1325, Max = 1349, Name = "ShipQuest2", Enemy = "Ship Officer", LevelQuest = 2,
+         CFrameQuest = CFrame.new(968.80957, 125.092171, 33244.125),
+         CFrameMon = CFrame.new(1036.0179443359375, 181.4390411376953, 33315.7265625),
+         RequestEntrancePos = Vector3.new(923.21252441406, 126.9760055542, 32852.83203125)},
+        {Min = 1350, Max = 1374, Name = "FrostQuest", Enemy = "Arctic Warrior", LevelQuest = 1,
+         CFrameQuest = CFrame.new(5667.6582, 26.7997818, -6486.08984, -0.933587909, 0, -0.358349502, 0, 1, 0, 0.358349502, 0, -0.933587909),
+         CFrameMon = CFrame.new(5966.24609375, 62.97002029418945, -6179.3828125),
+         RequestEntrancePos = Vector3.new(-6508.5581054688, 5000.034996032715, -132.83953857422)},
+        {Min = 1375, Max = 1449, Name = "FrostQuest", Enemy = "Snow Lurker", LevelQuest = 2,
+         CFrameQuest = CFrame.new(5667.6582, 26.7997818, -6486.08984, -0.933587909, 0, -0.358349502, 0, 1, 0, 0.358349502, 0, -0.933587909),
+         CFrameMon = CFrame.new(5407.07373046875, 69.19437408447266, -6880.88037109375)},
+        {Min = 1450, Name = "ForgottenQuest", Enemy = "Water Fighter", LevelQuest = 2,
+         CFrameQuest = CFrame.new(-3054.44458, 235.544281, -10142.8193, 0.990270376, -0, -0.13915664, 0, 1, -0, 0.13915664, 0, 0.990270376),
+         CFrameMon = CFrame.new(-3352.9013671875, 285.01556396484375, -10534.841796875),
+         RequestEntrancePos = Vector3.new(-3054.44458, 235.544281, -10142.8193)},
+    },
+    [3] = {  -- World 3
+        {Min = 1500, Max = 1524, Name = "PiratePortQuest", Enemy = "Pirate Millionaire", LevelQuest = 1,
+         CFrameQuest = CFrame.new(-290.074677, 42.9034653, 5581.58984, 0.965929627, -0, -0.258804798, 0, 1, -0, 0.258804798, 0, 0.965929627),
+         CFrameMon = CFrame.new(-245.9963836669922, 47.30615234375, 5584.1005859375)},
+        {Min = 1525, Max = 1574, Name = "PiratePortQuest", Enemy = "Pistol Billionaire", LevelQuest = 2,
+         CFrameQuest = CFrame.new(-290.074677, 42.9034653, 5581.58984, 0.965929627, -0, -0.258804798, 0, 1, -0, 0.258804798, 0, 0.965929627),
+         CFrameMon = CFrame.new(-187.3301544189453, 86.23987579345703, 6013.513671875)},
+        {Min = 1575, Max = 1599, Name = "AmazonQuest", Enemy = "Dragon Crew Warrior", LevelQuest = 1,
+         CFrameQuest = CFrame.new(5832.83594, 51.6806107, -1101.51563, 0.898790359, -0, -0.438378751, 0, 1, -0, 0.438378751, 0, 0.898790359),
+         CFrameMon = CFrame.new(6141.140625, 51.35136413574219, -1340.738525390625)},
+        {Min = 1600, Max = 1624, Name = "AmazonQuest", Enemy = "Dragon Crew Archer", LevelQuest = 2,
+         CFrameQuest = CFrame.new(5833.1147460938, 51.60498046875, -1103.0693359375),
+         CFrameMon = CFrame.new(6616.41748046875, 441.7670593261719, 446.0469970703125)},
+        {Min = 1625, Max = 1649, Name = "AmazonQuest2", Enemy = "Female Islander", LevelQuest = 1,
+         CFrameQuest = CFrame.new(5446.8793945313, 601.62945556641, 749.45672607422),
+         CFrameMon = CFrame.new(4685.25830078125, 735.8078002929688, 815.3425903320312)},
+        {Min = 1650, Max = 1699, Name = "AmazonQuest2", Enemy = "Giant Islander", LevelQuest = 2,
+         CFrameQuest = CFrame.new(5446.8793945313, 601.62945556641, 749.45672607422),
+         CFrameMon = CFrame.new(4729.09423828125, 590.436767578125, -36.97627639770508)},
+        {Min = 1700, Max = 1724, Name = "MarineTreeIsland", Enemy = "Marine Commodore", LevelQuest = 1,
+         CFrameQuest = CFrame.new(2180.54126, 27.8156815, -6741.54984, -0.965929747, 0, 0.258804798, 0, 1, 0, -0.258804798, 0, -0.965929747),
+         CFrameMon = CFrame.new(2286.0078125, 73.13391876220703, -7159.80908203125)},
+        {Min = 1725, Max = 1774, Name = "MarineTreeIsland", Enemy = "Marine Rear Admiral", LevelQuest = 2,
+         CFrameQuest = CFrame.new(2179.98828125, 28.731239318848, -6740.0551757813),
+         CFrameMon = CFrame.new(3656.773681640625, 160.52406311035156, -7001.5986328125)},
+        {Min = 1775, Max = 1799, Name = "DeepForestIsland3", Enemy = "Fishman Raider", LevelQuest = 1,
+         CFrameQuest = CFrame.new(-10581.65625, 330.872955, -8761.1865234375, -0.882952213, 0, 0.469463557, 0, 1, 0, -0.469463557, 0, -0.882952213),
+         CFrameMon = CFrame.new(-10407.5263671875, 331.76263427734375, -8368.5166015625)},
+        {Min = 1800, Max = 1824, Name = "DeepForestIsland3", Enemy = "Fishman Captain", LevelQuest = 2,
+         CFrameQuest = CFrame.new(-10581.65625, 330.872955, -8761.1865234375, -0.882952213, 0, 0.469463557, 0, 1, 0, -0.469463557, 0, -0.882952213),
+         CFrameMon = CFrame.new(-10994.701171875, 352.38140869140625, -9002.1103515625)},
+        {Min = 1825, Max = 1849, Name = "DeepForestIsland", Enemy = "Forest Pirate", LevelQuest = 1,
+         CFrameQuest = CFrame.new(-13234.04, 331.488495, -7625.40137, 0.707134247, -0, -0.707079291, 0, 1, -0, 0.707079291, 0, 0.707134247),
+         CFrameMon = CFrame.new(-13274.478515625, 332.3781433105469, -7769.58056640625)},
+        {Min = 1850, Max = 1899, Name = "DeepForestIsland", Enemy = "Mythological Pirate", LevelQuest = 2,
+         CFrameQuest = CFrame.new(-13234.04, 331.488495, -7625.40137, 0.707134247, -0, -0.707079291, 0, 1, -0, 0.707079291, 0, 0.707134247),
+         CFrameMon = CFrame.new(-13680.607421875, 501.08154296875, -6991.189453125)},
+        {Min = 1900, Max = 1924, Name = "DeepForestIsland2", Enemy = "Jungle Pirate", LevelQuest = 1,
+         CFrameQuest = CFrame.new(-12680.38184, 389.971039, -9902.01953, -0.0871315002, 0, 0.996196866, 0, 1, 0, -0.996196866, 0, -0.0871315002),
+         CFrameMon = CFrame.new(-12256.16015625, 331.73828125, -10485.8369140625)},
+        {Min = 1925, Max = 1974, Name = "DeepForestIsland2", Enemy = "Musketeer Pirate", LevelQuest = 2,
+         CFrameQuest = CFrame.new(-12680.38184, 389.971039, -9902.01953, -0.0871315002, 0, 0.996196866, 0, 1, 0, -0.996196866, 0, -0.0871315002),
+         CFrameMon = CFrame.new(-13457.904296875, 391.545654296875, -9859.177734375)},
+        {Min = 1975, Max = 1999, Name = "HauntedQuest1", Enemy = "Reborn Skeleton", LevelQuest = 1,
+         CFrameQuest = CFrame.new(-9479.2168, 141.215088, 5566.09277, 0, 0, 1, 0, 1, -0, -1, 0, 0),
+         CFrameMon = CFrame.new(-8763.7236328125, 165.72299194335938, 6159.86181640625)},
+        {Min = 2000, Max = 2024, Name = "HauntedQuest1", Enemy = "Living Zombie", LevelQuest = 2,
+         CFrameQuest = CFrame.new(-9479.2168, 141.215088, 5566.09277, 0, 0, 1, 0, 1, -0, -1, 0, 0),
+         CFrameMon = CFrame.new(-10144.1318359375, 138.62667846679688, 5838.0888671875)},
+        {Min = 2025, Max = 2049, Name = "HauntedQuest2", Enemy = "Demonic Soul", LevelQuest = 1,
+         CFrameQuest = CFrame.new(-9516.9931640625, 172.01718139648438, 6078.46533203125, 0, 0, -1, 0, 1, 0, 1, 0, 0),
+         CFrameMon = CFrame.new(-9505.8720703125, 172.10482788085938, 6158.9931640625)},
+        {Min = 2050, Max = 2074, Name = "HauntedQuest2", Enemy = "Possessed Mummy", LevelQuest = 2,
+         CFrameQuest = CFrame.new(-9516.9931640625, 172.01718139648438, 6078.46533203125, 0, 0, -1, 0, 1, 0, 1, 0, 0),
+         CFrameMon = CFrame.new(-9582.0224609375, 6.251527309417725, 6205.478515625)},
+        {Min = 2075, Max = 2099, Name = "NutsIslandQuest", Enemy = "Peanut Scout", LevelQuest = 1,
+         CFrameQuest = CFrame.new(-2104.3908691406, 38.104167938232422, -10194.21875, 0, 0, -1, 0, 1, 0, 1, 0, 0),
+         CFrameMon = CFrame.new(-2143.241943359375, 47.72198486328125, -10029.9951171875)},
+        {Min = 2100, Max = 2124, Name = "NutsIslandQuest", Enemy = "Peanut President", LevelQuest = 2,
+         CFrameQuest = CFrame.new(-2104.3908691406, 38.104167938232422, -10194.21875, 0, 0, -1, 0, 1, 0, 1, 0, 0),
+         CFrameMon = CFrame.new(-1859.35400390625, 38.10316848754883, -10422.4296875)},
+        {Min = 2125, Max = 2149, Name = "IceCreamIslandQuest", Enemy = "Ice Cream Chef", LevelQuest = 1,
+         CFrameQuest = CFrame.new(-820.6482543945312, 65.81952667236328, -10965.7958984375, 0, 0, -1, 0, 1, 0, 1, 0, 0),
+         CFrameMon = CFrame.new(-872.24658203125, 65.81957244873047, -10919.95703125)},
+        {Min = 2150, Max = 2199, Name = "IceCreamIslandQuest", Enemy = "Ice Cream Commander", LevelQuest = 2,
+         CFrameQuest = CFrame.new(-820.6482543945312, 65.81952667236328, -10965.7958984375, 0, 0, -1, 0, 1, 0, 1, 0, 0),
+         CFrameMon = CFrame.new(-558.06103515625, 112.04895782470703, -11290.7744140625)},
+        {Min = 2200, Max = 2224, Name = "CakeQuest1", Enemy = "Cookie Crafter", LevelQuest = 1,
+         CFrameQuest = CFrame.new(-2021.32007, 37.7982254, -12028.7295, 0.957576931, -8.80302053e-08, 0.288177818, 6.9301187e-08, 1, 7.51931211e-08, -0.288177818, -5.2032135e-08, 0.957576931),
+         CFrameMon = CFrame.new(-2374.13671875, 37.79826354980469, -12125.30859375)},
+        {Min = 2225, Max = 2249, Name = "CakeQuest1", Enemy = "Cake Guard", LevelQuest = 2,
+         CFrameQuest = CFrame.new(-2021.32007, 37.7982254, -12028.7295, 0.957576931, -8.80302053e-08, 0.288177818, 6.9301187e-08, 1, 7.51931211e-08, -0.288177818, -5.2032135e-08, 0.957576931),
+         CFrameMon = CFrame.new(-1598.3070068359375, 43.773197174072266, -12244.5810546875)},
+        {Min = 2250, Max = 2274, Name = "CakeQuest2", Enemy = "Baking Staff", LevelQuest = 1,
+         CFrameQuest = CFrame.new(-1927.91602, 37.7981339, -12842.5391, -0.96804446, 4.22142143e-08, 0.250778586, 4.74911062e-08, 1, 1.49904711e-08, -0.250778586, 2.64211941e-08, -0.96804446),
+         CFrameMon = CFrame.new(-1887.8099365234375, 77.6185073852539, -12998.3505859375)},
+        {Min = 2275, Max = 2299, Name = "CakeQuest2", Enemy = "Head Baker", LevelQuest = 2,
+         CFrameQuest = CFrame.new(-1927.91602, 37.7981339, -12842.5391, -0.96804446, 4.22142143e-08, 0.250778586, 4.74911062e-08, 1, 1.49904711e-08, -0.250778586, 2.64211941e-08, -0.96804446),
+         CFrameMon = CFrame.new(-2216.188232421875, 82.884521484375, -12869.2939453125)},
+        {Min = 2300, Max = 2324, Name = "ChocQuest1", Enemy = "Cocoa Warrior", LevelQuest = 1,
+         CFrameQuest = CFrame.new(233.22836303710938, 29.876001358032227, -12201.2333984375),
+         CFrameMon = CFrame.new(-21.55328369140625, 80.57499694824219, -12352.3876953125)},
+        {Min = 2325, Max = 2349, Name = "ChocQuest1", Enemy = "Chocolate Bar Battler", LevelQuest = 2,
+         CFrameQuest = CFrame.new(233.22836303710938, 29.876001358032227, -12201.2333984375),
+         CFrameMon = CFrame.new(582.590576171875, 77.18809509277344, -12463.162109375)},
+        {Min = 2350, Max = 2374, Name = "ChocQuest2", Enemy = "Sweet Thief", LevelQuest = 1,
+         CFrameQuest = CFrame.new(150.50663759765625, 30.693693161010742, -12774.5029296875),
+         CFrameMon = CFrame.new(165.1884765625, 76.05885314941406, -12600.8369140625)},
+        {Min = 2375, Max = 2399, Name = "ChocQuest2", Enemy = "Candy Rebel", LevelQuest = 2,
+         CFrameQuest = CFrame.new(150.50663759765625, 30.693693161010742, -12774.5029296875),
+         CFrameMon = CFrame.new(134.86563110351562, 77.2476806640625, -12876.5478515625)},
+        {Min = 2400, Max = 2424, Name = "CandyQuest1", Enemy = "Candy Pirate", LevelQuest = 1,
+         CFrameQuest = CFrame.new(-1150.0400390625, 20.378934860232422, -14446.3349609375),
+         CFrameMon = CFrame.new(-1310.5003662109375, 26.016523361206055, -14562.404296875)},
+        {Min = 2425, Max = 2449, Name = "CandyQuest1", Enemy = "Snow Demon", LevelQuest = 2,
+         CFrameQuest = CFrame.new(-1150.0400390625, 20.378934860232422, -14446.3349609375),
+         CFrameMon = CFrame.new(-880.2006225585938, 71.24776458740234, -14538.609375)},
+        {Min = 2450, Max = 2474, Name = "TikiQuest1", Enemy = "Isle Outlaw", LevelQuest = 1,
+         CFrameQuest = CFrame.new(-16547.748046875, 61.13533401489258, -173.41360473632812),
+         CFrameMon = CFrame.new(-16442.814453125, 116.13899993896484, -264.4637756347656)},
+        {Min = 2475, Max = 2499, Name = "TikiQuest1", Enemy = "Island Boy", LevelQuest = 2,
+         CFrameQuest = CFrame.new(-16547.748046875, 61.13533401489258, -173.41360473632812),
+         CFrameMon = CFrame.new(-16901.26171875, 84.06756591796875, -192.88906860351562)},
+        {Min = 2500, Max = 2524, Name = "TikiQuest2", Enemy = "Sun-kissed Warrior", LevelQuest = 1,
+         CFrameQuest = CFrame.new(-16539.078125, 55.68632888793945, 1051.5738525390625),
+         CFrameMon = CFrame.new(-16349.8779296875, 92.0808334350586, 1123.4169921875)},
+        {Min = 2525, Max = 2549, Name = "TikiQuest2", Enemy = "Isle Champion", LevelQuest = 2,
+         CFrameQuest = CFrame.new(-16539.078125, 55.68632888793945, 1051.5738525390625),
+         CFrameMon = CFrame.new(-16347.4150390625, 92.09503936767578, 1122.335205078125)},
+        {Min = 2550, Max = 2574, Name = "TikiQuest2", Enemy = "Isle Champion", LevelQuest = 2,
+         CFrameQuest = CFrame.new(-16539.078125, 55.68632888793945, 1051.5738525390625),
+         CFrameMon = CFrame.new(-16347.4150390625, 92.09503936767578, 1122.335205078125)},
+        {Min = 2575, Max = 2599, Name = "TikiQuest2", Enemy = "Isle Champion", LevelQuest = 2,
+         CFrameQuest = CFrame.new(-16539.078125, 55.68632888793945, 1051.5738525390625),
+         CFrameMon = CFrame.new(-16347.4150390625, 92.09503936767578, 1122.335205078125)},
+        {Min = 2600, Max = 2624, Name = "TikiQuest2", Enemy = "Isle Champion", LevelQuest = 2,
+         CFrameQuest = CFrame.new(-16539.078125, 55.68632888793945, 1051.5738525390625),
+         CFrameMon = CFrame.new(-16347.4150390625, 92.09503936767578, 1122.335205078125)},
+        {Min = 2625, Max = 2649, Name = "TikiQuest2", Enemy = "Isle Champion", LevelQuest = 2,
+         CFrameQuest = CFrame.new(-16539.078125, 55.68632888793945, 1051.5738525390625),
+         CFrameMon = CFrame.new(-16347.4150390625, 92.09503936767578, 1122.335205078125)},
+        {Min = 2650, Max = 2674, Name = "TikiQuest2", Enemy = "Isle Champion", LevelQuest = 2,
+         CFrameQuest = CFrame.new(-16539.078125, 55.68632888793945, 1051.5738525390625),
+         CFrameMon = CFrame.new(-16347.4150390625, 92.09503936767578, 1122.335205078125)},
+        {Min = 2675, Max = 2699, Name = "TikiQuest2", Enemy = "Isle Champion", LevelQuest = 2,
+         CFrameQuest = CFrame.new(-16539.078125, 55.68632888793945, 1051.5738525390625),
+         CFrameMon = CFrame.new(-16347.4150390625, 92.09503936767578, 1122.335205078125)},
+        {Min = 2700, Max = 2724, Name = "TikiQuest2", Enemy = "Isle Champion", LevelQuest = 2,
+         CFrameQuest = CFrame.new(-16539.078125, 55.68632888793945, 1051.5738525390625),
+         CFrameMon = CFrame.new(-16347.4150390625, 92.09503936767578, 1122.335205078125)},
+        {Min = 2725, Max = 2749, Name = "TikiQuest2", Enemy = "Isle Champion", LevelQuest = 2,
+         CFrameQuest = CFrame.new(-16539.078125, 55.68632888793945, 1051.5738525390625),
+         CFrameMon = CFrame.new(-16347.4150390625, 92.09503936767578, 1122.335205078125)},
+        {Min = 2750, Max = 2774, Name = "TikiQuest2", Enemy = "Isle Champion", LevelQuest = 2,
+         CFrameQuest = CFrame.new(-16539.078125, 55.68632888793945, 1051.5738525390625),
+         CFrameMon = CFrame.new(-16347.4150390625, 92.09503936767578, 1122.335205078125)},
+        {Min = 2775, Name = "TikiQuest2", Enemy = "Isle Champion", LevelQuest = 2,
+         CFrameQuest = CFrame.new(-16539.078125, 55.68632888793945, 1051.5738525390625),
+         CFrameMon = CFrame.new(-16347.4150390625, 92.09503936767578, 1122.335205078125)},
+        {Min = 2775, Max = 2800, Name = "TikiQuest3", Enemy = "Isle Champion", LevelQuest = 1,
+         CFrameQuest = CFrame.new(-16539.078125, 55.68632888793945, 1051.5738525390625),
+         CFrameMon = CFrame.new(-16347.4150390625, 92.09503936767578, 1122.335205078125)},
+        {Min = 2800, Name = "TikiQuest3", Enemy = "Isle Champion", LevelQuest = 2,
+         CFrameQuest = CFrame.new(-16539.078125, 55.68632888793945, 1051.5738525390625),
+         CFrameMon = CFrame.new(-16347.4150390625, 92.09503936767578, 1122.335205078125)},
+    }
+}
 
 return DataModule

@@ -252,6 +252,16 @@ if Makito.Utils then
     Makito.Utils.SecurityBypass()
     Makito.Utils.InitializeExampleFeatures()
     
+    -- Destruir efeitos de Death e Respawn (do exemplo)
+    pcall(function()
+        if game:GetService("ReplicatedStorage").Effect.Container:FindFirstChild("Death") then
+            game:GetService("ReplicatedStorage").Effect.Container.Death:Destroy()
+        end
+        if game:GetService("ReplicatedStorage").Effect.Container:FindFirstChild("Respawn") then
+            game:GetService("ReplicatedStorage").Effect.Container.Respawn:Destroy()
+        end
+    end)
+    
     -- Hookfunctions do exemplo para silenciar erros/death effects
     if hookfunction then
         pcall(function()

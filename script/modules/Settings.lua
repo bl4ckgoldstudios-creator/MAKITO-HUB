@@ -26,6 +26,9 @@ local DEFAULT_VALUES = {
     RipIndraTP = true,
     LowCPU = false,
     MobHeight = 20,
+    SafeFarm = true, -- Safe Farm do exemplo
+    BypassTP = false, -- Bypass de TP do exemplo
+    FarmMode = "Quest" -- "Quest" ou "No Quest"
     
     -- Farm Mastery (do exemplo)
     FarmMastery_Dev = false,

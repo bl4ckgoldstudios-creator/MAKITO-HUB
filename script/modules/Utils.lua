@@ -28,6 +28,20 @@ local Makito = getgenv().Makito
 local isTweening = false
 local currentTween: Tween? = nil
 local ESPObjects: {[Instance]: ESPData} = {}
+
+-- ==================================================
+-- FUNÇÃO _tbl DO EXEMPLO (para require hook)
+-- ==================================================
+local function _tbl(t)
+    return setmetatable(t or {}, {
+        __index = function()
+            return _tbl()
+        end,
+        __call = function()
+            return _tbl()
+        end
+    })
+end
 local InstanceCache = {
     Enemies = {} :: {any},
     NPCs = {} :: {any},
@@ -874,12 +888,95 @@ function UtilsModule.ApplyVisualSettings()
 end
 
 -- ==================================================
+-- ANTI-CHEAT BYPASS (DO EXEMPLO)
+-- ==================================================
+function UtilsModule.InitializeAntiCheat()
+    -- Hook Namecall para bloquear remotes de detecção
+    pcall(function()
+        if getrawmetatable and setreadonly and newcclosure then
+            local grm = getrawmetatable(game)
+            setreadonly(grm, false)
+            local old = grm.__namecall
+            grm.__namecall = newcclosure(function(self, ...)
+                local args = {...}
+                local arg1 = tostring(args[1])
+                if arg1 == "TeleportDetect" or arg1 == "CHECKER_1" or arg1 == "CHECKER" or arg1 == "GUI_CHECK" or arg1 == "OneMoreTime" or arg1 == "checkingSPEED" or arg1 == "BANREMOTE" or arg1 == "PERMAIDBAN" or arg1 == "KICKREMOTE" or arg1 == "BR_KICKPC" or arg1 == "BR_KICKMOBILE" then
+                    return
+                end
+                return old(self, ...)
+            end)
+            setreadonly(grm, true)
+        end
+    end)
+    
+    -- Hook require para bloquear errors de carregamento
+    pcall(function()
+        local _require = require
+        require = function(...)
+            local success, result = pcall(_require, ...)
+            return success and result or _tbl()
+        end
+    end)
+    
+    -- Desabilitar screenshots de denúncia
+    _G.setfflag = true
+    task.spawn(function()
+        while _G.setfflag do
+            task.wait()
+            if setfflag then
+                setfflag("AbuseReportScreenshot", "False")
+                setfflag("AbuseReportScreenshotPercentage", "0")
+            end
+        end
+    end)
+end
+
+-- ==================================================
+-- SAFE FARM (DO EXEMPLO)
+-- ==================================================
+function UtilsModule.StartSafeFarm()
+    _G.SafeFarm = true
+    task.spawn(function()
+        while _G.SafeFarm do
+            task.wait()
+            pcall(function()
+                -- Remover LocalScripts de detecção do Character
+                if LocalPlayer.Character then
+                    for _, v in pairs(LocalPlayer.Character:GetDescendants()) do
+                        if v:IsA("LocalScript") then
+                            local name = v.Name
+                            if name == "General" or name == "Shiftlock" or name == "FallDamage" or name == "4444" or name == "CamBob" or name == "JumpCD" or name == "Looking" or name == "Run" then
+                                v:Destroy()
+                            end
+                        end
+                    end
+                end
+                
+                -- Remover LocalScripts de detecção do PlayerScripts
+                if LocalPlayer.PlayerScripts then
+                    for _, v in pairs(LocalPlayer.PlayerScripts:GetDescendants()) do
+                        if v:IsA("LocalScript") then
+                            local name = v.Name
+                            if name == "RobloxMotor6DBugFix" or name == "Clans" or name == "Codes" or name == "CustomForceField" or name == "MenuBloodSp" or name == "PlayerList" then
+                                v:Destroy()
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+    end)
+end
+
+-- ==================================================
 -- INICIALIZAÇÃO DAS FUNCIONALIDADES DO EXEMPLO
 -- ==================================================
 function UtilsModule.InitializeExampleFeatures()
     CreateRipIndraPart()
     UtilsModule.StartAutoKen()
     UtilsModule.StartAutoTeam()
+    UtilsModule.InitializeAntiCheat()
+    UtilsModule.StartSafeFarm()
 end
 
 return UtilsModule
