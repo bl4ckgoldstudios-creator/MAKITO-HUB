@@ -17,7 +17,7 @@
 
 ## 1. Visão Geral do Projeto
 
-**MAKITO HUB PRO V11.0** é o script de Blox Fruits mais completo e seguro disponível. Projetado por LuaMasterX, ele combina todas as funcionalidades essenciais em um framework modular, de alto desempenho e com segurança avançada.
+**MAKITO HUB PRO V11.0** é o script de Blox Fruits mais completo e seguro disponível. Projetado por **BLACK GOLD STUDIOS**, ele combina todas as funcionalidades essenciais em um framework modular, de alto desempenho e com segurança avançada.
 
 ### Principais Características:
 - ✅ **Modularidade:** Estrutura organizada em módulos individuais para fácil manutenção

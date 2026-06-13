@@ -140,7 +140,7 @@ function LoaderModule.FormatReport(report, caps, discovered)
         "",
         "=== MODULOS ===",
     }
-    for _, name in ipairs({ "Settings", "Data", "Utils", "Combat", "Farming", "UI" }) do
+    for _, name in ipairs({ "Settings", "Data", "Utils", "Combat", "Farming", "UI", "Security", "Updater" }) do
         local info = report[name]
         if info then
             local status = info.success and "OK" or "FALHOU"

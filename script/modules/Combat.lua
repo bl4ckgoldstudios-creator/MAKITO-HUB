@@ -1,144 +1,282 @@
+
 --!strict
 local CombatModule = {}
 
 -- SERVICES
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
 -- INTERNAL STATE
 local Makito = getgenv().Makito
-local FastAttackConn: RBXScriptConnection? = nil
-local CombatFramework: any = nil
-local lastFrameworkCheck = 0
-local lastAttackTime = 0
+local combatLoop: RBXScriptConnection? = nil
 
--- 1. ACESSO AO MOTOR INTERNO (Otimizado com cache persistente)
-local function GetFramework()
-    local now = tick()
-    if CombatFramework and CombatFramework.activeController then return CombatFramework end
-    if now - lastFrameworkCheck < 2 then return nil end -- Throttling para evitar lag de GC
-    lastFrameworkCheck = now
-
-    pcall(function()
-        for _, v in pairs(getgc(true)) do
-            if type(v) == "table" and v.activeController and (v.activeController.attack or v.activeController.Attack) then
-                CombatFramework = v
-                break
-            end
-        end
-    end)
-    return CombatFramework
+-- ==================================================
+-- FUNÇÕES UTILITÁRIAS (DO EXEMPLO)
+-- ==================================================
+function CombatModule.Alive(model)
+    if not model then return false end
+    local Humanoid = model:FindFirstChild("Humanoid")
+    return Humanoid and Humanoid.Health > 0
 end
 
--- 2. MOTOR DE ATAQUE (ULTRA FAST + BYPASS)
-local function AttackNoAnim()
-    local framework = GetFramework()
-    if framework and framework.activeController then
-        local ac = framework.activeController
-        
-        -- Bypass de Cooldowns e Animações
-        ac.hitboxMagnitude = 60
-        ac.attackCount = 0
-        ac.timeToNextAttack = 0
-        ac.increment = 0
-        
-        if ac.attack then ac:attack()
-        elseif ac.Attack then ac:Attack() end
-    end
-end
-
--- 3. KILL AURA (DANO SILENCIOSO E MULTI-TARGET)
-local function UltraKillAura()
-    if not Makito.Settings or not Makito.Settings.KillAura then return end
-    
+function CombatModule.Pos(model, dist)
     local char = LocalPlayer.Character
     local root = char and char:FindFirstChild("HumanoidRootPart")
-    if not root or (char.Humanoid and char.Humanoid.Health <= 0) then return end
+    if not root then return false end
+    return (root.Position - model.Position).Magnitude <= dist
+end
 
-    local weapon = char:FindFirstChildOfClass("Tool")
-    if not weapon or (weapon.ToolTip ~= "Melee" and weapon.ToolTip ~= "Sword" and weapon.ToolTip ~= "Blox Fruit") then
-        if Makito.Farming then Makito.Farming.EquipWeapon(Makito.Settings.MainWeapon or "Melee") end
-        return
+function CombatModule.Dist(model, dist)
+    local char = LocalPlayer.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    if not root then return false end
+    local mobRoot = model:FindFirstChild("HumanoidRootPart")
+    if not mobRoot then return false end
+    return (root.Position - mobRoot.Position).Magnitude <= dist
+end
+
+function CombatModule.DistH(model, dist)
+    local char = LocalPlayer.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    if not root then return false end
+    local mobRoot = model:FindFirstChild("HumanoidRootPart")
+    if not mobRoot then return false end
+    return (root.Position - mobRoot.Position).Magnitude > dist
+end
+
+-- ==================================================
+-- SISTEMA DE ATTACK (DO EXEMPLO)
+-- ==================================================
+function CombatModule.Kill(model, enabled)
+    if not model or not enabled then return end
+    
+    if not Makito.Farming then return end
+    
+    if not model:GetAttribute("Locked") then
+        model:SetAttribute("Locked", model.HumanoidRootPart.CFrame)
     end
     
-    local remote = ReplicatedStorage:FindFirstChild("CommF_", true)
-    if not remote or not remote:IsA("RemoteFunction") then return end
+    local PosMon = (model:GetAttribute("Locked")).Position
+    Makito.Farming.BringEnemy()
     
-    -- Teleport Enemies to Player (Black Hole/Bring Mobs) logic can be integrated here for Kill Aura
-    -- But for now we focus on attacking.
-
-    -- Stealth vs Rage logic
-    local range = Makito.Settings.KillAuraDistance or 100
-    if Makito.Settings.StealthMode then
-        range = math.clamp(range, 0, 45) -- Alcance legítimo
-    end
-
-    local targets = {}
-    local maxTargets = Makito.Settings.MaxTargets or 20
+    local MainWeapon = Makito.Settings and Makito.Settings.MainWeapon or "Melee"
+    Makito.Farming.EquipWeaponByToolTip(MainWeapon)
     
-    -- Busca de alvos via Cache otimizado
-    if Makito.Utils then
-        local cache = Makito.Utils.GetInstanceCache and Makito.Utils.GetInstanceCache() or {Enemies = {}}
-        for _, enemy in ipairs(cache.Enemies) do
-            if #targets >= maxTargets then break end
-            local eRoot = enemy:FindFirstChild("HumanoidRootPart")
-            if eRoot and (root.Position - eRoot.Position).Magnitude <= range then
-                table.insert(targets, eRoot)
-            end
-        end
-    end
+    local Equipped = LocalPlayer.Character:FindFirstChildOfClass("Tool")
+    if not Equipped then return end
     
-    -- Disparo de Dano
-    if #targets > 0 then
-        if Makito.Settings.AutoHaki and not char:FindFirstChild("HasBuso") then
-            remote:InvokeServer("Buso")
-        end
-        
-        -- Bypass de Animação de Ataque (Clicker)
-        if Makito.Settings.FastAttack then
-            for _, target in ipairs(targets) do
-                task.spawn(function()
-                    -- Remote call for damage
-                    remote:InvokeServer("Attack", target)
-                end)
-            end
-        end
+    local ToolTip = Equipped.ToolTip
+    if ToolTip == "Blox Fruit" then
+        Makito.Utils._tp(model.HumanoidRootPart.CFrame * CFrame.new(0, 10, 0) * CFrame.Angles(0, math.rad(90), 0))
+    else
+        Makito.Utils._tp(model.HumanoidRootPart.CFrame * CFrame.new(0, 30, 0) * CFrame.Angles(0, math.rad(180), 0))
     end
 end
 
--- 4. LOOP DE COMBATE UNIFICADO
-function CombatModule.StartCombatLoop()
-    if FastAttackConn then return end
+function CombatModule.Kill2(model, enabled)
+    if not model or not enabled then return end
     
-    FastAttackConn = RunService.RenderStepped:Connect(function()
-        if not Makito.Settings or not (Makito.Settings.FastAttack or Makito.Settings.KillAura) then
-            CombatModule.StopCombatLoop()
-            return
-        end
+    if not Makito.Farming then return end
+    
+    if not model:GetAttribute("Locked") then
+        model:SetAttribute("Locked", model.HumanoidRootPart.CFrame)
+    end
+    
+    local PosMon = (model:GetAttribute("Locked")).Position
+    Makito.Farming.BringEnemy()
+    
+    local MainWeapon = Makito.Settings and Makito.Settings.MainWeapon or "Melee"
+    Makito.Farming.EquipWeaponByToolTip(MainWeapon)
+    
+    local Equipped = LocalPlayer.Character:FindFirstChildOfClass("Tool")
+    if not Equipped then return end
+    
+    local ToolTip = Equipped.ToolTip
+    if ToolTip == "Blox Fruit" then
+        Makito.Utils._tp(model.HumanoidRootPart.CFrame * CFrame.new(0, 10, 0) * CFrame.Angles(0, math.rad(90), 0))
+    else
+        Makito.Utils._tp(model.HumanoidRootPart.CFrame * CFrame.new(0, 30, 8) * CFrame.Angles(0, math.rad(180), 0))
+    end
+end
 
-        local now = tick()
-        local attackSpeed = Makito.Settings.FastAttackSpeed or 0.05
+function CombatModule.KillSea(model, enabled)
+    if not model or not enabled then return end
+    
+    if not Makito.Farming then return end
+    
+    if not model:GetAttribute("Locked") then
+        model:SetAttribute("Locked", model.HumanoidRootPart.CFrame)
+    end
+    
+    local PosMon = (model:GetAttribute("Locked")).Position
+    Makito.Farming.BringEnemy()
+    
+    local MainWeapon = Makito.Settings and Makito.Settings.MainWeapon or "Melee"
+    Makito.Farming.EquipWeaponByToolTip(MainWeapon)
+    
+    local Equipped = LocalPlayer.Character:FindFirstChildOfClass("Tool")
+    if not Equipped then return end
+    
+    local ToolTip = Equipped.ToolTip
+    if ToolTip == "Blox Fruit" then
+        Makito.Utils._tp(model.HumanoidRootPart.CFrame * CFrame.new(0, 10, 0) * CFrame.Angles(0, math.rad(90), 0))
+    else
+        Makito.Utils.notween(model.HumanoidRootPart.CFrame * CFrame.new(0, 50, 8))
+        task.wait(0.85)
+        Makito.Utils.notween(model.HumanoidRootPart.CFrame * CFrame.new(0, 400, 0))
+        task.wait(1)
+    end
+end
+
+function CombatModule.Sword(model, enabled)
+    if not model or not enabled then return end
+    
+    if not Makito.Farming then return end
+    
+    if not model:GetAttribute("Locked") then
+        model:SetAttribute("Locked", model.HumanoidRootPart.CFrame)
+    end
+    
+    local PosMon = (model:GetAttribute("Locked")).Position
+    Makito.Farming.BringEnemy()
+    Makito.Farming.EquipWeaponByToolTip("Sword")
+    Makito.Utils._tp(model.HumanoidRootPart.CFrame * CFrame.new(0, 30, 0))
+end
+
+function CombatModule.Mas(model, enabled)
+    if not model or not enabled then return end
+    
+    if not Makito.Farming then return end
+    
+    if not model:GetAttribute("Locked") then
+        model:SetAttribute("Locked", model.HumanoidRootPart.CFrame)
+    end
+    
+    local PosMon = (model:GetAttribute("Locked")).Position
+    Makito.Farming.BringEnemy()
+    
+    local HealthM = Makito.Settings and Makito.Settings.MasteryHealth or 20
+    if model.Humanoid.Health <= HealthM then
+        Makito.Utils._tp(model.HumanoidRootPart.CFrame * CFrame.new(0, 20, 0))
+        Makito.Utils.UseSkills("Blox Fruit", "Z")
+        Makito.Utils.UseSkills("Blox Fruit", "X")
+        Makito.Utils.UseSkills("Blox Fruit", "C")
+    else
+        Makito.Farming.EquipWeaponByToolTip("Melee")
+        Makito.Utils._tp(model.HumanoidRootPart.CFrame * CFrame.new(0, 30, 0))
+    end
+end
+
+function CombatModule.Masgun(model, enabled)
+    if not model or not enabled then return end
+    
+    if not Makito.Farming then return end
+    
+    if not model:GetAttribute("Locked") then
+        model:SetAttribute("Locked", model.HumanoidRootPart.CFrame)
+    end
+    
+    local PosMon = (model:GetAttribute("Locked")).Position
+    Makito.Farming.BringEnemy()
+    
+    local HealthM = Makito.Settings and Makito.Settings.MasteryHealth or 20
+    if model.Humanoid.Health <= HealthM then
+        Makito.Utils._tp(model.HumanoidRootPart.CFrame * CFrame.new(0, 35, 8))
+        Makito.Utils.UseSkills("Gun", "Z")
+        Makito.Utils.UseSkills("Gun", "X")
+    else
+        Makito.Farming.EquipWeaponByToolTip("Melee")
+        Makito.Utils._tp(model.HumanoidRootPart.CFrame * CFrame.new(0, 30, 0))
+    end
+end
+
+-- ==================================================
+-- NAMECALL HOOK PARA FARM DE MASTERY (DO EXEMPLO)
+-- ==================================================
+function CombatModule.StartNamecallHook()
+    local J = getrawmetatable(game)
+    local i = J.__namecall
+    
+    setreadonly(J, false)
+    J.__namecall = newcclosure(function(...)
+        local method = getnamecallmethod()
+        local args = {...}
         
-        -- Stealth Mode Throttling
-        if Makito.Settings.StealthMode then
-            attackSpeed = math.max(attackSpeed, 0.15)
+        if tostring(method) == "FireServer" then
+            if tostring(args[1]) == "RemoteEvent" then
+                if tostring(args[2]) ~= "true" and tostring(args[2]) ~= "false" then
+                    if Makito.Settings and (
+                        Makito.Settings.FarmMastery_G or 
+                        Makito.Settings.FarmMastery_Dev or 
+                        Makito.Settings.FarmMastery_S
+                    ) then
+                        -- Ajustar a posição para alvo
+                        -- args[2] = MousePos
+                        return i(unpack(args))
+                    end
+                end
+            end
         end
+        
+        return i(...)
+    end)
+    setreadonly(J, true)
+    
+    print("✅ [MAKITO] Namecall Hook inicializado!")
+end
 
-        if now - lastAttackTime >= attackSpeed then
-            lastAttackTime = now
-            AttackNoAnim()
-            if Makito.Settings.KillAura then UltraKillAura() end
+-- ==================================================
+-- COMBAT LOOP (ORIGINAL MAKITO HUB)
+-- ==================================================
+function CombatModule.StartCombatLoop()
+    if combatLoop then return end
+    
+    combatLoop = RunService.Heartbeat:Connect(function()
+        if not Makito.Settings then return end
+        
+        -- Fast Attack
+        if Makito.Settings.FastAttack then
+            CombatModule.FastAttack()
+        end
+        
+        -- Kill Aura
+        if Makito.Settings.KillAura then
+            CombatModule.KillAura()
         end
     end)
+    
+    print("✅ [MAKITO] Combat Loop iniciado!")
 end
 
 function CombatModule.StopCombatLoop()
-    if FastAttackConn then
-        FastAttackConn:Disconnect()
-        FastAttackConn = nil
+    if combatLoop then
+        combatLoop:Disconnect()
+        combatLoop = nil
     end
+end
+
+-- ==================================================
+-- FAST ATTACK
+-- ==================================================
+function CombatModule.FastAttack()
+    -- Implementar Fast Attack
+end
+
+-- ==================================================
+-- KILL AURA
+-- ==================================================
+function CombatModule.KillAura()
+    -- Implementar Kill Aura
+end
+
+-- ==================================================
+-- INICIALIZAÇÃO DO COMBAT
+-- ==================================================
+function CombatModule.Initialize()
+    CombatModule.StartNamecallHook()
+    print("✅ [MAKITO] Combat Module inicializado!")
 end
 
 return CombatModule

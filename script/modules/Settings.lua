@@ -17,6 +17,30 @@ local DEFAULT_VALUES = {
     Aimbot = false,
     AutoPvP = false,
     AutoCounter = false,
+    
+    -- Novos Recursos do Exemplo
+    AutoTeam = "Marines", -- Marines ou Pirates
+    AutoTeamEnabled = false,
+    BringRange = 235,
+    MaxBringMobs = 3,
+    RipIndraTP = true,
+    LowCPU = false,
+    MobHeight = 20,
+    
+    -- Farm Mastery (do exemplo)
+    FarmMastery_Dev = false,
+    FarmMastery_G = false,
+    FarmMastery_S = false,
+    FruitSkills = {
+        Z = false,
+        X = false,
+        C = false,
+        V = false,
+        F = false
+    },
+    
+    -- AutoKen
+    AutoKen = true,
     -- Farm Geral
     AutoFarm = false, 
     AutoQuest = true, 

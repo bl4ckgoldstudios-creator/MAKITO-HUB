@@ -250,6 +250,49 @@ end)
 if Makito.Utils then
     Makito.Utils.AntiAFK()
     Makito.Utils.SecurityBypass()
+    Makito.Utils.InitializeExampleFeatures()
+    
+    -- Hookfunctions do exemplo para silenciar erros/death effects
+    if hookfunction then
+        pcall(function()
+            hookfunction(require(game:GetService("ReplicatedStorage").Effect.Container.Death), function() end)
+        end)
+        pcall(function()
+            hookfunction(require(game:GetService("ReplicatedStorage"):WaitForChild("GuideModule")).ChangeDisplayedNPC, function() end)
+        end)
+        -- pcall(function()
+        --     hookfunction(error, function() end)
+        -- end)
+        -- pcall(function()
+        --     hookfunction(warn, function() end)
+        -- end)
+        
+        -- Remover Rocks do Workspace
+        pcall(function()
+            local Rock = workspace:FindFirstChild("Rocks")
+            if Rock then Rock:Destroy() end
+        end)
+        
+        -- Remover DarkFog e Foam/Water
+        pcall(function()
+            local Lighting = game:GetService("Lighting")
+            local lightingLayers = Lighting:FindFirstChild("LightingLayers")
+            if lightingLayers then
+                local darkFog = lightingLayers:FindFirstChild("DarkFog")
+                if darkFog then darkFog:Destroy() end
+            end
+            local Water = workspace:FindFirstChild("_WorldOrigin") and workspace._WorldOrigin:FindFirstChild("Foam;")
+            if Water then Water:Destroy() end
+        end)
+    end
+    
+    -- Inicializa módulos de Farming e Combat (Novos)
+    if Makito.Farming then
+        Makito.Farming.Initialize()
+    end
+    if Makito.Combat then
+        Makito.Combat.Initialize()
+    end
     
     -- Inicializa módulos de Segurança e Atualizações (NEW)
     if Makito.Security then
